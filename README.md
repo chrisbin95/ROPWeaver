@@ -13,8 +13,8 @@
 - 🔗 **Interactive ROP chain builder**: Manually or automatically link gadgets to develop and simulate exploits.
 <!-- - 🎯 **Blind ROP mode**: Inspired by BROP for blind exploitation without symbols. -->
 - 🛡️ **Binary sanitizer**: Detects common binary protections like NX, PIE, RELRO, and stack canaries.
-- 🧰 **Debugger-assisted simulation**: Optional integration with GDB or Pwntools for runtime ROP chain validation.
-- ☁️ **Firebase upload**: Upload exploit chain reports and gadget findings to Firebase for remote access and collaboration.
+- 🧰 **Debugger-assisted simulation**: Integration with GDB or Pwntools for runtime ROP chain validation.
+- ☁️ **Firebase upload**: Upload exploit chain reports and gadget findings to Firebase for remote web based access and collaboration.
 
 ---
 
@@ -43,6 +43,7 @@ ROPWeaver/
 ├── Makefile / CMakeLists.txt
 └── config/
     └── firebase_config.json
+
 ```
 
 ---
@@ -62,7 +63,8 @@ make        # or cmake . && make
 - `libelf-dev`
 - `binutils`
 - `g++` or `clang++`
-- `GDB`, `Pwntools`, `Firebase SDK`
+- `GDB`, `Pwntools`, `Qt5 (GUI)`
+- `Firebase SDK`
 
 ---
 
