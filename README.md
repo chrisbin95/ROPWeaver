@@ -62,7 +62,7 @@ make        # or cmake . && make
 - `libelf-dev`
 - `binutils`
 - `g++` or `clang++`
-- Optional: `GDB`, `Pwntools`, Firebase SDK
+- `GDB`, `Pwntools`, `Firebase SDK`
 
 ---
 
