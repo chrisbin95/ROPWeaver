@@ -1,0 +1,50 @@
+// sample json output
+{
+  "target_binary": "sample_x86.elf",
+  "architecture": "x86",
+  "protections": {
+    "NX": true,
+    "PIE": false,
+    "RELRO": "Partial",
+    "Canary": false
+  },
+  "gadgets": [
+    {
+      "address": "0x08048456",
+      "gadget": "pop eax; ret",
+      "category": "register_move"
+    },
+    {
+      "address": "0x0804851c",
+      "gadget": "pop ebx; pop ecx; pop edx; ret",
+      "category": "syscall_prep"
+    },
+    {
+      "address": "0x0804847a",
+      "gadget": "int 0x80",
+      "category": "syscall_trigger"
+    }
+  ],
+  "rop_chain": [
+    {
+      "step": 1,
+      "address": "0x08048456",
+      "description": "Set EAX to syscall number (execve)"
+    },
+    {
+      "step": 2,
+      "address": "0x0804851c",
+      "description": "Set EBX, ECX, EDX to /bin/sh, NULL, NULL"
+    },
+    {
+      "step": 3,
+      "address": "0x0804847a",
+      "description": "Trigger syscall"
+    }
+  ],
+  "summary": {
+    "chain_type": "execve syscall",
+    "success": true,
+    "notes": "Basic execve chain created for x86 32-bit ELF without stack canary or PIE."
+  }
+}

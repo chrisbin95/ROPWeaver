@@ -1,0 +1,9 @@
+{
+  "apiKey": "API_KEY",
+  "authDomain": "ROPWeaver.firebaseapp.com",
+  "projectId": "ROPWeaver-id",
+  "storageBucket": "ROPWeaver.appspot.com",
+  "messagingSenderId": "SENDER_ID",
+  "appId": "APP_ID",
+  "measurementId": "G-MEASUREMENT_ID"
+}
