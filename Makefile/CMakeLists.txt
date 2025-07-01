@@ -8,32 +8,34 @@ set(CMAKE_AUTORCC ON)
 
 option(USE_GUI "Build with Qt GUI" OFF)
 
-# Include directories
-include_directories(
-    ${CMAKE_SOURCE_DIR}/core
-    ${CMAKE_SOURCE_DIR}/ui
-    ${CMAKE_SOURCE_DIR}/firebase
-    ${CMAKE_SOURCE_DIR}/include
-)
+# Adjusted relative paths since CMakeLists.txt is inside Makefile/
+set(PROJECT_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/..)
 
-# Gather core source files
+include_directories(${PROJECT_ROOT})
+
+# Gather source files
 file(GLOB_RECURSE CORE_SRC
-    core/*.cpp
-    firebase/*.cpp
-    include/*.h
+    ${PROJECT_ROOT}/core/*.cpp
+    ${PROJECT_ROOT}/firebase/*.cpp
+    ${PROJECT_ROOT}/include/*.h
 )
 
 # CLI build
 if(NOT USE_GUI)
-    add_executable(ropweaver main.cpp ${CORE_SRC} ui/cli.cpp)
+    add_executable(ropweaver ${PROJECT_ROOT}/main.cpp ${CORE_SRC} ${PROJECT_ROOT}/ui/cli.cpp)
 else()
     find_package(Qt5 COMPONENTS Widgets REQUIRED)
-    add_executable(ropweaver main_qt.cpp ${CORE_SRC} ui/qt_gui.cpp)
+    add_executable(ropweaver ${PROJECT_ROOT}/main_qt.cpp ${CORE_SRC} ${PROJECT_ROOT}/ui/qt_gui.cpp)
     target_link_libraries(ropweaver Qt5::Widgets)
 endif()
 
-# Optional: install rules
 install(TARGETS ropweaver DESTINATION bin)
+
+if(DEFINED ENV{USE_GUI})
+    message("[MAKE] Building GUI version")
+else()
+    message("[MAKE] Building CLI version")
+endif()
 
 # Makefile fallback
 # Run: make cli or make gui
@@ -44,8 +46,3 @@ install(TARGETS ropweaver DESTINATION bin)
 # > To build GUI (Qt required):
 # cmake -DUSE_GUI=ON .
 # make
-if(DEFINED ENV{USE_GUI})
-    message("[MAKE] Building GUI version")
-else()
-    message("[MAKE] Building CLI version")
-endif()
