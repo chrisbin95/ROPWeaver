@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/home/kali/ROPWeaver/Makefile/..
+CXX_INCLUDES = -I/home/kali/ROPWeaver/Makefile/.. -I/home/kali/ROPWeaver/Makefile/firebase
 
 CXX_FLAGS = -std=gnu++17
 

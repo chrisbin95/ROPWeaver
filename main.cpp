@@ -1,4 +1,3 @@
-// main.cpp
 #include <iostream>
 #include "include/ropweaver.h"
 #include "core/elf_parser.h"
@@ -12,22 +11,21 @@
 int main(int argc, char* argv[]) {
     std::cout << "=== ROPWeaver: ROP Exploit Generator ===" << std::endl;
 
-    // Parse CLI arguments
     CLI cli;
     CLIOptions options = cli.parseArguments(argc, argv);
 
     if (!options.valid) {
-        cli.printUsage();
+        cli.showHelp();
         return 1;
     }
 
-    // Load and analyze the ELF binary
     ELFParser elf(options.filename);
     if (!elf.isValidELF()) {
         std::cerr << "[Error] Invalid ELF binary: " << options.filename << std::endl;
         return 1;
     }
-
+    
+    ArchDetector detector;
     std::string arch = detectArchitecture(elf);
     std::cout << "[*] Detected architecture: " << arch << std::endl;
 
@@ -58,8 +56,8 @@ int main(int argc, char* argv[]) {
         }
 
         if (options.uploadReport) {
-            FirebaseUploader uploader;
-            if (uploader.uploadChainReport(chain, options.filename, arch)) {
+            FirebaseUploader uploader("config/firebase_config.json");  // ✅ FIXED
+            if (uploader.uploadReport("reports/output.json")) {        // ✅ adjust if needed
                 std::cout << "[+] Report uploaded to Firebase." << std::endl;
             } else {
                 std::cerr << "[!] Firebase upload failed." << std::endl;

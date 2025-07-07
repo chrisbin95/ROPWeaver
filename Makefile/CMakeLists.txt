@@ -12,6 +12,8 @@ option(USE_GUI "Build with Qt GUI" OFF)
 set(PROJECT_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/..)
 
 include_directories(${PROJECT_ROOT})
+include_directories(${CMAKE_SOURCE_DIR}/firebase)
+
 
 # Gather source files
 file(GLOB_RECURSE CORE_SRC

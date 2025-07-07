@@ -11,6 +11,11 @@ bool ELFParser::parse() {
     return true;
 }
 
+bool ELFParser::isValidELF() const {
+    // Simple ELF check logic
+    return !data.empty();
+}
+
 std::vector<uint8_t> ELFParser::getTextSection() const {
     return text_section;
 }

@@ -8,6 +8,7 @@ class ELFParser {
 public:
     explicit ELFParser(const std::string& filename);
     bool parse();
+    bool isValidELF() const;
     std::vector<uint8_t> getTextSection() const;
     std::string getArchitecture() const;
 private:

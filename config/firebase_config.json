@@ -1,9 +1,10 @@
 {
-  "apiKey": "API_KEY",
-  "authDomain": "ROPWeaver.firebaseapp.com",
-  "projectId": "ROPWeaver-id",
-  "storageBucket": "ROPWeaver.appspot.com",
-  "messagingSenderId": "SENDER_ID",
-  "appId": "APP_ID",
-  "measurementId": "G-MEASUREMENT_ID"
+  "apiKey": "AIzaSyDZ3BEfUstg32hqnbctG7X3LQ5onNJ98qs",
+  "firebase_url": "https://firestore.googleapis.com/v1/projects/ropweaver/databases/(default)/documents/reports",
+  "authDomain": "ropweaver.firebaseapp.com",
+  "projectId": "ropweaver",
+  "storageBucket": "ropweaver.firebasestorage.app",
+  "messagingSenderId": "356547989098",
+  "appId": "1:356547989098:web:16a48b40d0bde270df8413",
+  "measurementId": "G-CR1P508GPH"
 }

@@ -4,5 +4,5 @@
 
 class ArchDetector {
 public:
-    static std::string detectArch(const std::string& filepath);
+    std::string detectArchitecture(const ELFParser& parser);
 };
