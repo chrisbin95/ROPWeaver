@@ -1,39 +1,176 @@
 <!DOCTYPE HTML>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<title>Free Online ROP Gadgets Search</title>
-<link rel="stylesheet" href="css/pure-min.css" />
-<link rel="stylesheet" href="css/skin-mine.css" />
+  <meta charset="utf-8">
+  <title>ROPWeaver | Free Online ROP Gadgets Search</title>
+  <link rel="stylesheet" href="css/pure-min.css" />
+  <link rel="stylesheet" href="css/skin-mine.css" />
+  <script type="module">
+    // Firebase imports
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    // Firebase config data
+    const firebaseConfig = {
+      apiKey: "AIzaSyDZ3BEfUstg32hqnbctG7X3LQ5onNJ98qs",
+      authDomain: "ropweaver.firebaseapp.com",
+      projectId: "ropweaver",
+      storageBucket: "ropweaver.firebasestorage.app",
+      messagingSenderId: "356547989098",
+      appId: "1:356547989098:web:16a48b40d0bde270df8413",
+      measurementId: "G-CR1P508GPH"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Search function: query by hash OR file name
+    window.searchGadgets = async function(event) {
+      event.preventDefault();
+      const input = document.getElementById("searchInput").value.trim();
+      const resultBox = document.getElementById("results");
+      resultBox.innerHTML = `<span> Searching for "<strong>${input}</strong>" </span>`;
+
+      const gadgetsRef = collection(db, "gadgets");
+      const queryByHash = query(gadgetsRef, where("hash", "==", input));
+      const queryByFilename = query(gadgetsRef, where("file name", "==", input));
+
+      try {
+        const [snapHash, snapFile] = await Promise.all([getDocs(queryByHash), getDocs(queryByFilename)]);
+        // Combine snapshots or pick non-empty
+        let docs = [];
+        if (!snapHash.empty) docs = snapHash.docs;
+        else if (!snapFile.empty) docs = snapFile.docs;
+
+        if (docs.length === 0) {
+          resultBox.innerHTML = `<span class="error">No matching gadgets found.</span>`;
+          return;
+        }
+
+        let output = `<div><strong>Found ${docs.length} gadget(s):</strong><br><br>`;
+        docs.forEach(doc => {
+          const g = doc.data();
+          output += `<div class="gadget-entry">`;
+          output += `<span><strong>File Name:</strong> ${g["file name"] || 'N/A'}</span>`;
+          output += `<span><strong>Hash:</strong> ${g.hash || 'N/A'}</span>`;
+          output += `<span><strong>Architecture:</strong> ${g.architecture || 'N/A'}</span>`;
+          output += `<span><strong>Instructions:</strong> <span class="highlight">${g.instructions || '[no instruction]'}</span></span>`;
+          output += `<span><strong>Offset:</strong> ${g.offset || 0}</span>`;
+          output += `<span><strong>Address:</strong> ${g.address || 'N/A'}</span>`;
+          output += `<span><strong>Category:</strong> ${g.category || 'N/A'}</span>`;
+          if (g.report_id && g.report_id !== '') {
+  		output += `<span><strong>Report ID:</strong> <a href="${g.report_id}.html" target="_blank">${g.report_id}</a></span>`;
+	  } else {
+  		output += `<span><strong>Report ID:</strong> N/A</span>`;
+  	  }
+          output += `</div>`;
+        });
+        output += `</div>`;
+        resultBox.innerHTML = output;
+      } catch (err) {
+        resultBox.innerHTML = `<span class="error">Error fetching gadgets: ${err.message}</span>`;
+      }
+    }
+
+    // Update stats dynamically
+    async function updateStats() {
+      const gadgetsRef = collection(db, "gadgets");
+      const snapshot = await getDocs(gadgetsRef);
+
+      const archCounts = { "x86_64": 0, "i386": 0, "arm": 0, "armv7": 0 };
+      const typeCounts = { "RAW": 0, "MACHO": 0, "ELF": 0, "PE": 0 };
+      let totalCount = 0;
+
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        totalCount++;
+        if (data.architecture && archCounts.hasOwnProperty(data.architecture)) archCounts[data.architecture]++;
+        if (data.category && typeCounts.hasOwnProperty(data.category.toUpperCase())) typeCounts[data.category.toUpperCase()]++;
+      });
+
+      let output = `ropweaver> stats
+by arch
+-------
+`;
+      for (const [arch, count] of Object.entries(archCounts)) {
+        output += `${arch.padEnd(6)}: ${count}\n`;
+      }
+      output += `
+by type
+-------
+`;
+      for (const [type, count] of Object.entries(typeCounts)) {
+        output += `${type.padEnd(6)}: ${count}\n`;
+      }
+      output += `
+total gadget database: ${totalCount}
+`;
+
+      document.getElementById("stats-output").textContent = output;
+    }
+
+    window.onload = () => {
+      updateStats();
+    }
+  </script>
+  <style>
+    .results-box {
+      background: #1e1e1e;
+      color: #e0e0e0;
+      border: 1px solid #444;
+      padding: 1em;
+      font-family: monospace;
+      white-space: pre-wrap;
+      margin-top: 1em;
+    }
+    .gadget-entry {
+      margin-bottom: 1.5em;
+      padding-bottom: 0.5em;
+      border-bottom: 1px dashed #555;
+    }
+    .gadget-entry span {
+      display: block;
+      margin-bottom: 2px;
+    }
+    .highlight {
+      color: #0f0;
+    }
+    .error {
+      color: #f44;
+    }
+  </style>
 </head>
+
 <body class="pure-skin-mine">
-<div class="pure-g">
-    <div class="pure-u-1-24">
-    </div>
+  <div class="pure-g">
+    <div class="pure-u-1-24"></div>
     <div class="pure-u-22-24">
-        <div class="pure-menu pure-menu-open pure-menu-horizontal">
-    <a href="/" class="pure-menu-heading">ROPWeaver</a>
-    <ul>
-        <li><a href="upload.html">Upload</a></li>
-        <li><a href="search.html">Search</a></li>
-        <li><a href="howto.html">Howto</a></li>
-        <li><a href="about.html">About</a></li>
-    </ul>
-</div>
+      <div class="pure-menu pure-menu-open pure-menu-horizontal">
+        <a href="index.html" class="pure-menu-heading">ROPWeaver</a>
+        <ul>
+          <li><a href="upload.html">Upload</a></li>
+          <li><a href="search.html">Search</a></li>
+          <li><a href="howto.html">Howto</a></li>
+          <li><a href="about.html">About</a></li>
+        </ul>
+      </div>
 
-        <div class="content">
-        
-<pre>
+      <div class="content">
+        <pre>
 ropweaver> Free online ROP gadgets search!
-</pre>
-<form class="pure-form" action="/search" method="post">
-    <input name="pattern" type="text" class="pure-input" placeholder="binary name or md5 hash" required>
-    <button type="submit" class="pure-button">Search</button>
-</form>
+        </pre>
 
-<p></p>
-<pre>
-ropshell> stats
+        <form class="pure-form" onsubmit="searchGadgets(event)">
+          <input id="searchInput" name="pattern" type="text" class="pure-input" placeholder="Enter binary name or hash" required>
+          <button type="submit" class="pure-button">Search</button>
+        </form>
+
+        <div id="results" class="results-box">
+        	<span> &#9656; Type hash or file name to begin search.. (eg. fd635dde8a2c5df766008b4cc7a113ec) </span>
+        </div>
+
+        <pre id="stats-output">
+ropweaver> stats
 by arch
 -------
 x86_64: 0
@@ -49,16 +186,15 @@ ELF   : 0
 PE    : 0
 
 total gadget database: 0
-</pre>
+        </pre>
+      </div>
 
-        </div>
-        <div class="footer l-box is-center">
-    <p class="copyright">
-    &copy; 2025 - Powered by <a href="index.html">ROPWeaver</a> | <a href="mailto:admin@ropweaver.com">Contact</a>
-    </p>
-</div>
-
+      <div class="footer l-box is-center">
+        <p class="copyright">
+          &copy; 2025 - Powered by <a href="index.html">ROPWeaver</a> | <a href="mailto:admin@ropweaver.com">Contact</a>
+        </p>
+      </div>
     </div>
-</div>
+  </div>
 </body>
 </html>
