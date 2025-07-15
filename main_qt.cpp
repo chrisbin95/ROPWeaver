@@ -5,7 +5,7 @@
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
     
-    QtROPWeaver window;
+    QtGUI window;
     window.setWindowTitle("ROPWeaver - GUI Mode");
     window.resize(900, 600);
     window.show();

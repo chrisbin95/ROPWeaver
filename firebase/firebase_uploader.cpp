@@ -13,41 +13,50 @@ FirebaseUploader::FirebaseUploader(const std::string& configPath) {
 void FirebaseUploader::loadConfig(const std::string& configPath) {
     std::ifstream file(configPath);
     if (!file.is_open()) {
-        std::cerr << "❌ Failed to open Firebase config file.\n";
+        std::cerr << "❌ Failed to open Firebase config file: " << configPath << "\n";
         return;
     }
 
-    nlohmann::json config;
-    file >> config;
-
-    firebaseUrl = config["firebase_url"];
-    apiKey = config["api_key"];
+    try {
+        nlohmann::json config;
+        file >> config;
+        firebaseUrl = config.at("firebase_url").get<std::string>();
+        apiKey = config.at("api_key").get<std::string>();
+    } catch (const std::exception& e) {
+        std::cerr << "❌ Error parsing config JSON: " << e.what() << "\n";
+    }
 }
 
 bool FirebaseUploader::uploadReport(const std::string& jsonPath) {
     std::ifstream file(jsonPath);
     if (!file.is_open()) {
-        std::cerr << "❌ Failed to open report JSON file.\n";
+        std::cerr << "❌ Failed to open report JSON file: " << jsonPath << "\n";
         return false;
     }
 
     nlohmann::json inputJson;
-    file >> inputJson;
+    try {
+        file >> inputJson;
+    } catch (const std::exception& e) {
+        std::cerr << "❌ Error parsing input JSON: " << e.what() << "\n";
+        return false;
+    }
 
-    // Transform to Firestore-compatible structure
-    nlohmann::json firestoreFormat = {
-        {"fields", {}}
-    };
+    // Transform into Firestore API format
+    nlohmann::json firestoreFormat = { {"fields", nlohmann::json::object()} };
 
-    for (auto& el : inputJson.items()) {
-        if (el.value().is_string()) {
-            firestoreFormat["fields"][el.key()] = { { "stringValue", el.value() } };
-        } else if (el.value().is_number_integer()) {
-            firestoreFormat["fields"][el.key()] = { { "integerValue", std::to_string(el.value().get<int>()) } };
-        } else if (el.value().is_number_float()) {
-            firestoreFormat["fields"][el.key()] = { { "doubleValue", el.value().get<double>() } };
+    for (const auto& [key, value] : inputJson.items()) {
+        if (value.is_string()) {
+            firestoreFormat["fields"][key] = { { "stringValue", value.get<std::string>() } };
+        } else if (value.is_number_integer()) {
+            firestoreFormat["fields"][key] = { { "integerValue", std::to_string(value.get<int>()) } };
+        } else if (value.is_number_float()) {
+            firestoreFormat["fields"][key] = { { "doubleValue", value.get<double>() } };
+        } else if (value.is_boolean()) {
+            firestoreFormat["fields"][key] = { { "booleanValue", value.get<bool>() } };
+        } else {
+            std::cerr << "⚠️ Skipped unsupported field: " << key << "\n";
         }
-        // You can add more type mappings here (e.g., booleanValue, timestampValue)
     }
 
     std::string jsonPayload = firestoreFormat.dump();
@@ -62,15 +71,14 @@ bool FirebaseUploader::uploadReport(const std::string& jsonPath) {
     headers = curl_slist_append(headers, "Content-Type: application/json");
 
     std::string fullUrl = firebaseUrl + "?key=" + apiKey;
-
     curl_easy_setopt(curl, CURLOPT_URL, fullUrl.c_str());
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jsonPayload.c_str());
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L);
 
     CURLcode res = curl_easy_perform(curl);
-
     if (res != CURLE_OK) {
-        std::cerr << "❌ CURL failed: " << curl_easy_strerror(res) << std::endl;
+        std::cerr << "❌ CURL failed: " << curl_easy_strerror(res) << "\n";
     } else {
         std::cout << "✅ Report successfully uploaded to Firestore.\n";
     }

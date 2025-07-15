@@ -1,3 +1,4 @@
+// main.cpp
 #include <iostream>
 #include "include/ropweaver.h"
 #include "core/elf_parser.h"
@@ -15,7 +16,7 @@ int main(int argc, char* argv[]) {
     CLIOptions options = cli.parseArguments(argc, argv);
 
     if (!options.valid) {
-        cli.showHelp();
+        cli.printUsage();  // corrected method name
         return 1;
     }
 
@@ -26,11 +27,15 @@ int main(int argc, char* argv[]) {
     }
     
     ArchDetector detector;
-    std::string arch = detectArchitecture(elf);
+    std::string arch = detector.detectArchitecture(elf);  // corrected method call
     std::cout << "[*] Detected architecture: " << arch << std::endl;
 
-    GadgetFinder finder(elf, arch);
-    std::vector<Gadget> gadgets = finder.findGadgets();
+    std::vector<uint8_t> binaryCode = elf.getTextSection();
+    GadgetFinder finder(binaryCode, arch);
+
+    finder.findGadgets();  // if returns void
+
+    auto gadgets = finder.getGadgets();  // assuming getter exists returning vector<Gadget>
 
     std::cout << "[*] Found " << gadgets.size() << " gadgets." << std::endl;
 
@@ -56,8 +61,8 @@ int main(int argc, char* argv[]) {
         }
 
         if (options.uploadReport) {
-            FirebaseUploader uploader("config/firebase_config.json");  // ✅ FIXED
-            if (uploader.uploadReport("reports/output.json")) {        // ✅ adjust if needed
+            FirebaseUploader uploader("config/firebase_config.json");
+            if (uploader.uploadReport("reports/output.json")) {
                 std::cout << "[+] Report uploaded to Firebase." << std::endl;
             } else {
                 std::cerr << "[!] Firebase upload failed." << std::endl;
@@ -67,3 +72,4 @@ int main(int argc, char* argv[]) {
 
     return 0;
 }
+

@@ -1,9 +1,11 @@
 // utils.h
-#pragma once // include once during compilation
+#pragma once
 #include <string>
 #include <vector>
+#include <cstdint>
 
-namespace Utils {
-    std::vector<uint8_t> readBinaryFile(const std::string& path);
-    void writeToFile(const std::string& path, const std::string& content);
-}
+class Utils {
+public:
+    static std::vector<uint8_t> readBinaryFile(const std::string& path);
+    static void writeToFile(const std::string& path, const std::string& content);
+};

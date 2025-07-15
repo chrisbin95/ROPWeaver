@@ -4,12 +4,19 @@
 
 #include <QWidget>
 
+class QPushButton;
+
 class QtGUI : public QWidget {
     Q_OBJECT
-
 public:
-    QtGUI(QWidget* parent = nullptr);
+    explicit QtGUI(QWidget* parent = nullptr);
+
+private slots:
+    void onRunAnalysisClicked();
+
+private:
     void setupUI();
+    QPushButton* runButton;
 };
 
 #endif // QT_GUI_H

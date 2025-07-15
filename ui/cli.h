@@ -5,17 +5,20 @@
 #include <string>
 
 struct CLIOptions {
-    std::string filename;
-    std::string architecture = "x86";
-    bool listGadgets = false;
-    bool autoChain = false;
-    bool uploadReport = false;
-    bool valid = false;
+    std::string filename;                  // Binary input file
+    std::string architecture = "x86";      // Default arch if not specified
+    bool listGadgets = false;              // --list-gadgets
+    bool autoChain = false;                // --auto-chain
+    bool uploadReport = false;             // --upload-report
+    bool valid = false;                    // Set to true only when args are good
 };
 
 class CLI {
 public:
+    // Parses command-line arguments and returns options
     CLIOptions parseArguments(int argc, char** argv);
+
+    // Displays usage/help message
     void printUsage() const;
 };
 
