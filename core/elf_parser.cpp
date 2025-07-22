@@ -3,6 +3,7 @@
 #include <fstream>
 #include <iostream>
 #include <cstring>
+#include <elf.h>
 
 ELFParser::ELFParser(const std::string& filename) : filepath(filename) {}
 
@@ -27,38 +28,34 @@ bool ELFParser::parse() {
         return false;
     }
 
-    const Elf64_Ehdr* ehdr = reinterpret_cast<const Elf64_Ehdr*>(data.data());
+    // Save a copy of the ELF header
+    std::memcpy(&elf_header, data.data(), sizeof(Elf64_Ehdr));
 
     // Set architecture string
-    switch (ehdr->e_machine) {
-        case EM_X86_64:
-            arch = "x86_64";
-            break;
-        case EM_386:
-            arch = "i386";
-            break;
-        case EM_ARM:
-            arch = "arm";
-            break;
-        case EM_AARCH64:
-            arch = "aarch64";
-            break;
-        default:
-            arch = "unknown";
-            break;
+    switch (elf_header.e_machine) {
+        case EM_X86_64:  arch = "x86_64"; break;
+        case EM_386:     arch = "i386"; break;
+        case EM_ARM:     arch = "arm"; break;
+        case EM_AARCH64: arch = "aarch64"; break;
+        default:         arch = "unknown"; break;
     }
 
-    // Parse section headers to find .text section
-    const Elf64_Shdr* sh_table = reinterpret_cast<const Elf64_Shdr*>(data.data() + ehdr->e_shoff);
-    const char* sh_strtab = reinterpret_cast<const char*>(data.data() + sh_table[ehdr->e_shstrndx].sh_offset);
+    // Section headers
+    const Elf64_Shdr* sh_table = reinterpret_cast<const Elf64_Shdr*>(data.data() + elf_header.e_shoff);
+    if (elf_header.e_shstrndx == SHN_UNDEF) {
+        std::cerr << "Invalid section string table index.\n";
+        return false;
+    }
 
-    for (int i = 0; i < ehdr->e_shnum; ++i) {
+    const Elf64_Shdr& sh_strtab_hdr = sh_table[elf_header.e_shstrndx];
+    const char* sh_strtab = reinterpret_cast<const char*>(data.data() + sh_strtab_hdr.sh_offset);
+
+    for (int i = 0; i < elf_header.e_shnum; ++i) {
         const Elf64_Shdr& sh = sh_table[i];
         std::string sectionName(sh_strtab + sh.sh_name);
 
         if (sectionName == ".text") {
-            text_section.insert(
-                text_section.end(),
+            text_section.assign(
                 data.begin() + sh.sh_offset,
                 data.begin() + sh.sh_offset + sh.sh_size
             );
@@ -79,4 +76,9 @@ std::vector<uint8_t> ELFParser::getTextSection() const {
 
 std::string ELFParser::getArchitecture() const {
     return arch;
+}
+
+// returns the ELF header
+Elf64_Ehdr ELFParser::getHeader() const {
+    return elf_header;
 }

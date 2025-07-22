@@ -121,7 +121,7 @@ CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/arch_detector.cpp.o: \
  /usr/include/c++/14/vector /usr/include/c++/14/bits/stl_uninitialized.h \
  /usr/include/c++/14/bits/stl_vector.h \
  /usr/include/c++/14/bits/stl_bvector.h \
- /usr/include/c++/14/bits/vector.tcc /usr/include/elf.h \
+ /usr/include/c++/14/bits/vector.tcc /usr/include/c++/14/cstdint \
  /usr/lib/gcc/x86_64-linux-gnu/14/include/stdint.h /usr/include/stdint.h \
  /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h \
- /usr/include/x86_64-linux-gnu/bits/stdint-least.h
+ /usr/include/x86_64-linux-gnu/bits/stdint-least.h /usr/include/elf.h

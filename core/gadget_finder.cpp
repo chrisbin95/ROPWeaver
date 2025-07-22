@@ -55,7 +55,8 @@ void GadgetFinder::findGadgets() {
                 // Stop at ret/jmp/call/syscall for ROP gadget
                 std::string mnem = insn[j].mnemonic;
                 if (mnem == "ret" || mnem == "syscall" || mnem.find("jmp") == 0 || mnem.find("call") == 0) {
-                    gadgets.push_back(gadget.str());
+                    // gadgets.push_back(gadget.str());
+                    gadgets.emplace_back(gadget.str(), insn[0].address);
                     break;
                 }
             }
@@ -66,6 +67,6 @@ void GadgetFinder::findGadgets() {
     cs_close(&handle);
 }
 
-std::vector<std::string> GadgetFinder::getGadgets() const {
+std::vector<Gadget> GadgetFinder::getGadgets() const {
     return gadgets;
 }

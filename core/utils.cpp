@@ -3,6 +3,7 @@
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <cstdio>
 
 std::vector<uint8_t> Utils::readBinaryFile(const std::string& path) {
     std::ifstream file(path, std::ios::binary);

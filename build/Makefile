@@ -174,6 +174,32 @@ ropweaver/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver.dir/build.make CMakeFiles/ropweaver.dir/build
 .PHONY : ropweaver/fast
 
+#=============================================================================
+# Target rules for targets named ropweaver_autogen_timestamp_deps
+
+# Build rule for target.
+ropweaver_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 ropweaver_autogen_timestamp_deps
+.PHONY : ropweaver_autogen_timestamp_deps
+
+# fast build rule for target.
+ropweaver_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_autogen_timestamp_deps.dir/build.make CMakeFiles/ropweaver_autogen_timestamp_deps.dir/build
+.PHONY : ropweaver_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named ropweaver_autogen
+
+# Build rule for target.
+ropweaver_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 ropweaver_autogen
+.PHONY : ropweaver_autogen
+
+# fast build rule for target.
+ropweaver_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_autogen.dir/build.make CMakeFiles/ropweaver_autogen.dir/build
+.PHONY : ropweaver_autogen/fast
+
 home/kali/ROPWeaver/core/arch_detector.o: home/kali/ROPWeaver/core/arch_detector.cpp.o
 .PHONY : home/kali/ROPWeaver/core/arch_detector.o
 
@@ -318,53 +344,77 @@ home/kali/ROPWeaver/firebase/firebase_uploader.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver.dir/build.make CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/firebase/firebase_uploader.cpp.s
 .PHONY : home/kali/ROPWeaver/firebase/firebase_uploader.cpp.s
 
-home/kali/ROPWeaver/main.o: home/kali/ROPWeaver/main.cpp.o
-.PHONY : home/kali/ROPWeaver/main.o
+home/kali/ROPWeaver/main_qt.o: home/kali/ROPWeaver/main_qt.cpp.o
+.PHONY : home/kali/ROPWeaver/main_qt.o
 
 # target to build an object file
-home/kali/ROPWeaver/main.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver.dir/build.make CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/main.cpp.o
-.PHONY : home/kali/ROPWeaver/main.cpp.o
+home/kali/ROPWeaver/main_qt.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver.dir/build.make CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/main_qt.cpp.o
+.PHONY : home/kali/ROPWeaver/main_qt.cpp.o
 
-home/kali/ROPWeaver/main.i: home/kali/ROPWeaver/main.cpp.i
-.PHONY : home/kali/ROPWeaver/main.i
+home/kali/ROPWeaver/main_qt.i: home/kali/ROPWeaver/main_qt.cpp.i
+.PHONY : home/kali/ROPWeaver/main_qt.i
 
 # target to preprocess a source file
-home/kali/ROPWeaver/main.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver.dir/build.make CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/main.cpp.i
-.PHONY : home/kali/ROPWeaver/main.cpp.i
+home/kali/ROPWeaver/main_qt.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver.dir/build.make CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/main_qt.cpp.i
+.PHONY : home/kali/ROPWeaver/main_qt.cpp.i
 
-home/kali/ROPWeaver/main.s: home/kali/ROPWeaver/main.cpp.s
-.PHONY : home/kali/ROPWeaver/main.s
+home/kali/ROPWeaver/main_qt.s: home/kali/ROPWeaver/main_qt.cpp.s
+.PHONY : home/kali/ROPWeaver/main_qt.s
 
 # target to generate assembly for a file
-home/kali/ROPWeaver/main.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver.dir/build.make CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/main.cpp.s
-.PHONY : home/kali/ROPWeaver/main.cpp.s
+home/kali/ROPWeaver/main_qt.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver.dir/build.make CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/main_qt.cpp.s
+.PHONY : home/kali/ROPWeaver/main_qt.cpp.s
 
-home/kali/ROPWeaver/ui/cli.o: home/kali/ROPWeaver/ui/cli.cpp.o
-.PHONY : home/kali/ROPWeaver/ui/cli.o
+home/kali/ROPWeaver/ui/qt_gui.o: home/kali/ROPWeaver/ui/qt_gui.cpp.o
+.PHONY : home/kali/ROPWeaver/ui/qt_gui.o
 
 # target to build an object file
-home/kali/ROPWeaver/ui/cli.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver.dir/build.make CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/ui/cli.cpp.o
-.PHONY : home/kali/ROPWeaver/ui/cli.cpp.o
+home/kali/ROPWeaver/ui/qt_gui.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver.dir/build.make CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/ui/qt_gui.cpp.o
+.PHONY : home/kali/ROPWeaver/ui/qt_gui.cpp.o
 
-home/kali/ROPWeaver/ui/cli.i: home/kali/ROPWeaver/ui/cli.cpp.i
-.PHONY : home/kali/ROPWeaver/ui/cli.i
+home/kali/ROPWeaver/ui/qt_gui.i: home/kali/ROPWeaver/ui/qt_gui.cpp.i
+.PHONY : home/kali/ROPWeaver/ui/qt_gui.i
 
 # target to preprocess a source file
-home/kali/ROPWeaver/ui/cli.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver.dir/build.make CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/ui/cli.cpp.i
-.PHONY : home/kali/ROPWeaver/ui/cli.cpp.i
+home/kali/ROPWeaver/ui/qt_gui.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver.dir/build.make CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/ui/qt_gui.cpp.i
+.PHONY : home/kali/ROPWeaver/ui/qt_gui.cpp.i
 
-home/kali/ROPWeaver/ui/cli.s: home/kali/ROPWeaver/ui/cli.cpp.s
-.PHONY : home/kali/ROPWeaver/ui/cli.s
+home/kali/ROPWeaver/ui/qt_gui.s: home/kali/ROPWeaver/ui/qt_gui.cpp.s
+.PHONY : home/kali/ROPWeaver/ui/qt_gui.s
 
 # target to generate assembly for a file
-home/kali/ROPWeaver/ui/cli.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver.dir/build.make CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/ui/cli.cpp.s
-.PHONY : home/kali/ROPWeaver/ui/cli.cpp.s
+home/kali/ROPWeaver/ui/qt_gui.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver.dir/build.make CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/ui/qt_gui.cpp.s
+.PHONY : home/kali/ROPWeaver/ui/qt_gui.cpp.s
+
+ropweaver_autogen/mocs_compilation.o: ropweaver_autogen/mocs_compilation.cpp.o
+.PHONY : ropweaver_autogen/mocs_compilation.o
+
+# target to build an object file
+ropweaver_autogen/mocs_compilation.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver.dir/build.make CMakeFiles/ropweaver.dir/ropweaver_autogen/mocs_compilation.cpp.o
+.PHONY : ropweaver_autogen/mocs_compilation.cpp.o
+
+ropweaver_autogen/mocs_compilation.i: ropweaver_autogen/mocs_compilation.cpp.i
+.PHONY : ropweaver_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+ropweaver_autogen/mocs_compilation.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver.dir/build.make CMakeFiles/ropweaver.dir/ropweaver_autogen/mocs_compilation.cpp.i
+.PHONY : ropweaver_autogen/mocs_compilation.cpp.i
+
+ropweaver_autogen/mocs_compilation.s: ropweaver_autogen/mocs_compilation.cpp.s
+.PHONY : ropweaver_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+ropweaver_autogen/mocs_compilation.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver.dir/build.make CMakeFiles/ropweaver.dir/ropweaver_autogen/mocs_compilation.cpp.s
+.PHONY : ropweaver_autogen/mocs_compilation.cpp.s
 
 # Help Target
 help:
@@ -378,6 +428,8 @@ help:
 	@echo "... install/strip"
 	@echo "... list_install_components"
 	@echo "... rebuild_cache"
+	@echo "... ropweaver_autogen"
+	@echo "... ropweaver_autogen_timestamp_deps"
 	@echo "... ropweaver"
 	@echo "... home/kali/ROPWeaver/core/arch_detector.o"
 	@echo "... home/kali/ROPWeaver/core/arch_detector.i"
@@ -397,12 +449,15 @@ help:
 	@echo "... home/kali/ROPWeaver/firebase/firebase_uploader.o"
 	@echo "... home/kali/ROPWeaver/firebase/firebase_uploader.i"
 	@echo "... home/kali/ROPWeaver/firebase/firebase_uploader.s"
-	@echo "... home/kali/ROPWeaver/main.o"
-	@echo "... home/kali/ROPWeaver/main.i"
-	@echo "... home/kali/ROPWeaver/main.s"
-	@echo "... home/kali/ROPWeaver/ui/cli.o"
-	@echo "... home/kali/ROPWeaver/ui/cli.i"
-	@echo "... home/kali/ROPWeaver/ui/cli.s"
+	@echo "... home/kali/ROPWeaver/main_qt.o"
+	@echo "... home/kali/ROPWeaver/main_qt.i"
+	@echo "... home/kali/ROPWeaver/main_qt.s"
+	@echo "... home/kali/ROPWeaver/ui/qt_gui.o"
+	@echo "... home/kali/ROPWeaver/ui/qt_gui.i"
+	@echo "... home/kali/ROPWeaver/ui/qt_gui.s"
+	@echo "... ropweaver_autogen/mocs_compilation.o"
+	@echo "... ropweaver_autogen/mocs_compilation.i"
+	@echo "... ropweaver_autogen/mocs_compilation.s"
 .PHONY : help
 
 

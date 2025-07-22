@@ -8,14 +8,16 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
+  "" "ropweaver_autogen/timestamp" "custom" "ropweaver_autogen/deps"
   "/home/kali/ROPWeaver/core/arch_detector.cpp" "CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/arch_detector.cpp.o" "gcc" "CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/arch_detector.cpp.o.d"
   "/home/kali/ROPWeaver/core/chain_builder.cpp" "CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/chain_builder.cpp.o" "gcc" "CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/chain_builder.cpp.o.d"
   "/home/kali/ROPWeaver/core/elf_parser.cpp" "CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/elf_parser.cpp.o" "gcc" "CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/elf_parser.cpp.o.d"
   "/home/kali/ROPWeaver/core/gadget_finder.cpp" "CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/gadget_finder.cpp.o" "gcc" "CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/gadget_finder.cpp.o.d"
   "/home/kali/ROPWeaver/core/utils.cpp" "CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/utils.cpp.o" "gcc" "CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/utils.cpp.o.d"
   "/home/kali/ROPWeaver/firebase/firebase_uploader.cpp" "CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/firebase/firebase_uploader.cpp.o" "gcc" "CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/firebase/firebase_uploader.cpp.o.d"
-  "/home/kali/ROPWeaver/main.cpp" "CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/main.cpp.o" "gcc" "CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/main.cpp.o.d"
-  "/home/kali/ROPWeaver/ui/cli.cpp" "CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/ui/cli.cpp.o" "gcc" "CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/ui/cli.cpp.o.d"
+  "/home/kali/ROPWeaver/main_qt.cpp" "CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/main_qt.cpp.o" "gcc" "CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/main_qt.cpp.o.d"
+  "/home/kali/ROPWeaver/ui/qt_gui.cpp" "CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/ui/qt_gui.cpp.o" "gcc" "CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/ui/qt_gui.cpp.o.d"
+  "/home/kali/ROPWeaver/build/ropweaver_autogen/mocs_compilation.cpp" "CMakeFiles/ropweaver.dir/ropweaver_autogen/mocs_compilation.cpp.o" "gcc" "CMakeFiles/ropweaver.dir/ropweaver_autogen/mocs_compilation.cpp.o.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

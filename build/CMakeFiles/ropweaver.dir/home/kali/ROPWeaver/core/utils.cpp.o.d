@@ -120,9 +120,13 @@ CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/utils.cpp.o: \
  /usr/include/c++/14/vector /usr/include/c++/14/bits/stl_uninitialized.h \
  /usr/include/c++/14/bits/stl_vector.h \
  /usr/include/c++/14/bits/stl_bvector.h \
- /usr/include/c++/14/bits/vector.tcc /usr/include/c++/14/fstream \
- /usr/include/c++/14/istream /usr/include/c++/14/ios \
- /usr/include/c++/14/exception /usr/include/c++/14/bits/exception_ptr.h \
+ /usr/include/c++/14/bits/vector.tcc /usr/include/c++/14/cstdint \
+ /usr/lib/gcc/x86_64-linux-gnu/14/include/stdint.h /usr/include/stdint.h \
+ /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h \
+ /usr/include/x86_64-linux-gnu/bits/stdint-least.h \
+ /usr/include/c++/14/fstream /usr/include/c++/14/istream \
+ /usr/include/c++/14/ios /usr/include/c++/14/exception \
+ /usr/include/c++/14/bits/exception_ptr.h \
  /usr/include/c++/14/bits/cxxabi_init_exception.h \
  /usr/include/c++/14/typeinfo /usr/include/c++/14/bits/nested_exception.h \
  /usr/include/c++/14/bits/ios_base.h /usr/include/c++/14/ext/atomicity.h \
@@ -168,4 +172,5 @@ CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/utils.cpp.o: \
  /usr/include/c++/14/bits/istream.tcc /usr/include/c++/14/bits/codecvt.h \
  /usr/include/x86_64-linux-gnu/c++/14/bits/basic_file.h \
  /usr/include/x86_64-linux-gnu/c++/14/bits/c++io.h \
- /usr/include/c++/14/bits/fstream.tcc
+ /usr/include/c++/14/bits/fstream.tcc /usr/include/c++/14/iostream \
+ /usr/include/c++/14/iterator /usr/include/c++/14/bits/stream_iterator.h

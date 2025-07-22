@@ -1,99 +1,83 @@
 // chain_builder.cpp
 #include "chain_builder.h"
-#include <sstream>
-#include <regex>
 
-ChainBuilder::ChainBuilder(const std::vector<std::string>& gadgets)
-    : rop_gadgets(gadgets) {}
-
-// Helper to find a gadget containing all required substrings
-std::string ChainBuilder::findGadget(const std::vector<std::string>& keywords) {
-    for (const std::string& g : rop_gadgets) {
+Gadget ChainBuilder::findGadget(const std::vector<std::string>& keywords) {
+    for (const Gadget& g : rop_gadgets) {
         bool match = true;
         for (const std::string& k : keywords) {
-            if (g.find(k) == std::string::npos) {
+            if (g.instruction.find(k) == std::string::npos) {
                 match = false;
                 break;
             }
         }
-        if (match) return g;
+        if (match) return g;  // Return the whole gadget
     }
-    return "";
+    return Gadget("", 0); // return invalid gadget
 }
 
-std::string ChainBuilder::buildExecveChain(const std::string& binsh_path) {
-    std::ostringstream chain;
-    chain << "Generated ROP chain for execve(\"" << binsh_path << "\", NULL, NULL):\n\n";
+ROPChain ChainBuilder::buildExecveChain(const std::string& binsh_path) {
+    ROPChain chain;
 
-    // Attempt for x86_64 ELF/Linux
-    std::string popRDI = findGadget({"pop rdi", "ret"});
-    std::string popRSI = findGadget({"pop rsi", "ret"});
-    std::string popRDX = findGadget({"pop rdx", "ret"});
-    std::string popRAX = findGadget({"pop rax", "ret"});
-    std::string syscall = findGadget({"syscall"});
+    Gadget popRDI = findGadget({"pop rdi", "ret"});
+    Gadget popRSI = findGadget({"pop rsi", "ret"});
+    Gadget popRDX = findGadget({"pop rdx", "ret"});
+    Gadget popRAX = findGadget({"pop rax", "ret"});
+    Gadget syscall = findGadget({"syscall"});
 
-    if (!popRDI.empty() && !popRSI.empty() && !popRDX.empty() && !popRAX.empty() && !syscall.empty()) {
-        chain << "# x86_64 execve('/bin/sh', NULL, NULL)\n";
-        chain << popRDI << "\n";
-        chain << "-> Address of '/bin/sh' string\n";
-        chain << popRSI << "\n";
-        chain << "-> 0 (NULL)\n";
-        chain << popRDX << "\n";
-        chain << "-> 0 (NULL)\n";
-        chain << popRAX << "\n";
-        chain << "-> 59 (execve syscall number)\n";
-        chain << syscall << "\n";
-        return chain.str();
+    // Check if gadgets are valid by checking if address != 0
+    if (popRDI.address != 0 && popRSI.address != 0 && popRDX.address != 0 && popRAX.address != 0 && syscall.address != 0) {
+        chain.steps.push_back({popRDI, "pop rdi; set pointer to '" + binsh_path + "'"});
+        chain.steps.push_back({popRSI, "pop rsi; set to NULL"});
+        chain.steps.push_back({popRDX, "pop rdx; set to NULL"});
+        chain.steps.push_back({popRAX, "pop rax; set to 59 (execve syscall)"});
+        chain.steps.push_back({syscall, "syscall; invoke execve"});
+        return chain;
     }
 
-    // Attempt for i386 (x86)
-    std::string int80 = findGadget({"int", "0x80"});
-    std::string movEBX = findGadget({"mov ebx", "ret"});
+    // i386 (x86) example — note findGadget must return Gadget, not std::string here too
+    Gadget int80 = findGadget({"int", "0x80"});
+    Gadget movEBX = findGadget({"mov ebx", "ret"});
 
-    if (!popRAX.empty() && !popRSI.empty() && !popRDX.empty() && int80 != "") {
-        chain << "# i386 execve('/bin/sh', NULL, NULL)\n";
-        chain << popRAX << " -> 11 (execve)\n";
-        chain << movEBX << " -> '/bin/sh'\n";
-        chain << popRSI << " -> 0 (NULL)\n";
-        chain << popRDX << " -> 0 (NULL)\n";
-        chain << int80 << "\n";
-        return chain.str();
+    if (popRAX.address != 0 && popRSI.address != 0 && popRDX.address != 0 && int80.address != 0 && movEBX.address != 0) {
+        chain.steps.push_back({popRAX, "pop rax; set to 11 (execve syscall)"});
+        chain.steps.push_back({movEBX, "mov ebx; set pointer to '" + binsh_path + "'"});
+        chain.steps.push_back({popRSI, "pop rsi; set to NULL"});
+        chain.steps.push_back({popRDX, "pop rdx; set to NULL"});
+        chain.steps.push_back({int80, "int 0x80; invoke syscall"});
+        return chain;
     }
 
-    // ARM (ARM mode)
-    std::string svc = findGadget({"svc"});
-    std::string popR0 = findGadget({"pop {r0", "pc"});
-    std::string popR1 = findGadget({"pop {r1", "pc"});
-    std::string popR2 = findGadget({"pop {r2", "pc"});
-    std::string popR7 = findGadget({"pop {r7", "pc"});
+    // ARM
+    Gadget svc = findGadget({"svc"});
+    Gadget popR0 = findGadget({"pop {r0", "pc"});
+    Gadget popR1 = findGadget({"pop {r1", "pc"});
+    Gadget popR2 = findGadget({"pop {r2", "pc"});
+    Gadget popR7 = findGadget({"pop {r7", "pc"});
 
-    if (!svc.empty() && !popR0.empty() && !popR1.empty() && !popR2.empty() && !popR7.empty()) {
-        chain << "# ARM execve('/bin/sh', NULL, NULL)\n";
-        chain << popR0 << " -> Address of '/bin/sh'\n";
-        chain << popR1 << " -> 0\n";
-        chain << popR2 << " -> 0\n";
-        chain << popR7 << " -> 11 (syscall number for execve)\n";
-        chain << svc << "\n";
-        return chain.str();
+    if (svc.address != 0 && popR0.address != 0 && popR1.address != 0 && popR2.address != 0 && popR7.address != 0) {
+        chain.steps.push_back({popR0, "pop r0; set pointer to '" + binsh_path + "'"});
+        chain.steps.push_back({popR1, "pop r1; set to 0"});
+        chain.steps.push_back({popR2, "pop r2; set to 0"});
+        chain.steps.push_back({popR7, "pop r7; set to 11 (execve syscall)"});
+        chain.steps.push_back({svc, "svc; invoke syscall"});
+        return chain;
     }
 
-    // RISC-V (limited gadget availability typically)
-    std::string ecall = findGadget({"ecall"});
-    std::string loadA0 = findGadget({"mv a0", "ret"});
-    std::string loadA1 = findGadget({"mv a1", "ret"});
-    std::string loadA2 = findGadget({"mv a2", "ret"});
-    std::string loadA7 = findGadget({"li a7", "ret"});
+    // RISC-V
+    Gadget ecall = findGadget({"ecall"});
+    Gadget loadA0 = findGadget({"mv a0", "ret"});
+    Gadget loadA1 = findGadget({"mv a1", "ret"});
+    Gadget loadA2 = findGadget({"mv a2", "ret"});
+    Gadget loadA7 = findGadget({"li a7", "ret"});
 
-    if (!ecall.empty() && !loadA0.empty() && !loadA1.empty() && !loadA2.empty() && !loadA7.empty()) {
-        chain << "# RISC-V execve('/bin/sh', NULL, NULL)\n";
-        chain << loadA0 << " -> Address of '/bin/sh'\n";
-        chain << loadA1 << " -> 0\n";
-        chain << loadA2 << " -> 0\n";
-        chain << loadA7 << " -> 221 (syscall number)\n";
-        chain << ecall << "\n";
-        return chain.str();
+    if (ecall.address != 0 && loadA0.address != 0 && loadA1.address != 0 && loadA2.address != 0 && loadA7.address != 0) {
+        chain.steps.push_back({loadA0, "mv a0; set pointer to '" + binsh_path + "'"});
+        chain.steps.push_back({loadA1, "mv a1; set to 0"});
+        chain.steps.push_back({loadA2, "mv a2; set to 0"});
+        chain.steps.push_back({loadA7, "li a7; set to 221 (execve syscall)"});
+        chain.steps.push_back({ecall, "ecall; invoke syscall"});
+        return chain;
     }
 
-    // Fallback
-    return "Unable to construct a ROP chain for execve(). Required gadgets not found.\n";
+    return chain; // empty if no suitable chain found
 }

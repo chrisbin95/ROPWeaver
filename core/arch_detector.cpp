@@ -4,7 +4,7 @@
 #include <elf.h>   // For EM_* constants
 
 std::string ArchDetector::detectArchitecture(const ELFParser& parser) {
-    auto header = parser.getHeader(); // returns a struct with e_machine
+    Elf64_Ehdr header = parser.getHeader(); // returns a struct with e_machine
 
     switch (header.e_machine) {
         case EM_386:
