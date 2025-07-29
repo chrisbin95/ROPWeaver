@@ -1,7 +1,7 @@
 CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/chain_builder.cpp.o: \
  /home/kali/ROPWeaver/core/chain_builder.cpp /usr/include/stdc-predef.h \
  /home/kali/ROPWeaver/core/chain_builder.h \
- /home/kali/ROPWeaver/core/gadget.h /usr/include/c++/14/string \
+ /home/kali/ROPWeaver/core/rop_chain.h /usr/include/c++/14/string \
  /usr/include/c++/14/bits/requires_hosted.h \
  /usr/include/x86_64-linux-gnu/c++/14/bits/c++config.h \
  /usr/include/x86_64-linux-gnu/c++/14/bits/os_defines.h \
@@ -118,12 +118,11 @@ CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/chain_builder.cpp.o: \
  /usr/include/c++/14/bits/memory_resource.h /usr/include/c++/14/cstddef \
  /usr/include/c++/14/bits/uses_allocator.h \
  /usr/include/c++/14/bits/uses_allocator_args.h /usr/include/c++/14/tuple \
- /usr/include/c++/14/cstdint \
+ /usr/include/c++/14/vector /usr/include/c++/14/bits/stl_uninitialized.h \
+ /usr/include/c++/14/bits/stl_vector.h \
+ /usr/include/c++/14/bits/stl_bvector.h \
+ /usr/include/c++/14/bits/vector.tcc /usr/include/c++/14/cstdint \
  /usr/lib/gcc/x86_64-linux-gnu/14/include/stdint.h /usr/include/stdint.h \
  /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h \
  /usr/include/x86_64-linux-gnu/bits/stdint-least.h \
- /home/kali/ROPWeaver/core/rop_chain.h /usr/include/c++/14/vector \
- /usr/include/c++/14/bits/stl_uninitialized.h \
- /usr/include/c++/14/bits/stl_vector.h \
- /usr/include/c++/14/bits/stl_bvector.h \
- /usr/include/c++/14/bits/vector.tcc
+ /home/kali/ROPWeaver/core/gadget.h

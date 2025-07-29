@@ -11,6 +11,6 @@
 #include "core/utils.h"
 #include "firebase/firebase_uploader.h"
 #include "ui/cli.h"
-#include "ui/gt_gui.h"
+//#include "ui/gt_gui.h"
 
 #endif // ROPWEAVER_H

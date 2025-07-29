@@ -5,5 +5,3 @@
 /home/kali/ROPWeaver/build/CMakeFiles/install.dir
 /home/kali/ROPWeaver/build/CMakeFiles/install/local.dir
 /home/kali/ROPWeaver/build/CMakeFiles/install/strip.dir
-/home/kali/ROPWeaver/build/CMakeFiles/ropweaver_autogen_timestamp_deps.dir
-/home/kali/ROPWeaver/build/CMakeFiles/ropweaver_autogen.dir

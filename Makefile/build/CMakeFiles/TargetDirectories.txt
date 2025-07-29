@@ -1,0 +1,7 @@
+/home/kali/ROPWeaver/Makefile/build/CMakeFiles/ropweaver.dir
+/home/kali/ROPWeaver/Makefile/build/CMakeFiles/edit_cache.dir
+/home/kali/ROPWeaver/Makefile/build/CMakeFiles/rebuild_cache.dir
+/home/kali/ROPWeaver/Makefile/build/CMakeFiles/list_install_components.dir
+/home/kali/ROPWeaver/Makefile/build/CMakeFiles/install.dir
+/home/kali/ROPWeaver/Makefile/build/CMakeFiles/install/local.dir
+/home/kali/ROPWeaver/Makefile/build/CMakeFiles/install/strip.dir

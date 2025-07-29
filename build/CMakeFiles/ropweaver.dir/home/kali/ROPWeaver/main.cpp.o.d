@@ -159,16 +159,19 @@ CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/main.cpp.o: \
  /usr/include/c++/14/bits/locale_facets.tcc \
  /usr/include/c++/14/bits/basic_ios.tcc \
  /usr/include/c++/14/bits/ostream.tcc /usr/include/c++/14/istream \
- /usr/include/c++/14/bits/istream.tcc \
- /home/kali/ROPWeaver/include/ropweaver.h \
- /home/kali/ROPWeaver/Makefile/../core/elf_parser.h \
- /usr/include/c++/14/vector /usr/include/c++/14/bits/stl_uninitialized.h \
+ /usr/include/c++/14/bits/istream.tcc /usr/include/c++/14/vector \
+ /usr/include/c++/14/bits/stl_uninitialized.h \
  /usr/include/c++/14/bits/stl_vector.h \
  /usr/include/c++/14/bits/stl_bvector.h \
- /usr/include/c++/14/bits/vector.tcc /usr/include/elf.h \
+ /usr/include/c++/14/bits/vector.tcc \
+ /home/kali/ROPWeaver/include/ropweaver.h \
+ /home/kali/ROPWeaver/Makefile/../core/elf_parser.h \
+ /usr/include/c++/14/cstdint \
  /usr/lib/gcc/x86_64-linux-gnu/14/include/stdint.h /usr/include/stdint.h \
  /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h \
- /usr/include/x86_64-linux-gnu/bits/stdint-least.h \
+ /usr/include/x86_64-linux-gnu/bits/stdint-least.h /usr/include/elf.h \
+ /home/kali/ROPWeaver/Makefile/../core/rop_chain.h \
+ /home/kali/ROPWeaver/Makefile/../core/gadget.h \
  /home/kali/ROPWeaver/Makefile/../core/gadget_finder.h \
  /usr/include/capstone/capstone.h /usr/include/c++/14/stdlib.h \
  /usr/include/capstone/platform.h \
@@ -186,7 +189,6 @@ CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/main.cpp.o: \
  /home/kali/ROPWeaver/Makefile/../core/chain_builder.h \
  /home/kali/ROPWeaver/Makefile/../core/arch_detector.h \
  /home/kali/ROPWeaver/Makefile/../core/utils.h \
- /usr/include/c++/14/cstdint \
  /home/kali/ROPWeaver/Makefile/../firebase/firebase_uploader.h \
  /home/kali/ROPWeaver/Makefile/../ui/cli.h /home/kali/ROPWeaver/ui/cli.h \
  /home/kali/ROPWeaver/firebase/firebase_uploader.h

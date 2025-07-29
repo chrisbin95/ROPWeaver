@@ -1,6 +1,10 @@
 // chain_builder.cpp
 #include "chain_builder.h"
+#include "rop_chain.h"
 
+ChainBuilder::ChainBuilder(const std::vector<Gadget>& gadgets)
+    : rop_gadgets(gadgets) {}
+    
 Gadget ChainBuilder::findGadget(const std::vector<std::string>& keywords) {
     for (const Gadget& g : rop_gadgets) {
         bool match = true;
@@ -34,7 +38,7 @@ ROPChain ChainBuilder::buildExecveChain(const std::string& binsh_path) {
         return chain;
     }
 
-    // i386 (x86) example — note findGadget must return Gadget, not std::string here too
+    // i386 (x86) example — note findGadget must return Gadget
     Gadget int80 = findGadget({"int", "0x80"});
     Gadget movEBX = findGadget({"mov ebx", "ret"});
 
