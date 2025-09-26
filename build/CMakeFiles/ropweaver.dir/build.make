@@ -86,94 +86,10 @@ CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/main.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/main.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/kali/ROPWeaver/main.cpp -o CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/main.cpp.s
 
-CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/arch_detector.cpp.o: CMakeFiles/ropweaver.dir/flags.make
-CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/arch_detector.cpp.o: /home/kali/ROPWeaver/core/arch_detector.cpp
-CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/arch_detector.cpp.o: CMakeFiles/ropweaver.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/kali/ROPWeaver/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/arch_detector.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/arch_detector.cpp.o -MF CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/arch_detector.cpp.o.d -o CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/arch_detector.cpp.o -c /home/kali/ROPWeaver/core/arch_detector.cpp
-
-CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/arch_detector.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/arch_detector.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/kali/ROPWeaver/core/arch_detector.cpp > CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/arch_detector.cpp.i
-
-CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/arch_detector.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/arch_detector.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/kali/ROPWeaver/core/arch_detector.cpp -o CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/arch_detector.cpp.s
-
-CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/chain_builder.cpp.o: CMakeFiles/ropweaver.dir/flags.make
-CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/chain_builder.cpp.o: /home/kali/ROPWeaver/core/chain_builder.cpp
-CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/chain_builder.cpp.o: CMakeFiles/ropweaver.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/kali/ROPWeaver/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/chain_builder.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/chain_builder.cpp.o -MF CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/chain_builder.cpp.o.d -o CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/chain_builder.cpp.o -c /home/kali/ROPWeaver/core/chain_builder.cpp
-
-CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/chain_builder.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/chain_builder.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/kali/ROPWeaver/core/chain_builder.cpp > CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/chain_builder.cpp.i
-
-CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/chain_builder.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/chain_builder.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/kali/ROPWeaver/core/chain_builder.cpp -o CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/chain_builder.cpp.s
-
-CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/elf_parser.cpp.o: CMakeFiles/ropweaver.dir/flags.make
-CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/elf_parser.cpp.o: /home/kali/ROPWeaver/core/elf_parser.cpp
-CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/elf_parser.cpp.o: CMakeFiles/ropweaver.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/kali/ROPWeaver/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/elf_parser.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/elf_parser.cpp.o -MF CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/elf_parser.cpp.o.d -o CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/elf_parser.cpp.o -c /home/kali/ROPWeaver/core/elf_parser.cpp
-
-CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/elf_parser.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/elf_parser.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/kali/ROPWeaver/core/elf_parser.cpp > CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/elf_parser.cpp.i
-
-CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/elf_parser.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/elf_parser.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/kali/ROPWeaver/core/elf_parser.cpp -o CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/elf_parser.cpp.s
-
-CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/gadget_finder.cpp.o: CMakeFiles/ropweaver.dir/flags.make
-CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/gadget_finder.cpp.o: /home/kali/ROPWeaver/core/gadget_finder.cpp
-CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/gadget_finder.cpp.o: CMakeFiles/ropweaver.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/kali/ROPWeaver/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/gadget_finder.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/gadget_finder.cpp.o -MF CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/gadget_finder.cpp.o.d -o CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/gadget_finder.cpp.o -c /home/kali/ROPWeaver/core/gadget_finder.cpp
-
-CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/gadget_finder.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/gadget_finder.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/kali/ROPWeaver/core/gadget_finder.cpp > CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/gadget_finder.cpp.i
-
-CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/gadget_finder.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/gadget_finder.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/kali/ROPWeaver/core/gadget_finder.cpp -o CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/gadget_finder.cpp.s
-
-CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/utils.cpp.o: CMakeFiles/ropweaver.dir/flags.make
-CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/utils.cpp.o: /home/kali/ROPWeaver/core/utils.cpp
-CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/utils.cpp.o: CMakeFiles/ropweaver.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/kali/ROPWeaver/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/utils.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/utils.cpp.o -MF CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/utils.cpp.o.d -o CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/utils.cpp.o -c /home/kali/ROPWeaver/core/utils.cpp
-
-CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/utils.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/utils.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/kali/ROPWeaver/core/utils.cpp > CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/utils.cpp.i
-
-CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/utils.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/utils.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/kali/ROPWeaver/core/utils.cpp -o CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/utils.cpp.s
-
-CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/firebase/firebase_uploader.cpp.o: CMakeFiles/ropweaver.dir/flags.make
-CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/firebase/firebase_uploader.cpp.o: /home/kali/ROPWeaver/firebase/firebase_uploader.cpp
-CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/firebase/firebase_uploader.cpp.o: CMakeFiles/ropweaver.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/kali/ROPWeaver/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/firebase/firebase_uploader.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/firebase/firebase_uploader.cpp.o -MF CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/firebase/firebase_uploader.cpp.o.d -o CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/firebase/firebase_uploader.cpp.o -c /home/kali/ROPWeaver/firebase/firebase_uploader.cpp
-
-CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/firebase/firebase_uploader.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/firebase/firebase_uploader.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/kali/ROPWeaver/firebase/firebase_uploader.cpp > CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/firebase/firebase_uploader.cpp.i
-
-CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/firebase/firebase_uploader.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/firebase/firebase_uploader.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/kali/ROPWeaver/firebase/firebase_uploader.cpp -o CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/firebase/firebase_uploader.cpp.s
-
 CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/ui/cli.cpp.o: CMakeFiles/ropweaver.dir/flags.make
 CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/ui/cli.cpp.o: /home/kali/ROPWeaver/ui/cli.cpp
 CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/ui/cli.cpp.o: CMakeFiles/ropweaver.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/kali/ROPWeaver/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/ui/cli.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/kali/ROPWeaver/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/ui/cli.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/ui/cli.cpp.o -MF CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/ui/cli.cpp.o.d -o CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/ui/cli.cpp.o -c /home/kali/ROPWeaver/ui/cli.cpp
 
 CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/ui/cli.cpp.i: cmake_force
@@ -187,29 +103,18 @@ CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/ui/cli.cpp.s: cmake_force
 # Object files for target ropweaver
 ropweaver_OBJECTS = \
 "CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/main.cpp.o" \
-"CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/arch_detector.cpp.o" \
-"CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/chain_builder.cpp.o" \
-"CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/elf_parser.cpp.o" \
-"CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/gadget_finder.cpp.o" \
-"CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/utils.cpp.o" \
-"CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/firebase/firebase_uploader.cpp.o" \
 "CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/ui/cli.cpp.o"
 
 # External object files for target ropweaver
 ropweaver_EXTERNAL_OBJECTS =
 
 ropweaver: CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/main.cpp.o
-ropweaver: CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/arch_detector.cpp.o
-ropweaver: CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/chain_builder.cpp.o
-ropweaver: CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/elf_parser.cpp.o
-ropweaver: CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/gadget_finder.cpp.o
-ropweaver: CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/utils.cpp.o
-ropweaver: CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/firebase/firebase_uploader.cpp.o
 ropweaver: CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/ui/cli.cpp.o
 ropweaver: CMakeFiles/ropweaver.dir/build.make
+ropweaver: libropweaver_core.a
 ropweaver: /usr/lib/x86_64-linux-gnu/libcurl.so
 ropweaver: CMakeFiles/ropweaver.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/kali/ROPWeaver/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Linking CXX executable ropweaver"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/kali/ROPWeaver/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking CXX executable ropweaver"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/ropweaver.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

@@ -2,7 +2,7 @@
 #ifndef ROPWEAVER_H
 #define ROPWEAVER_H
 
-#include "core/elf_parser.h"
+//#include "core/elf_parser.h"
 #include "core/rop_chain.h"
 #include "core/gadget.h"
 #include "core/gadget_finder.h"

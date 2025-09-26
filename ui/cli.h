@@ -1,16 +1,20 @@
 // cli.h
-#ifndef CLI_H
-#define CLI_H
-
+#pragma once
 #include <string>
+#include <cstdint>  // <-- Add this
 
 struct CLIOptions {
-    std::string filename;                  // Binary input file
-    std::string architecture = "x86";      // Default arch if not specified
-    bool listGadgets = false;              // --list-gadgets
-    bool autoChain = false;                // --auto-chain
-    bool uploadReport = false;             // --upload-report
-    bool valid = false;                    // Set to true only when args are good
+    bool valid = false;             // Set to true only when args are good
+    bool helpRequested = false;     // Indicates if --help was requested
+    std::string filename;           // Binary input file
+    std::string architecture = "";  // Initialize as an empty string
+    bool listGadgets = false;       // --list-gadgets
+    bool suggestGadgets = false;    // --suggest-gadgets
+    bool autoChain = false;         // --auto-chain
+    bool uploadReport = false;      // --upload-report
+    uint64_t binshAddress = 0;      // /bin/sh address
+    bool useManualBinsh = false;    // true if user provides --binsh-addr
+    bool generatePayload = false;   // payload generation
 };
 
 class CLI {
@@ -21,5 +25,3 @@ public:
     // Displays usage/help message
     void printUsage() const;
 };
-
-#endif // CLI_H

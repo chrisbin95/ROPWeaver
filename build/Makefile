@@ -162,6 +162,32 @@ depend:
 .PHONY : depend
 
 #=============================================================================
+# Target rules for targets named ropweaver_core
+
+# Build rule for target.
+ropweaver_core: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 ropweaver_core
+.PHONY : ropweaver_core
+
+# fast build rule for target.
+ropweaver_core/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/build
+.PHONY : ropweaver_core/fast
+
+#=============================================================================
+# Target rules for targets named execve_chain_test
+
+# Build rule for target.
+execve_chain_test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 execve_chain_test
+.PHONY : execve_chain_test
+
+# fast build rule for target.
+execve_chain_test/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/execve_chain_test.dir/build.make CMakeFiles/execve_chain_test.dir/build
+.PHONY : execve_chain_test/fast
+
+#=============================================================================
 # Target rules for targets named ropweaver
 
 # Build rule for target.
@@ -179,7 +205,7 @@ home/kali/ROPWeaver/core/arch_detector.o: home/kali/ROPWeaver/core/arch_detector
 
 # target to build an object file
 home/kali/ROPWeaver/core/arch_detector.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver.dir/build.make CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/arch_detector.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/arch_detector.cpp.o
 .PHONY : home/kali/ROPWeaver/core/arch_detector.cpp.o
 
 home/kali/ROPWeaver/core/arch_detector.i: home/kali/ROPWeaver/core/arch_detector.cpp.i
@@ -187,7 +213,7 @@ home/kali/ROPWeaver/core/arch_detector.i: home/kali/ROPWeaver/core/arch_detector
 
 # target to preprocess a source file
 home/kali/ROPWeaver/core/arch_detector.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver.dir/build.make CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/arch_detector.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/arch_detector.cpp.i
 .PHONY : home/kali/ROPWeaver/core/arch_detector.cpp.i
 
 home/kali/ROPWeaver/core/arch_detector.s: home/kali/ROPWeaver/core/arch_detector.cpp.s
@@ -195,7 +221,7 @@ home/kali/ROPWeaver/core/arch_detector.s: home/kali/ROPWeaver/core/arch_detector
 
 # target to generate assembly for a file
 home/kali/ROPWeaver/core/arch_detector.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver.dir/build.make CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/arch_detector.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/arch_detector.cpp.s
 .PHONY : home/kali/ROPWeaver/core/arch_detector.cpp.s
 
 home/kali/ROPWeaver/core/chain_builder.o: home/kali/ROPWeaver/core/chain_builder.cpp.o
@@ -203,7 +229,7 @@ home/kali/ROPWeaver/core/chain_builder.o: home/kali/ROPWeaver/core/chain_builder
 
 # target to build an object file
 home/kali/ROPWeaver/core/chain_builder.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver.dir/build.make CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/chain_builder.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/chain_builder.cpp.o
 .PHONY : home/kali/ROPWeaver/core/chain_builder.cpp.o
 
 home/kali/ROPWeaver/core/chain_builder.i: home/kali/ROPWeaver/core/chain_builder.cpp.i
@@ -211,7 +237,7 @@ home/kali/ROPWeaver/core/chain_builder.i: home/kali/ROPWeaver/core/chain_builder
 
 # target to preprocess a source file
 home/kali/ROPWeaver/core/chain_builder.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver.dir/build.make CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/chain_builder.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/chain_builder.cpp.i
 .PHONY : home/kali/ROPWeaver/core/chain_builder.cpp.i
 
 home/kali/ROPWeaver/core/chain_builder.s: home/kali/ROPWeaver/core/chain_builder.cpp.s
@@ -219,39 +245,39 @@ home/kali/ROPWeaver/core/chain_builder.s: home/kali/ROPWeaver/core/chain_builder
 
 # target to generate assembly for a file
 home/kali/ROPWeaver/core/chain_builder.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver.dir/build.make CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/chain_builder.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/chain_builder.cpp.s
 .PHONY : home/kali/ROPWeaver/core/chain_builder.cpp.s
 
-home/kali/ROPWeaver/core/elf_parser.o: home/kali/ROPWeaver/core/elf_parser.cpp.o
-.PHONY : home/kali/ROPWeaver/core/elf_parser.o
+home/kali/ROPWeaver/core/gadget.o: home/kali/ROPWeaver/core/gadget.cpp.o
+.PHONY : home/kali/ROPWeaver/core/gadget.o
 
 # target to build an object file
-home/kali/ROPWeaver/core/elf_parser.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver.dir/build.make CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/elf_parser.cpp.o
-.PHONY : home/kali/ROPWeaver/core/elf_parser.cpp.o
+home/kali/ROPWeaver/core/gadget.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/gadget.cpp.o
+.PHONY : home/kali/ROPWeaver/core/gadget.cpp.o
 
-home/kali/ROPWeaver/core/elf_parser.i: home/kali/ROPWeaver/core/elf_parser.cpp.i
-.PHONY : home/kali/ROPWeaver/core/elf_parser.i
+home/kali/ROPWeaver/core/gadget.i: home/kali/ROPWeaver/core/gadget.cpp.i
+.PHONY : home/kali/ROPWeaver/core/gadget.i
 
 # target to preprocess a source file
-home/kali/ROPWeaver/core/elf_parser.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver.dir/build.make CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/elf_parser.cpp.i
-.PHONY : home/kali/ROPWeaver/core/elf_parser.cpp.i
+home/kali/ROPWeaver/core/gadget.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/gadget.cpp.i
+.PHONY : home/kali/ROPWeaver/core/gadget.cpp.i
 
-home/kali/ROPWeaver/core/elf_parser.s: home/kali/ROPWeaver/core/elf_parser.cpp.s
-.PHONY : home/kali/ROPWeaver/core/elf_parser.s
+home/kali/ROPWeaver/core/gadget.s: home/kali/ROPWeaver/core/gadget.cpp.s
+.PHONY : home/kali/ROPWeaver/core/gadget.s
 
 # target to generate assembly for a file
-home/kali/ROPWeaver/core/elf_parser.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver.dir/build.make CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/elf_parser.cpp.s
-.PHONY : home/kali/ROPWeaver/core/elf_parser.cpp.s
+home/kali/ROPWeaver/core/gadget.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/gadget.cpp.s
+.PHONY : home/kali/ROPWeaver/core/gadget.cpp.s
 
 home/kali/ROPWeaver/core/gadget_finder.o: home/kali/ROPWeaver/core/gadget_finder.cpp.o
 .PHONY : home/kali/ROPWeaver/core/gadget_finder.o
 
 # target to build an object file
 home/kali/ROPWeaver/core/gadget_finder.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver.dir/build.make CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/gadget_finder.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/gadget_finder.cpp.o
 .PHONY : home/kali/ROPWeaver/core/gadget_finder.cpp.o
 
 home/kali/ROPWeaver/core/gadget_finder.i: home/kali/ROPWeaver/core/gadget_finder.cpp.i
@@ -259,7 +285,7 @@ home/kali/ROPWeaver/core/gadget_finder.i: home/kali/ROPWeaver/core/gadget_finder
 
 # target to preprocess a source file
 home/kali/ROPWeaver/core/gadget_finder.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver.dir/build.make CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/gadget_finder.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/gadget_finder.cpp.i
 .PHONY : home/kali/ROPWeaver/core/gadget_finder.cpp.i
 
 home/kali/ROPWeaver/core/gadget_finder.s: home/kali/ROPWeaver/core/gadget_finder.cpp.s
@@ -267,15 +293,231 @@ home/kali/ROPWeaver/core/gadget_finder.s: home/kali/ROPWeaver/core/gadget_finder
 
 # target to generate assembly for a file
 home/kali/ROPWeaver/core/gadget_finder.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver.dir/build.make CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/gadget_finder.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/gadget_finder.cpp.s
 .PHONY : home/kali/ROPWeaver/core/gadget_finder.cpp.s
+
+home/kali/ROPWeaver/core/parsers/aarch64_parser.o: home/kali/ROPWeaver/core/parsers/aarch64_parser.cpp.o
+.PHONY : home/kali/ROPWeaver/core/parsers/aarch64_parser.o
+
+# target to build an object file
+home/kali/ROPWeaver/core/parsers/aarch64_parser.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/parsers/aarch64_parser.cpp.o
+.PHONY : home/kali/ROPWeaver/core/parsers/aarch64_parser.cpp.o
+
+home/kali/ROPWeaver/core/parsers/aarch64_parser.i: home/kali/ROPWeaver/core/parsers/aarch64_parser.cpp.i
+.PHONY : home/kali/ROPWeaver/core/parsers/aarch64_parser.i
+
+# target to preprocess a source file
+home/kali/ROPWeaver/core/parsers/aarch64_parser.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/parsers/aarch64_parser.cpp.i
+.PHONY : home/kali/ROPWeaver/core/parsers/aarch64_parser.cpp.i
+
+home/kali/ROPWeaver/core/parsers/aarch64_parser.s: home/kali/ROPWeaver/core/parsers/aarch64_parser.cpp.s
+.PHONY : home/kali/ROPWeaver/core/parsers/aarch64_parser.s
+
+# target to generate assembly for a file
+home/kali/ROPWeaver/core/parsers/aarch64_parser.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/parsers/aarch64_parser.cpp.s
+.PHONY : home/kali/ROPWeaver/core/parsers/aarch64_parser.cpp.s
+
+home/kali/ROPWeaver/core/parsers/armv7_parser.o: home/kali/ROPWeaver/core/parsers/armv7_parser.cpp.o
+.PHONY : home/kali/ROPWeaver/core/parsers/armv7_parser.o
+
+# target to build an object file
+home/kali/ROPWeaver/core/parsers/armv7_parser.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/parsers/armv7_parser.cpp.o
+.PHONY : home/kali/ROPWeaver/core/parsers/armv7_parser.cpp.o
+
+home/kali/ROPWeaver/core/parsers/armv7_parser.i: home/kali/ROPWeaver/core/parsers/armv7_parser.cpp.i
+.PHONY : home/kali/ROPWeaver/core/parsers/armv7_parser.i
+
+# target to preprocess a source file
+home/kali/ROPWeaver/core/parsers/armv7_parser.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/parsers/armv7_parser.cpp.i
+.PHONY : home/kali/ROPWeaver/core/parsers/armv7_parser.cpp.i
+
+home/kali/ROPWeaver/core/parsers/armv7_parser.s: home/kali/ROPWeaver/core/parsers/armv7_parser.cpp.s
+.PHONY : home/kali/ROPWeaver/core/parsers/armv7_parser.s
+
+# target to generate assembly for a file
+home/kali/ROPWeaver/core/parsers/armv7_parser.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/parsers/armv7_parser.cpp.s
+.PHONY : home/kali/ROPWeaver/core/parsers/armv7_parser.cpp.s
+
+home/kali/ROPWeaver/core/parsers/elf_parser.o: home/kali/ROPWeaver/core/parsers/elf_parser.cpp.o
+.PHONY : home/kali/ROPWeaver/core/parsers/elf_parser.o
+
+# target to build an object file
+home/kali/ROPWeaver/core/parsers/elf_parser.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/parsers/elf_parser.cpp.o
+.PHONY : home/kali/ROPWeaver/core/parsers/elf_parser.cpp.o
+
+home/kali/ROPWeaver/core/parsers/elf_parser.i: home/kali/ROPWeaver/core/parsers/elf_parser.cpp.i
+.PHONY : home/kali/ROPWeaver/core/parsers/elf_parser.i
+
+# target to preprocess a source file
+home/kali/ROPWeaver/core/parsers/elf_parser.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/parsers/elf_parser.cpp.i
+.PHONY : home/kali/ROPWeaver/core/parsers/elf_parser.cpp.i
+
+home/kali/ROPWeaver/core/parsers/elf_parser.s: home/kali/ROPWeaver/core/parsers/elf_parser.cpp.s
+.PHONY : home/kali/ROPWeaver/core/parsers/elf_parser.s
+
+# target to generate assembly for a file
+home/kali/ROPWeaver/core/parsers/elf_parser.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/parsers/elf_parser.cpp.s
+.PHONY : home/kali/ROPWeaver/core/parsers/elf_parser.cpp.s
+
+home/kali/ROPWeaver/core/parsers/macho_parser.o: home/kali/ROPWeaver/core/parsers/macho_parser.cpp.o
+.PHONY : home/kali/ROPWeaver/core/parsers/macho_parser.o
+
+# target to build an object file
+home/kali/ROPWeaver/core/parsers/macho_parser.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/parsers/macho_parser.cpp.o
+.PHONY : home/kali/ROPWeaver/core/parsers/macho_parser.cpp.o
+
+home/kali/ROPWeaver/core/parsers/macho_parser.i: home/kali/ROPWeaver/core/parsers/macho_parser.cpp.i
+.PHONY : home/kali/ROPWeaver/core/parsers/macho_parser.i
+
+# target to preprocess a source file
+home/kali/ROPWeaver/core/parsers/macho_parser.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/parsers/macho_parser.cpp.i
+.PHONY : home/kali/ROPWeaver/core/parsers/macho_parser.cpp.i
+
+home/kali/ROPWeaver/core/parsers/macho_parser.s: home/kali/ROPWeaver/core/parsers/macho_parser.cpp.s
+.PHONY : home/kali/ROPWeaver/core/parsers/macho_parser.s
+
+# target to generate assembly for a file
+home/kali/ROPWeaver/core/parsers/macho_parser.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/parsers/macho_parser.cpp.s
+.PHONY : home/kali/ROPWeaver/core/parsers/macho_parser.cpp.s
+
+home/kali/ROPWeaver/core/parsers/pe_parser.o: home/kali/ROPWeaver/core/parsers/pe_parser.cpp.o
+.PHONY : home/kali/ROPWeaver/core/parsers/pe_parser.o
+
+# target to build an object file
+home/kali/ROPWeaver/core/parsers/pe_parser.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/parsers/pe_parser.cpp.o
+.PHONY : home/kali/ROPWeaver/core/parsers/pe_parser.cpp.o
+
+home/kali/ROPWeaver/core/parsers/pe_parser.i: home/kali/ROPWeaver/core/parsers/pe_parser.cpp.i
+.PHONY : home/kali/ROPWeaver/core/parsers/pe_parser.i
+
+# target to preprocess a source file
+home/kali/ROPWeaver/core/parsers/pe_parser.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/parsers/pe_parser.cpp.i
+.PHONY : home/kali/ROPWeaver/core/parsers/pe_parser.cpp.i
+
+home/kali/ROPWeaver/core/parsers/pe_parser.s: home/kali/ROPWeaver/core/parsers/pe_parser.cpp.s
+.PHONY : home/kali/ROPWeaver/core/parsers/pe_parser.s
+
+# target to generate assembly for a file
+home/kali/ROPWeaver/core/parsers/pe_parser.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/parsers/pe_parser.cpp.s
+.PHONY : home/kali/ROPWeaver/core/parsers/pe_parser.cpp.s
+
+home/kali/ROPWeaver/core/parsers/riscv32_parser.o: home/kali/ROPWeaver/core/parsers/riscv32_parser.cpp.o
+.PHONY : home/kali/ROPWeaver/core/parsers/riscv32_parser.o
+
+# target to build an object file
+home/kali/ROPWeaver/core/parsers/riscv32_parser.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/parsers/riscv32_parser.cpp.o
+.PHONY : home/kali/ROPWeaver/core/parsers/riscv32_parser.cpp.o
+
+home/kali/ROPWeaver/core/parsers/riscv32_parser.i: home/kali/ROPWeaver/core/parsers/riscv32_parser.cpp.i
+.PHONY : home/kali/ROPWeaver/core/parsers/riscv32_parser.i
+
+# target to preprocess a source file
+home/kali/ROPWeaver/core/parsers/riscv32_parser.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/parsers/riscv32_parser.cpp.i
+.PHONY : home/kali/ROPWeaver/core/parsers/riscv32_parser.cpp.i
+
+home/kali/ROPWeaver/core/parsers/riscv32_parser.s: home/kali/ROPWeaver/core/parsers/riscv32_parser.cpp.s
+.PHONY : home/kali/ROPWeaver/core/parsers/riscv32_parser.s
+
+# target to generate assembly for a file
+home/kali/ROPWeaver/core/parsers/riscv32_parser.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/parsers/riscv32_parser.cpp.s
+.PHONY : home/kali/ROPWeaver/core/parsers/riscv32_parser.cpp.s
+
+home/kali/ROPWeaver/core/parsers/riscv64_parser.o: home/kali/ROPWeaver/core/parsers/riscv64_parser.cpp.o
+.PHONY : home/kali/ROPWeaver/core/parsers/riscv64_parser.o
+
+# target to build an object file
+home/kali/ROPWeaver/core/parsers/riscv64_parser.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/parsers/riscv64_parser.cpp.o
+.PHONY : home/kali/ROPWeaver/core/parsers/riscv64_parser.cpp.o
+
+home/kali/ROPWeaver/core/parsers/riscv64_parser.i: home/kali/ROPWeaver/core/parsers/riscv64_parser.cpp.i
+.PHONY : home/kali/ROPWeaver/core/parsers/riscv64_parser.i
+
+# target to preprocess a source file
+home/kali/ROPWeaver/core/parsers/riscv64_parser.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/parsers/riscv64_parser.cpp.i
+.PHONY : home/kali/ROPWeaver/core/parsers/riscv64_parser.cpp.i
+
+home/kali/ROPWeaver/core/parsers/riscv64_parser.s: home/kali/ROPWeaver/core/parsers/riscv64_parser.cpp.s
+.PHONY : home/kali/ROPWeaver/core/parsers/riscv64_parser.s
+
+# target to generate assembly for a file
+home/kali/ROPWeaver/core/parsers/riscv64_parser.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/parsers/riscv64_parser.cpp.s
+.PHONY : home/kali/ROPWeaver/core/parsers/riscv64_parser.cpp.s
+
+home/kali/ROPWeaver/core/payload_gen.o: home/kali/ROPWeaver/core/payload_gen.cpp.o
+.PHONY : home/kali/ROPWeaver/core/payload_gen.o
+
+# target to build an object file
+home/kali/ROPWeaver/core/payload_gen.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/payload_gen.cpp.o
+.PHONY : home/kali/ROPWeaver/core/payload_gen.cpp.o
+
+home/kali/ROPWeaver/core/payload_gen.i: home/kali/ROPWeaver/core/payload_gen.cpp.i
+.PHONY : home/kali/ROPWeaver/core/payload_gen.i
+
+# target to preprocess a source file
+home/kali/ROPWeaver/core/payload_gen.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/payload_gen.cpp.i
+.PHONY : home/kali/ROPWeaver/core/payload_gen.cpp.i
+
+home/kali/ROPWeaver/core/payload_gen.s: home/kali/ROPWeaver/core/payload_gen.cpp.s
+.PHONY : home/kali/ROPWeaver/core/payload_gen.s
+
+# target to generate assembly for a file
+home/kali/ROPWeaver/core/payload_gen.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/payload_gen.cpp.s
+.PHONY : home/kali/ROPWeaver/core/payload_gen.cpp.s
+
+home/kali/ROPWeaver/core/rop_chain.o: home/kali/ROPWeaver/core/rop_chain.cpp.o
+.PHONY : home/kali/ROPWeaver/core/rop_chain.o
+
+# target to build an object file
+home/kali/ROPWeaver/core/rop_chain.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/rop_chain.cpp.o
+.PHONY : home/kali/ROPWeaver/core/rop_chain.cpp.o
+
+home/kali/ROPWeaver/core/rop_chain.i: home/kali/ROPWeaver/core/rop_chain.cpp.i
+.PHONY : home/kali/ROPWeaver/core/rop_chain.i
+
+# target to preprocess a source file
+home/kali/ROPWeaver/core/rop_chain.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/rop_chain.cpp.i
+.PHONY : home/kali/ROPWeaver/core/rop_chain.cpp.i
+
+home/kali/ROPWeaver/core/rop_chain.s: home/kali/ROPWeaver/core/rop_chain.cpp.s
+.PHONY : home/kali/ROPWeaver/core/rop_chain.s
+
+# target to generate assembly for a file
+home/kali/ROPWeaver/core/rop_chain.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/rop_chain.cpp.s
+.PHONY : home/kali/ROPWeaver/core/rop_chain.cpp.s
 
 home/kali/ROPWeaver/core/utils.o: home/kali/ROPWeaver/core/utils.cpp.o
 .PHONY : home/kali/ROPWeaver/core/utils.o
 
 # target to build an object file
 home/kali/ROPWeaver/core/utils.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver.dir/build.make CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/utils.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/utils.cpp.o
 .PHONY : home/kali/ROPWeaver/core/utils.cpp.o
 
 home/kali/ROPWeaver/core/utils.i: home/kali/ROPWeaver/core/utils.cpp.i
@@ -283,7 +525,7 @@ home/kali/ROPWeaver/core/utils.i: home/kali/ROPWeaver/core/utils.cpp.i
 
 # target to preprocess a source file
 home/kali/ROPWeaver/core/utils.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver.dir/build.make CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/utils.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/utils.cpp.i
 .PHONY : home/kali/ROPWeaver/core/utils.cpp.i
 
 home/kali/ROPWeaver/core/utils.s: home/kali/ROPWeaver/core/utils.cpp.s
@@ -291,15 +533,39 @@ home/kali/ROPWeaver/core/utils.s: home/kali/ROPWeaver/core/utils.cpp.s
 
 # target to generate assembly for a file
 home/kali/ROPWeaver/core/utils.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver.dir/build.make CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/core/utils.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/core/utils.cpp.s
 .PHONY : home/kali/ROPWeaver/core/utils.cpp.s
+
+home/kali/ROPWeaver/execve_chain_test/execve_chain_test.o: home/kali/ROPWeaver/execve_chain_test/execve_chain_test.cpp.o
+.PHONY : home/kali/ROPWeaver/execve_chain_test/execve_chain_test.o
+
+# target to build an object file
+home/kali/ROPWeaver/execve_chain_test/execve_chain_test.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/execve_chain_test.dir/build.make CMakeFiles/execve_chain_test.dir/home/kali/ROPWeaver/execve_chain_test/execve_chain_test.cpp.o
+.PHONY : home/kali/ROPWeaver/execve_chain_test/execve_chain_test.cpp.o
+
+home/kali/ROPWeaver/execve_chain_test/execve_chain_test.i: home/kali/ROPWeaver/execve_chain_test/execve_chain_test.cpp.i
+.PHONY : home/kali/ROPWeaver/execve_chain_test/execve_chain_test.i
+
+# target to preprocess a source file
+home/kali/ROPWeaver/execve_chain_test/execve_chain_test.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/execve_chain_test.dir/build.make CMakeFiles/execve_chain_test.dir/home/kali/ROPWeaver/execve_chain_test/execve_chain_test.cpp.i
+.PHONY : home/kali/ROPWeaver/execve_chain_test/execve_chain_test.cpp.i
+
+home/kali/ROPWeaver/execve_chain_test/execve_chain_test.s: home/kali/ROPWeaver/execve_chain_test/execve_chain_test.cpp.s
+.PHONY : home/kali/ROPWeaver/execve_chain_test/execve_chain_test.s
+
+# target to generate assembly for a file
+home/kali/ROPWeaver/execve_chain_test/execve_chain_test.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/execve_chain_test.dir/build.make CMakeFiles/execve_chain_test.dir/home/kali/ROPWeaver/execve_chain_test/execve_chain_test.cpp.s
+.PHONY : home/kali/ROPWeaver/execve_chain_test/execve_chain_test.cpp.s
 
 home/kali/ROPWeaver/firebase/firebase_uploader.o: home/kali/ROPWeaver/firebase/firebase_uploader.cpp.o
 .PHONY : home/kali/ROPWeaver/firebase/firebase_uploader.o
 
 # target to build an object file
 home/kali/ROPWeaver/firebase/firebase_uploader.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver.dir/build.make CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/firebase/firebase_uploader.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/firebase/firebase_uploader.cpp.o
 .PHONY : home/kali/ROPWeaver/firebase/firebase_uploader.cpp.o
 
 home/kali/ROPWeaver/firebase/firebase_uploader.i: home/kali/ROPWeaver/firebase/firebase_uploader.cpp.i
@@ -307,7 +573,7 @@ home/kali/ROPWeaver/firebase/firebase_uploader.i: home/kali/ROPWeaver/firebase/f
 
 # target to preprocess a source file
 home/kali/ROPWeaver/firebase/firebase_uploader.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver.dir/build.make CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/firebase/firebase_uploader.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/firebase/firebase_uploader.cpp.i
 .PHONY : home/kali/ROPWeaver/firebase/firebase_uploader.cpp.i
 
 home/kali/ROPWeaver/firebase/firebase_uploader.s: home/kali/ROPWeaver/firebase/firebase_uploader.cpp.s
@@ -315,7 +581,7 @@ home/kali/ROPWeaver/firebase/firebase_uploader.s: home/kali/ROPWeaver/firebase/f
 
 # target to generate assembly for a file
 home/kali/ROPWeaver/firebase/firebase_uploader.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver.dir/build.make CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/firebase/firebase_uploader.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ropweaver_core.dir/build.make CMakeFiles/ropweaver_core.dir/home/kali/ROPWeaver/firebase/firebase_uploader.cpp.s
 .PHONY : home/kali/ROPWeaver/firebase/firebase_uploader.cpp.s
 
 home/kali/ROPWeaver/main.o: home/kali/ROPWeaver/main.cpp.o
@@ -378,22 +644,54 @@ help:
 	@echo "... install/strip"
 	@echo "... list_install_components"
 	@echo "... rebuild_cache"
+	@echo "... execve_chain_test"
 	@echo "... ropweaver"
+	@echo "... ropweaver_core"
 	@echo "... home/kali/ROPWeaver/core/arch_detector.o"
 	@echo "... home/kali/ROPWeaver/core/arch_detector.i"
 	@echo "... home/kali/ROPWeaver/core/arch_detector.s"
 	@echo "... home/kali/ROPWeaver/core/chain_builder.o"
 	@echo "... home/kali/ROPWeaver/core/chain_builder.i"
 	@echo "... home/kali/ROPWeaver/core/chain_builder.s"
-	@echo "... home/kali/ROPWeaver/core/elf_parser.o"
-	@echo "... home/kali/ROPWeaver/core/elf_parser.i"
-	@echo "... home/kali/ROPWeaver/core/elf_parser.s"
+	@echo "... home/kali/ROPWeaver/core/gadget.o"
+	@echo "... home/kali/ROPWeaver/core/gadget.i"
+	@echo "... home/kali/ROPWeaver/core/gadget.s"
 	@echo "... home/kali/ROPWeaver/core/gadget_finder.o"
 	@echo "... home/kali/ROPWeaver/core/gadget_finder.i"
 	@echo "... home/kali/ROPWeaver/core/gadget_finder.s"
+	@echo "... home/kali/ROPWeaver/core/parsers/aarch64_parser.o"
+	@echo "... home/kali/ROPWeaver/core/parsers/aarch64_parser.i"
+	@echo "... home/kali/ROPWeaver/core/parsers/aarch64_parser.s"
+	@echo "... home/kali/ROPWeaver/core/parsers/armv7_parser.o"
+	@echo "... home/kali/ROPWeaver/core/parsers/armv7_parser.i"
+	@echo "... home/kali/ROPWeaver/core/parsers/armv7_parser.s"
+	@echo "... home/kali/ROPWeaver/core/parsers/elf_parser.o"
+	@echo "... home/kali/ROPWeaver/core/parsers/elf_parser.i"
+	@echo "... home/kali/ROPWeaver/core/parsers/elf_parser.s"
+	@echo "... home/kali/ROPWeaver/core/parsers/macho_parser.o"
+	@echo "... home/kali/ROPWeaver/core/parsers/macho_parser.i"
+	@echo "... home/kali/ROPWeaver/core/parsers/macho_parser.s"
+	@echo "... home/kali/ROPWeaver/core/parsers/pe_parser.o"
+	@echo "... home/kali/ROPWeaver/core/parsers/pe_parser.i"
+	@echo "... home/kali/ROPWeaver/core/parsers/pe_parser.s"
+	@echo "... home/kali/ROPWeaver/core/parsers/riscv32_parser.o"
+	@echo "... home/kali/ROPWeaver/core/parsers/riscv32_parser.i"
+	@echo "... home/kali/ROPWeaver/core/parsers/riscv32_parser.s"
+	@echo "... home/kali/ROPWeaver/core/parsers/riscv64_parser.o"
+	@echo "... home/kali/ROPWeaver/core/parsers/riscv64_parser.i"
+	@echo "... home/kali/ROPWeaver/core/parsers/riscv64_parser.s"
+	@echo "... home/kali/ROPWeaver/core/payload_gen.o"
+	@echo "... home/kali/ROPWeaver/core/payload_gen.i"
+	@echo "... home/kali/ROPWeaver/core/payload_gen.s"
+	@echo "... home/kali/ROPWeaver/core/rop_chain.o"
+	@echo "... home/kali/ROPWeaver/core/rop_chain.i"
+	@echo "... home/kali/ROPWeaver/core/rop_chain.s"
 	@echo "... home/kali/ROPWeaver/core/utils.o"
 	@echo "... home/kali/ROPWeaver/core/utils.i"
 	@echo "... home/kali/ROPWeaver/core/utils.s"
+	@echo "... home/kali/ROPWeaver/execve_chain_test/execve_chain_test.o"
+	@echo "... home/kali/ROPWeaver/execve_chain_test/execve_chain_test.i"
+	@echo "... home/kali/ROPWeaver/execve_chain_test/execve_chain_test.s"
 	@echo "... home/kali/ROPWeaver/firebase/firebase_uploader.o"
 	@echo "... home/kali/ROPWeaver/firebase/firebase_uploader.i"
 	@echo "... home/kali/ROPWeaver/firebase/firebase_uploader.s"

@@ -1,36 +1,43 @@
-// rop_chain.h
-#pragma once
-#include <string>
+#ifndef ROP_CHAIN_H
+#define ROP_CHAIN_H
+
 #include <vector>
+#include <string>
 #include <cstdint>
 #include "gadget.h"
 
+// Required for the ROPChain::toJson() method
+#include "nlohmann/json.hpp" 
+
+// A single step in the ROP chain, combining a gadget and its associated value.
 struct ROPChainStep {
     Gadget gadget;
-    uint64_t address;        // Address of the gadget step
-    std::string description; // Description or instruction of this step
-
-    ROPChainStep(const Gadget& g, const std::string& desc)
-        : gadget(g), address(g.address), description(desc) {}
-    // Sets address = gadget.address automatically
+    uint64_t value;
+    std::string comment;
+    bool has_value = false; // Indicates if the step has a value
+    // NOTE: Add a 'type' field here later for cleaner JSON generation.
 };
 
-struct ROPChain {
-    std::vector<ROPChainStep> steps;
+class ROPChain {
+public:
+    ROPChain() = default;
 
-    std::string toString() const {
-        std::string result;
-        for (const auto& step : steps) {
-            result += step.description + ": " + step.gadget.instruction + " @ 0x" +
-                      to_hex(step.address) + "\n";
-        }
-        return result;
-    }
+    // Adds a gadget-only step to the chain.
+    void add_step(const Gadget& gadget, const std::string& comment);
+
+    // Adds a gadget-value step to the chain.
+    void add_step(const Gadget& gadget, uint64_t value, const std::string& comment);
+
+    // Getters
+    const std::vector<ROPChainStep>& get_steps() const { return m_steps; }
+    std::string to_string() const;
+    std::vector<char> getPayloadBytes() const;
+
+    bool isSuccessful() const;
+    nlohmann::json toJson() const;
 
 private:
-    std::string to_hex(uint64_t addr) const {
-        char buffer[20];
-        snprintf(buffer, sizeof(buffer), "%016lx", addr);
-        return std::string(buffer);
-    }
+    std::vector<ROPChainStep> m_steps;
 };
+
+#endif // ROP_CHAIN_H

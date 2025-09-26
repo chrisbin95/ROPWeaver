@@ -1,3 +1,5 @@
+/home/kali/ROPWeaver/build/CMakeFiles/ropweaver_core.dir
+/home/kali/ROPWeaver/build/CMakeFiles/execve_chain_test.dir
 /home/kali/ROPWeaver/build/CMakeFiles/ropweaver.dir
 /home/kali/ROPWeaver/build/CMakeFiles/edit_cache.dir
 /home/kali/ROPWeaver/build/CMakeFiles/rebuild_cache.dir

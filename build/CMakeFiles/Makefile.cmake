@@ -39,7 +39,6 @@ set(CMAKE_MAKEFILE_DEPENDS
   "/usr/share/cmake-3.31/Modules/CMakeTestCCompiler.cmake"
   "/usr/share/cmake-3.31/Modules/CMakeTestCXXCompiler.cmake"
   "/usr/share/cmake-3.31/Modules/CMakeTestCompilerCommon.cmake"
-  "/usr/share/cmake-3.31/Modules/CMakeUnixFindMake.cmake"
   "/usr/share/cmake-3.31/Modules/Compiler/ADSP-DetermineCompiler.cmake"
   "/usr/share/cmake-3.31/Modules/Compiler/ARMCC-DetermineCompiler.cmake"
   "/usr/share/cmake-3.31/Modules/Compiler/ARMClang-DetermineCompiler.cmake"
@@ -142,5 +141,7 @@ set(CMAKE_MAKEFILE_PRODUCTS
 
 # Dependency information for all targets:
 set(CMAKE_DEPEND_INFO_FILES
+  "CMakeFiles/ropweaver_core.dir/DependInfo.cmake"
+  "CMakeFiles/execve_chain_test.dir/DependInfo.cmake"
   "CMakeFiles/ropweaver.dir/DependInfo.cmake"
   )

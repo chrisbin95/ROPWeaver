@@ -1,0 +1,1 @@
+-I/home/kali/ROPWeaver/Makefile/.. -I/home/kali/ROPWeaver/Makefile/../core -I/home/kali/ROPWeaver/Makefile/../include -I/home/kali/ROPWeaver/Makefile/../firebase
