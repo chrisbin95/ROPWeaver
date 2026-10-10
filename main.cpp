@@ -190,20 +190,38 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    // Ensure reports dir exists in current working directory
+    fs::path reportsDir = fs::current_path() / "reports";
+    std::error_code ec;
+    if (!fs::exists(reportsDir)) {
+        fs::create_directories(reportsDir, ec);
+    }
+
+    // Compute cryptographic hash of binary for deterministic identification & deduplication
+    std::string base = basename_noext(options.filename);
+    std::string fileHash = Utils::computeFileSHA256(options.filename);
+    std::string hashShort = (fileHash.size() >= 12) ? fileHash.substr(0, 12) : base;
+    std::string reportId = "ROPW-" + base + "_" + hashShort;
+
+    // Deterministic Firestore document ID (safe characters only)
+    std::string reportDocId = base + "_" + ((fileHash.size() >= 16) ? fileHash.substr(0, 16) : base);
+    std::replace(reportDocId.begin(), reportDocId.end(), '/', '_');
+    std::replace(reportDocId.begin(), reportDocId.end(), '\\', '_');
+    std::replace(reportDocId.begin(), reportDocId.end(), '.', '_');
+    std::replace(reportDocId.begin(), reportDocId.end(), ' ', '_');
+
     // --- Payload Generation (writes reports/output.json) ---
     if (options.generatePayload || options.uploadReport) {
         PayloadGenerator payloadGen;
         const size_t paddingSize = 104;
         std::cout << ANSI_COLOR_CYAN << "\n--- Generating Exploit Payload / Report ---" << ANSI_COLOR_RESET << std::endl;
 
-        payloadGen.generate(ropChain, paddingSize, options.filename);
+        std::string binaryType = parser ? parser->getBinaryType() : "ELF";
+        payloadGen.generate(ropChain, paddingSize, options.filename, gadgets, arch_to_use, binaryType, nlohmann::json::object(), reportId, fileHash);
     }
 
     // --- Firebase Report Upload ---
     if (options.uploadReport) {
-        // Ensure reports dir exists in current working directory
-        fs::path reportsDir = fs::current_path() / "reports";
-        std::error_code ec;
         if (!fs::exists(reportsDir)) {
             if (!fs::create_directories(reportsDir, ec)) {
                 std::cerr << "[!] Could not create reports directory: " << reportsDir.string()
@@ -233,36 +251,47 @@ int main(int argc, char* argv[]) {
             goto end_main;
         }
 
-        // Default report path (where PayloadGenerator should write)
+        ropweaver::FirebaseUploader uploader(foundConfig.string());
+
+        // Deduplication Check: Check if report already exists in Firestore!
+        if (uploader.reportExists(reportDocId) && !options.forceUpload) {
+            std::cout << "\n[" << ANSI_COLOR_CYAN << "i" << ANSI_COLOR_RESET << "] Binary '" << base 
+                      << "' (SHA-256: " << hashShort << "...) already exists in Firebase Firestore." << std::endl;
+            std::cout << "[" << ANSI_COLOR_CYAN << "i" << ANSI_COLOR_RESET << "] Existing Document ID: " 
+                      << ANSI_COLOR_GREEN << reportDocId << ANSI_COLOR_RESET << std::endl;
+            std::cout << "[" << ANSI_COLOR_GREEN << "✓" << ANSI_COLOR_RESET << "] Skipping upload to prevent database clutter." << std::endl;
+            std::cout << "[i] Tip: Use " << ANSI_COLOR_ORANGE << "--force" << ANSI_COLOR_RESET 
+                      << " or " << ANSI_COLOR_ORANGE << "-f" << ANSI_COLOR_RESET 
+                      << " to overwrite the existing Firestore report.\n" << std::endl;
+            goto end_main;
+        }
+
+        // Default report path (where PayloadGenerator wrote)
         fs::path reportPath = fs::current_path() / "reports" / "output.json";
         if (!fs::exists(reportPath)) {
             std::cerr << "[!] Report file not found: " << reportPath.string() << " — nothing to upload.\n";
             goto end_main;
         }
 
-        // Create a timestamped copy named <binary>_<timestamp>.json (reports/)
-        std::string base = basename_noext(options.filename);
-        std::string ts = timestamp_now_string();
-        fs::path copyPath = reportsDir / (base + "_" + ts + ".json");
-
+        // Save a clean deduplicated copy named <binary>_<hashShort>.json in reports/
+        fs::path copyPath = reportsDir / (base + "_" + hashShort + ".json");
         std::error_code copy_ec;
         fs::copy_file(reportPath, copyPath, fs::copy_options::overwrite_existing, copy_ec);
         if (copy_ec) {
-            // If copy failed, still try to upload the original reportPath
-            std::cerr << "[!] Warning: could not create timestamped copy (" << copy_ec.message()
-                      << "). Will attempt to upload the original report file.\n";
             copyPath = reportPath;
         }
 
-        std::cout << "[" << ANSI_COLOR_ORANGE << "*" << ANSI_COLOR_RESET << "] Uploading report to Firebase (using config: "
-                  << foundConfig.string() << ", file: " << copyPath.string() << ")..." << std::endl;
+        std::cout << "[" << ANSI_COLOR_ORANGE << "*" << ANSI_COLOR_RESET << "] Uploading report to Firebase (Doc ID: "
+                  << reportDocId << ")..." << std::endl;
 
-        ropweaver::FirebaseUploader uploader(foundConfig.string());
-        if (uploader.uploadReport(copyPath.string())) {
+        if (uploader.uploadReport(copyPath.string(), reportDocId)) {
             std::cout << "[+] Report uploaded to Firebase." << std::endl;
         } else {
             std::cerr << "[x] Firebase upload failed." << std::endl;
         }
+
+        // Upload discovered gadgets to Firestore 'gadgets' collection
+        uploader.uploadGadgets(base, arch_to_use, fileHash, reportId, gadgets);
     }
 
 end_main:

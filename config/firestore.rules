@@ -1,0 +1,14 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow read and write access to reports collection
+    match /reports/{document=**} {
+      allow read, write: if true;
+    }
+    
+    // Allow read and write access to gadgets collection
+    match /gadgets/{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

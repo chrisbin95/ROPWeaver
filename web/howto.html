@@ -1,0 +1,97 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HowTo | Free Online ROP Gadgets Search</title>
+<link rel="stylesheet" href="css/pure-min.css" />
+<link rel="stylesheet" href="css/skin-mine.css" />
+</head>
+<body class="pure-skin-mine">
+<div class="pure-g">
+    <div class="pure-u-1-24"></div>
+    <div class="pure-u-22-24">
+        <div class="pure-menu pure-menu-open pure-menu-horizontal">
+            <a href="index.html" class="pure-menu-heading">ROPWeaver</a>
+            <ul>
+                <li><a href="upload.html">Upload</a></li>
+                <li><a href="search.html">Search</a></li>
+                <li><a href="howto.html">Howto</a></li>
+                <li><a href="about.html">About</a></li>
+            </ul>
+        </div>
+
+        <div class="content">
+<pre>
+ropweaver> help <a href="/upload">upload</a>
+Use the <strong>Upload</strong> tab to submit ELF or PE binaries. 
+ROPWeaver will analyze architecture, stack protections (NX, PIE, RELRO, Canary), 
+and extract usable gadgets and ROP chains automatically.
+
+Example: Uploading an ELF binary like `sample_x86.elf` will result in detection
+of gadgets like:
+  - pop eax; ret
+  - pop ebx; pop ecx; pop edx; ret
+  - int 0x80
+
+ropweaver> help <a href="/search">search</a>
+After analysis, use <strong>Search</strong> to explore gadgets:
+  - By instruction: e.g., `pop eax`, `int 0x80`
+  - By type: `syscall_trigger`, `register_move`, `stack_pivot`
+  - By register (r32, r64, etc.)
+
+Advanced filters allow:
+  ?   Match one instruction
+  %   Match one or more
+  $   Match mnemonic prefix
+  -   Exclude keyword
+
+Example: <a href="/ropsearch?p=pop+r32+%25">"pop r32 %"</a> lists gadgets popping into 32-bit registers.
+
+ropweaver> help <a href="/search">chain</a>
+If auto-chain generation is enabled, ROPWeaver will attempt to create exploit
+chains (e.g., `execve("/bin/sh")`) using the discovered gadgets.
+
+Example output:
+  Step 1: pop eax; ret — Set syscall number
+  Step 2: pop ebx; ... — Set arguments
+  Step 3: int 0x80     — Trigger syscall
+
+ropweaver> help <a href="/search">download</a>
+Generated output can be exported as:
+  - JSON report (with metadata, gadgets, chain)
+  - Gzipped raw gadget dump
+  - Optional Firebase sync (if configured)
+
+ropweaver> help <a href="/upload">upload-to-firestore</a>
+If Firebase is configured, reports will be uploaded automatically with:
+  - Architecture
+  - Binary name
+  - Protection info
+  - Gadget list
+  - Chain steps
+
+Make sure your `firebase_config.json` is placed in `/config/` and the tool
+was compiled with `-lcurl` and `nlohmann::json`.
+
+Example CLI:
+  ./ropweaver sample.elf --auto-chain --upload-report
+
+ropweaver> help <a href="/search">examples</a>
+Common patterns to look for:
+  Stack Pivot: "xchg esp %"
+  POP-POP-RET: "pop ? pop ?"
+  Deref Loads: "mov eax, [ebx]"
+  Mem Writes: "mov [edi], eax"
+</pre>
+        </div>
+
+        <div class="footer l-box is-center">
+            <p class="copyright">
+            &copy; 2025 - Powered by <a href="index.html">ROPWeaver</a> | 
+            <a href="mailto:admin@ropweaver.com">Contact</a>
+            </p>
+        </div>
+    </div>
+</div>
+</body>
+</html>

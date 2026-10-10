@@ -1,0 +1,435 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>ROPWeaver | Free Online ROP Gadgets & Exploit Search</title>
+  <link rel="stylesheet" href="css/pure-min.css" />
+  <link rel="stylesheet" href="css/skin-mine.css" />
+  <script type="module">
+    // Firebase imports
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    // Firebase config data
+    const firebaseConfig = {
+      apiKey: "AIzaSyDZ3BEfUstg32hqnbctG7X3LQ5onNJ98qs",
+      authDomain: "ropweaver.firebaseapp.com",
+      projectId: "ropweaver",
+      storageBucket: "ropweaver.firebasestorage.app",
+      messagingSenderId: "356547989098",
+      appId: "1:356547989098:web:16a48b40d0bde270df8413",
+      measurementId: "G-CR1P508GPH"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Helpers to extract field values cleanly
+    function getBinaryName(data) {
+      if (!data) return 'N/A';
+      if (typeof data.target_binary === 'string') return data.target_binary;
+      if (data.target_binary && typeof data.target_binary.filename === 'string') return data.target_binary.filename;
+      if (data["file name"]) return data["file name"];
+      if (data.binary_name) return data.binary_name;
+      return 'N/A';
+    }
+
+    function getArch(data) {
+      if (!data) return 'N/A';
+      return data.architecture || (data.binary_analysis && data.binary_analysis.architecture) || 'N/A';
+    }
+
+    // Search function: searches both 'reports' and 'gadgets'
+    window.searchGadgets = async function(event) {
+      if (event) event.preventDefault();
+      const input = document.getElementById("searchInput").value.trim().toLowerCase();
+      const resultBox = document.getElementById("results");
+      resultBox.innerHTML = `<span>[~] Searching Firestore for "<strong>${input || 'ALL'}</strong>"...</span>`;
+
+      try {
+        const [reportsSnap, gadgetsSnap] = await Promise.all([
+          getDocs(collection(db, "reports")),
+          getDocs(collection(db, "gadgets"))
+        ]);
+
+        const matchingReports = [];
+        reportsSnap.forEach(doc => {
+          const d = doc.data();
+          const bin = getBinaryName(d).toLowerCase();
+          const reportId = (d.report_id || doc.id).toLowerCase();
+          const arch = getArch(d).toLowerCase();
+          if (!input || input === "all" || bin.includes(input) || reportId.includes(input) || arch.includes(input)) {
+            matchingReports.push({ id: doc.id, ...d });
+          }
+        });
+
+        const matchingGadgets = [];
+        gadgetsSnap.forEach(doc => {
+          const g = doc.data();
+          const fileName = (g["file name"] || "").toLowerCase();
+          const hash = (g.hash || "").toLowerCase();
+          const instr = (g.instructions || "").toLowerCase();
+          const cat = (g.category || "").toLowerCase();
+          if (!input || input === "all" || fileName.includes(input) || hash.includes(input) || instr.includes(input) || cat.includes(input)) {
+            matchingGadgets.push({ id: doc.id, ...g });
+          }
+        });
+
+        if (matchingReports.length === 0 && matchingGadgets.length === 0) {
+          resultBox.innerHTML = `<span class="error">[x] No matching reports or gadgets found in Firebase for "${input}".</span>
+<br><span style="color:#888;">Hint: Verify you uploaded with <code>--upload-report</code> and that Firestore security rules are enabled.</span>`;
+          return;
+        }
+
+        let html = "";
+
+        // Render Reports Section
+        if (matchingReports.length > 0) {
+          html += `<div class="section-title">==«✪»== Exploit Chain Reports (${matchingReports.length}) ==«✪»==</div>`;
+          matchingReports.forEach(r => {
+            const binName = getBinaryName(r);
+            const arch = getArch(r);
+            const reportId = r.report_id || r.id;
+            const date = r.report_date || (r.timestamp && r.timestamp.toDate ? r.timestamp.toDate().toLocaleString() : 'N/A');
+            const summary = r.summary || (r.rop_chain_generation ? {
+              chain_type: r.rop_chain_generation.target_syscall,
+              success: (r.rop_chain_generation.status || "").toLowerCase().includes("success"),
+              notes: r.rop_chain_generation.chain_notes
+            } : null);
+
+            html += `<div class="report-card">`;
+            html += `<div class="report-header">`;
+            html += `<span><strong>Binary:</strong> <span class="highlight">${binName}</span></span> `;
+            html += `<span><strong>Arch:</strong> ${arch}</span> `;
+            html += `<span><strong>Report ID:</strong> ${reportId}</span> `;
+            if (date !== 'N/A') html += `<span><strong>Date:</strong> ${date}</span>`;
+            html += `</div>`;
+
+            // Protections
+            const prots = r.protections || (r.binary_analysis && r.binary_analysis.hardening_features);
+            if (prots) {
+              html += `<div class="protections-bar">`;
+              html += `<strong>Protections:</strong> `;
+              html += `<span class="badge ${prots.NX || prots.nx_enabled ? 'badge-on' : 'badge-off'}">NX: ${prots.NX || prots.nx_enabled ? 'ON' : 'OFF'}</span> `;
+              html += `<span class="badge ${prots.PIE || prots.pie_enabled ? 'badge-on' : 'badge-off'}">PIE: ${prots.PIE || prots.pie_enabled ? 'ON' : 'OFF'}</span> `;
+              html += `<span class="badge ${prots.Canary ? 'badge-on' : 'badge-off'}">Canary: ${prots.Canary ? 'ON' : 'OFF'}</span> `;
+              html += `<span class="badge badge-info">RELRO: ${prots.RELRO || (prots.relro_full ? 'Full' : 'Partial')}</span>`;
+              html += `</div>`;
+            }
+
+            // Summary
+            if (summary) {
+              html += `<div class="summary-box">`;
+              html += `<span><strong>Chain Status:</strong> <span class="${summary.success ? 'highlight' : 'error'}">${summary.success ? 'SUCCESS' : 'FAILED'}</span> (${summary.chain_type || 'N/A'})</span><br>`;
+              if (summary.notes) html += `<span><strong>Notes:</strong> ${summary.notes}</span>`;
+              html += `</div>`;
+            }
+
+            // ROP Chain steps
+            const chain = r.rop_chain || (r.rop_chain_details && r.rop_chain_details.chain_steps) || [];
+            if (Array.isArray(chain) && chain.length > 0) {
+              html += `<div class="chain-box"><strong>ROP Chain (${chain.length} steps):</strong><br>`;
+              chain.forEach((step, idx) => {
+                const stepNum = step.step || step.index || (idx + 1);
+                const addr = step.address || step.gadget_address || 'N/A';
+                const desc = step.description || step.comment || step.assembly || '';
+                html += `  <span class="step-num">[Step ${stepNum}]</span> <span class="addr">${addr}</span> : <span class="highlight">${desc}</span><br>`;
+              });
+              html += `</div>`;
+            }
+
+            // Gadgets inside report
+            const gadgetsList = r.gadgets || [];
+            if (Array.isArray(gadgetsList) && gadgetsList.length > 0) {
+              html += `<details class="gadgets-details"><summary>Discovered Gadgets (${gadgetsList.length})</summary><pre>`;
+              gadgetsList.forEach(g => {
+                const addr = g.address || 'N/A';
+                const instr = g.gadget || g.instructions || '';
+                const cat = g.category ? `[${g.category}]` : '';
+                html += `${addr.padEnd(14)} : ${instr.padEnd(35)} ${cat}\n`;
+              });
+              html += `</pre></details>`;
+            }
+
+            // Raw payload
+            if (r.raw_payload && r.raw_payload.data) {
+              html += `<details class="payload-details"><summary>Raw Payload (${r.raw_payload.format || 'hex'})</summary>`;
+              html += `<textarea readonly class="payload-text">${r.raw_payload.data}</textarea>`;
+              html += `</details>`;
+            }
+
+            html += `</div>`;
+          });
+        }
+
+        // Render Gadgets Section
+        if (matchingGadgets.length > 0) {
+          html += `<div class="section-title">==«✪»== Individual Gadgets (${matchingGadgets.length}) ==«✪»==</div>`;
+          matchingGadgets.forEach(g => {
+            html += `<div class="gadget-entry">`;
+            html += `<span><strong>File Name:</strong> ${g["file name"] || 'N/A'}</span>`;
+            html += `<span><strong>Hash:</strong> ${g.hash || 'N/A'}</span>`;
+            html += `<span><strong>Architecture:</strong> ${g.architecture || 'N/A'}</span>`;
+            html += `<span><strong>Instructions:</strong> <span class="highlight">${g.instructions || '[no instruction]'}</span></span>`;
+            html += `<span><strong>Offset:</strong> ${g.offset || 0}</span>`;
+            html += `<span><strong>Address:</strong> ${g.address || 'N/A'}</span>`;
+            html += `<span><strong>Category:</strong> ${g.category || 'N/A'}</span>`;
+            if (g.report_id) {
+              html += `<span><strong>Report ID:</strong> <a href="#" onclick="document.getElementById('searchInput').value='${g.report_id}'; window.searchGadgets(); return false;">${g.report_id}</a></span>`;
+            }
+            html += `</div>`;
+          });
+        }
+
+        resultBox.innerHTML = html;
+      } catch (err) {
+        console.error(err);
+        resultBox.innerHTML = `<span class="error">[x] Error querying Firestore: ${err.message}</span>
+<br><span style="color:#aaa;">If you see 'permission-denied', update your Firestore Security Rules in Firebase Console to allow read/write access.</span>`;
+      }
+    }
+
+    // Quick search trigger
+    window.quickSearch = function(name) {
+      document.getElementById("searchInput").value = name;
+      window.searchGadgets();
+    }
+
+    // Update stats dynamically from Firestore
+    async function updateStats() {
+      try {
+        const [gadgetsSnap, reportsSnap] = await Promise.all([
+          getDocs(collection(db, "gadgets")),
+          getDocs(collection(db, "reports"))
+        ]);
+
+        const archCounts = { "x86_64": 0, "i386": 0, "x86": 0, "arm": 0, "armv7": 0, "riscv": 0 };
+        const typeCounts = { "RAW": 0, "MACHO": 0, "ELF": 0, "PE": 0 };
+        let totalGadgets = 0;
+        let totalReports = 0;
+        const recentBinaries = new Set();
+
+        gadgetsSnap.forEach(doc => {
+          const data = doc.data();
+          totalGadgets++;
+          const arch = (data.architecture || "").toLowerCase();
+          if (archCounts.hasOwnProperty(arch)) archCounts[arch]++;
+          if (data.category && typeCounts.hasOwnProperty(data.category.toUpperCase())) typeCounts[data.category.toUpperCase()]++;
+          if (data["file name"]) recentBinaries.add(data["file name"]);
+        });
+
+        reportsSnap.forEach(doc => {
+          totalReports++;
+          const data = doc.data();
+          const arch = getArch(data).toLowerCase();
+          if (archCounts.hasOwnProperty(arch)) archCounts[arch]++;
+          const bin = getBinaryName(data);
+          if (bin && bin !== 'N/A') recentBinaries.add(bin);
+        });
+
+        let output = `ropweaver> stats
+by arch
+-------
+`;
+        for (const [arch, count] of Object.entries(archCounts)) {
+          output += `${arch.padEnd(8)}: ${count}\n`;
+        }
+        output += `
+by type
+-------
+`;
+        for (const [type, count] of Object.entries(typeCounts)) {
+          output += `${type.padEnd(8)}: ${count}\n`;
+        }
+        output += `
+total reports: ${totalReports}
+total gadget records: ${totalGadgets}
+`;
+
+        document.getElementById("stats-output").textContent = output;
+
+        // Render Quick links for recent binaries
+        if (recentBinaries.size > 0) {
+          let recHtml = `ropweaver> available binaries in cloud: `;
+          recentBinaries.forEach(b => {
+            recHtml += `<a href="#" onclick="quickSearch('${b}'); return false;">${b}</a>  `;
+          });
+          document.getElementById("recent-binaries").innerHTML = recHtml;
+        }
+      } catch (err) {
+        console.warn("Could not load stats from Firestore:", err.message);
+        document.getElementById("stats-output").textContent = `ropweaver> stats\n[x] Could not fetch live stats: ${err.message}\nCheck Firestore rules.`;
+      }
+    }
+
+    window.onload = () => {
+      updateStats();
+    }
+  </script>
+  <style>
+    .results-box {
+      background: #1e1e1e;
+      color: #e0e0e0;
+      border: 1px solid #444;
+      padding: 1em;
+      font-family: monospace;
+      margin-top: 1em;
+      min-height: 120px;
+    }
+    .section-title {
+      color: #ff9900;
+      font-weight: bold;
+      font-size: 1.1em;
+      margin: 1.2em 0 0.8em 0;
+      border-bottom: 1px solid #555;
+      padding-bottom: 4px;
+    }
+    .report-card {
+      background: #252525;
+      border: 1px solid #3c3c3c;
+      border-left: 4px solid #00bc8c;
+      padding: 1em;
+      margin-bottom: 1.5em;
+      border-radius: 2px;
+    }
+    .report-header {
+      margin-bottom: 0.8em;
+      line-height: 1.6;
+    }
+    .report-header span {
+      margin-right: 1.2em;
+      display: inline-block;
+    }
+    .protections-bar {
+      margin-bottom: 0.8em;
+      padding: 0.4em 0.6em;
+      background: #181818;
+      border-radius: 3px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      font-size: 0.85em;
+      border-radius: 3px;
+      margin-right: 4px;
+      font-weight: bold;
+    }
+    .badge-on { background: #28a745; color: #fff; }
+    .badge-off { background: #dc3545; color: #fff; }
+    .badge-info { background: #17a2b8; color: #fff; }
+    .summary-box {
+      background: #1d1d1d;
+      padding: 0.6em;
+      border-radius: 3px;
+      margin-bottom: 0.8em;
+      border-left: 3px solid #ffaa00;
+    }
+    .chain-box {
+      background: #151515;
+      padding: 0.8em;
+      border: 1px dashed #444;
+      margin-bottom: 0.8em;
+      font-family: monospace;
+      line-height: 1.5;
+    }
+    .chain-box .step-num { color: #e67e22; font-weight: bold; }
+    .chain-box .addr { color: #3498db; }
+    .gadgets-details, .payload-details {
+      margin-top: 0.6em;
+      background: #1a1a1a;
+      padding: 0.5em;
+      border: 1px solid #333;
+    }
+    .gadgets-details summary, .payload-details summary {
+      cursor: pointer;
+      color: #ffaa00;
+      font-weight: bold;
+    }
+    .gadgets-details pre {
+      margin: 0.5em 0 0 0;
+      max-height: 250px;
+      overflow-y: auto;
+      color: #aaa;
+    }
+    .payload-text {
+      width: 100%;
+      height: 60px;
+      background: #0d0d0d;
+      color: #00ff66;
+      border: 1px solid #333;
+      font-family: monospace;
+      font-size: 0.9em;
+      padding: 0.4em;
+      box-sizing: border-box;
+      margin-top: 0.4em;
+    }
+    .gadget-entry {
+      margin-bottom: 1.5em;
+      padding-bottom: 0.5em;
+      border-bottom: 1px dashed #555;
+    }
+    .gadget-entry span {
+      display: block;
+      margin-bottom: 2px;
+    }
+    .highlight {
+      color: #0f0;
+    }
+    .error {
+      color: #f44;
+    }
+    .action-btn {
+      margin-left: 8px;
+    }
+  </style>
+</head>
+
+<body class="pure-skin-mine">
+  <div class="pure-g">
+    <div class="pure-u-1-24"></div>
+    <div class="pure-u-22-24">
+      <div class="pure-menu pure-menu-open pure-menu-horizontal">
+        <a href="index.html" class="pure-menu-heading">ROPWeaver</a>
+        <ul>
+          <li><a href="upload.html">Upload</a></li>
+          <li><a href="search.html">Search</a></li>
+          <li><a href="howto.html">Howto</a></li>
+          <li><a href="about.html">About</a></li>
+        </ul>
+      </div>
+
+      <div class="content">
+        <pre>
+==«✪»== ROPWeaver: Online Exploit & Gadgets Explorer ==«✪»==
+Free online ROP chain reports & gadget search powered by Firebase Firestore
+        </pre>
+
+        <form class="pure-form" onsubmit="searchGadgets(event)">
+          <input id="searchInput" name="pattern" type="text" class="pure-input" placeholder="Enter binary name, hash, or 'all'" style="width: 350px;">
+          <button type="submit" class="pure-button">Search</button>
+          <button type="button" class="pure-button action-btn" onclick="document.getElementById('searchInput').value='all'; searchGadgets();">Show All</button>
+        </form>
+
+        <pre id="recent-binaries" style="margin-top: 0.6em; color: #888;">
+ropweaver> available binaries in cloud: Loading...
+        </pre>
+
+        <div id="results" class="results-box">
+          <span> &#9656; Type a binary name (e.g. sample_x86.elf, p3), a hash, or click "Show All" to browse published results..</span>
+        </div>
+
+        <pre id="stats-output">
+ropweaver> stats
+Loading Firestore metrics...
+        </pre>
+      </div>
+
+      <div class="footer l-box is-center">
+        <p class="copyright">
+          &copy; 2025 - Powered by <a href="index.html">ROPWeaver</a> | <a href="mailto:admin@ropweaver.com">Contact</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

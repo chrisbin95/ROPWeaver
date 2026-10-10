@@ -20,24 +20,88 @@ ChainBuilder::ChainBuilder(const std::vector<Gadget>& gadgets, const std::string
 
 // Find a gadget with a specific instruction and a return
 std::optional<Gadget> ChainBuilder::findOptimalPopGadget(const std::string& reg) {
-    std::string pop_instruction = "pop " + reg + " ; ret";
-    auto it = std::find_if(rop_gadgets.begin(), rop_gadgets.end(), [&](const Gadget& g) {
-        return g.toString().find(pop_instruction) != std::string::npos;
-    });
+    // 1. First priority: exact 2-instruction gadget: "pop <reg> ; ret"
+    for (const auto& g : rop_gadgets) {
+        if (g.instructions.size() == 2 && 
+            g.instructions[0].mnemonic == "pop" && 
+            g.instructions[0].op_str == reg &&
+            (g.instructions[1].mnemonic == "ret" || g.instructions[1].mnemonic == "retf")) {
+            Gadget res = g;
+            res.target_register = reg;
+            if (res.assembly.empty()) res.assembly = "pop " + reg + " ; ret";
+            return res;
+        }
+    }
 
-    if (it != rop_gadgets.end()) {
-        return *it;
+    // 2. Second priority: any clean gadget ending with ret where pop <reg> is present, smallest size
+    const Gadget* best_candidate = nullptr;
+    for (const auto& g : rop_gadgets) {
+        if (g.instructions.size() < 2) continue;
+        if (!g.isTerminator()) continue;
+
+        for (size_t i = 0; i < g.instructions.size() - 1; ++i) {
+            if (g.instructions[i].mnemonic == "pop" && g.instructions[i].op_str == reg) {
+                if (!best_candidate || g.instructions.size() < best_candidate->instructions.size()) {
+                    best_candidate = &g;
+                }
+            }
+        }
+    }
+    if (best_candidate) {
+        Gadget res = *best_candidate;
+        res.target_register = reg;
+        return res;
+    }
+
+    // 3. Fallback substring search
+    std::string pop_instruction = "pop " + reg + " ; ret";
+    for (const auto& g : rop_gadgets) {
+        if (g.toString().find(pop_instruction) != std::string::npos) {
+            Gadget res = g;
+            res.target_register = reg;
+            return res;
+        }
     }
     return std::nullopt;
 }
 
 std::optional<Gadget> ChainBuilder::findSpecificGadget(const std::string& instruction) {
-    auto it = std::find_if(rop_gadgets.begin(), rop_gadgets.end(), [&](const Gadget& g) {
-        return g.toString().find(instruction) != std::string::npos &&
-               g.toString().find("ret") != std::string::npos;
-    });
-    if (it != rop_gadgets.end()) {
-        return *it;
+    // For syscall, sysenter, int 0x80, svc #0, ecall - look for exact instruction
+    if (instruction == "syscall" || instruction == "sysenter" || instruction == "int 0x80" || 
+        instruction == "svc #0" || instruction == "ecall") {
+        
+        // Exact 1-instruction match (e.g. standalone syscall)
+        for (const auto& g : rop_gadgets) {
+            if (g.instructions.size() == 1) {
+                std::string full_insn = g.instructions[0].mnemonic;
+                if (!g.instructions[0].op_str.empty()) full_insn += " " + g.instructions[0].op_str;
+                if (full_insn == instruction || g.instructions[0].mnemonic == instruction) {
+                    Gadget res = g;
+                    if (res.assembly.empty()) res.assembly = instruction;
+                    return res;
+                }
+            }
+        }
+
+        // Gadget ending with the target instruction
+        for (const auto& g : rop_gadgets) {
+            if (!g.instructions.empty()) {
+                std::string full_insn = g.instructions.back().mnemonic;
+                if (!g.instructions.back().op_str.empty()) full_insn += " " + g.instructions.back().op_str;
+                if (full_insn == instruction || g.instructions.back().mnemonic == instruction) {
+                    Gadget res = g;
+                    if (res.assembly.empty()) res.assembly = instruction;
+                    return res;
+                }
+            }
+        }
+    }
+
+    // Gadget containing target instruction that terminates
+    for (const auto& g : rop_gadgets) {
+        if (g.toString().find(instruction) != std::string::npos) {
+            return g;
+        }
     }
     return std::nullopt;
 }
@@ -82,7 +146,7 @@ ROPChain ChainBuilder::buildExecveChainInternal(uint64_t binsh_addr) {
             chain.add_step(*pop_rsi_gadget, 0, "Set RSI to 0");
             chain.add_step(*pop_rdx_gadget, 0, "Set RDX to 0");
             chain.add_step(*pop_rax_gadget, 59, "Set RAX to syscall number 59 (execve)");
-            chain.add_step(*syscall_gadget, 0, "Invoke execve syscall");
+            chain.add_step(*syscall_gadget, "Invoke execve syscall");
             return chain;
         }
     } else if (m_arch == "x86") {
@@ -97,10 +161,10 @@ ROPChain ChainBuilder::buildExecveChainInternal(uint64_t binsh_addr) {
             chain.add_step(*pop_ebx_gadget, binsh_addr, "Set EBX to /bin/sh address");
             chain.add_step(*pop_ecx_gadget, 0, "Set ECX to 0");
             chain.add_step(*pop_edx_gadget, 0, "Set EDX to 0");
-            chain.add_step(*int80_gadget, 0, "Invoke int 0x80");
+            chain.add_step(*int80_gadget, "Invoke int 0x80");
             return chain;
         }
-    } else if (m_arch == "aarch64") {
+    } else if (m_arch == "aarch64" || m_arch == "arm64") {
         auto pop_x0_gadget = findOptimalPopGadget("x0");
         auto pop_x1_gadget = findOptimalPopGadget("x1");
         auto pop_x2_gadget = findOptimalPopGadget("x2");
@@ -112,10 +176,10 @@ ROPChain ChainBuilder::buildExecveChainInternal(uint64_t binsh_addr) {
             chain.add_step(*pop_x1_gadget, 0, "Set X1 to 0");
             chain.add_step(*pop_x2_gadget, 0, "Set X2 to 0");
             chain.add_step(*pop_x8_gadget, 221, "Set X8 to syscall number 221 (execve)");
-            chain.add_step(*svc_gadget, 0, "Invoke execve syscall");
+            chain.add_step(*svc_gadget, "Invoke execve syscall");
             return chain;
         }
-    } else if (m_arch == "armv7") {
+    } else if (m_arch == "armv7" || m_arch == "arm") {
         auto pop_r0_gadget = findOptimalPopGadget("r0");
         auto pop_r1_gadget = findOptimalPopGadget("r1");
         auto pop_r2_gadget = findOptimalPopGadget("r2");
@@ -127,10 +191,10 @@ ROPChain ChainBuilder::buildExecveChainInternal(uint64_t binsh_addr) {
             chain.add_step(*pop_r1_gadget, 0, "Set R1 to 0");
             chain.add_step(*pop_r2_gadget, 0, "Set R2 to 0");
             chain.add_step(*pop_r7_gadget, 11, "Set R7 to syscall number 11 (execve)");
-            chain.add_step(*svc_gadget, 0, "Invoke execve syscall");
+            chain.add_step(*svc_gadget, "Invoke execve syscall");
             return chain;
         }
-    } else if (m_arch == "riscv") {
+    } else if (m_arch == "riscv" || m_arch == "riscv32" || m_arch == "riscv64") {
         auto pop_a0_gadget = findOptimalPopGadget("a0");
         auto pop_a1_gadget = findOptimalPopGadget("a1");
         auto pop_a2_gadget = findOptimalPopGadget("a2");
@@ -142,7 +206,7 @@ ROPChain ChainBuilder::buildExecveChainInternal(uint64_t binsh_addr) {
             chain.add_step(*pop_a1_gadget, 0, "Set A1 to 0");
             chain.add_step(*pop_a2_gadget, 0, "Set A2 to 0");
             chain.add_step(*pop_a7_gadget, 103, "Set A7 to syscall number 103 (execve)");
-            chain.add_step(*ecall_gadget, 0, "Invoke ecall");
+            chain.add_step(*ecall_gadget, "Invoke ecall");
             return chain;
         }
     }

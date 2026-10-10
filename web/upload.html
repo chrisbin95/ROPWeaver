@@ -1,0 +1,86 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Upload | Free Online ROP Gadgets Search</title>
+<link rel="stylesheet" href="css/pure-min.css" />
+<link rel="stylesheet" href="css/skin-mine.css" />
+</head>
+<body class="pure-skin-mine">
+<div class="pure-g">
+    <div class="pure-u-1-24">
+    </div>
+    <div class="pure-u-22-24">
+        <div class="pure-menu pure-menu-open pure-menu-horizontal">
+    <a href="index.html" class="pure-menu-heading">ROPWeaver</a>
+    <ul>
+        <li><a href="upload.html">Upload</a></li>
+        <li><a href="search.html">Search</a></li>
+        <li><a href="howto.html">Howto</a></li>
+        <li><a href="about.html">About</a></li>
+    </ul>
+</div>
+
+        <div class="content">
+        
+<pre>
+> Maximum file size: 4MB
+> Support x86/x86_64/ARM arch with PE/ELF/MACHO format
+</pre>
+
+<form class="pure-form pure-form-aligned" method="post" enctype="multipart/form-data">
+    <fieldset>
+        <div class="pure-control-group">
+            <label for="name">Select a file</label>
+            <input name="upload" type="file">
+        </div>
+        <div class="pure-control-group">
+            <label for="raw" class="pure-checkbox">Raw binary</label>
+            <input name="raw" value="raw" type="checkbox">
+        </div>
+        <div class="pure-control-group">
+            <label for="arch">Custom arch</label>
+            <select name="arch" class="pure-input">
+                <option selected>auto</option>
+                <option>i386 (x86_32)</option>
+                <option>x86_64</option>
+                <option>arm</option>
+                <option>RISC-V</option>
+                <
+            </select>
+        </div>
+        <div class="pure-controls">
+            <button type="submit" class="pure-button">Upload</button>
+        </div>
+    </fieldset>
+</form>
+
+
+<pre>
+ropshell> recent
+hash                             name                 arch   type   count
+-------------------------------------------------------------------------
+<a href="#">cb2ec8bf3b3bcece58257652058e8900</a> vdso                 x86_64 RAW    0
+<a href="./fd635dde8a2c5df766008b4cc7a113ec.html">fd635dde8a2c5df766008b4cc7a113ec</a> p3                   x86_64 ELF    1
+<a href="#">73a5955536966c7f1295d38d55e3a79d</a> ROPiah               x86_64 ELF    0
+<a href="#">51c97047f59c2c041b4cb68669698571</a> rsp.out              x86_64 ELF    0
+<a href="#">3c54b2579e5d25e951162f220b0917c8</a> p1                   x86_64 ELF    0
+<a href="#">d371da546786965fe0ee40147ffef716</a> libc.so.6            x86_64 ELF    0
+<a href="#">a4ed2a0e588f4e2601e3fc3b803bd5f7</a> chall-2              i386   RAW    0
+<a href="#">570a4d2f670e339ca78a438141a2e2dd</a> libc-2.31.so         x86_64 ELF    0
+<a href="#">ac8ec5870a0bf2af033cf8a343d9d25d</a> echosrv              x86_64 ELF    0
+<a href="#">c94f3442432d6b3885d3c18320fd9d45</a> libc.so.6            x86_64 ELF    0
+</pre>
+
+
+        </div>
+        <div class="footer l-box is-center">
+    <p class="copyright">
+    &copy; 2025 - Powered by <a href="index.html">ROPWeaver</a> | <a href="mailto:admin@ropweaver.com">Contact</a>
+    </p>
+</div>
+
+    </div>
+</div>
+</body>
+</html>

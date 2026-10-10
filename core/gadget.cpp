@@ -25,17 +25,27 @@ bool Gadget::isTerminator() const {
     std::string mnem = last_instr.mnemonic;
 
     // generic terminators
-    if (mnem == "ret" || mnem == "jmp" || mnem == "call") return true;
+    if (mnem == "ret" || mnem == "retf" || mnem == "retfq" || mnem == "jmp" || mnem == "call") return true;
+    if (mnem == "syscall" || mnem == "sysenter" || mnem == "ecall") return true;
+    if (mnem == "int" && last_instr.op_str.find("0x80") != std::string::npos) return true;
 
     // ARM/Thumb terminators
-    if ((architecture == "arm" || architecture == "thumb") &&
-        ((mnem == "bx" && last_instr.op_str.find("lr") != std::string::npos) || 
-         (mnem == "pop" && last_instr.op_str.find("pc") != std::string::npos))) {
+    if ((architecture == "arm" || architecture == "thumb" || architecture == "armv7") &&
+        ((mnem == "bx" && (last_instr.op_str.find("lr") != std::string::npos || last_instr.op_str.find("r14") != std::string::npos)) || 
+         (mnem == "pop" && last_instr.op_str.find("pc") != std::string::npos) ||
+         mnem == "svc" || mnem == "swi")) {
         return true;
     }
 
     // AArch64 terminators
-    if ((architecture == "aarch64" || architecture == "arm64") && mnem == "blr") return true;
+    if ((architecture == "aarch64" || architecture == "arm64") && (mnem == "blr" || mnem == "ret" || mnem == "svc")) return true;
+
+    // RISC-V terminators
+    if ((architecture == "riscv32" || architecture == "riscv64") && 
+        (mnem == "ret" || mnem == "ecall" || 
+         (mnem == "jalr" && (last_instr.op_str.find("ra") != std::string::npos || last_instr.op_str.find("zero") != std::string::npos)))) {
+        return true;
+    }
 
     return false;
 }

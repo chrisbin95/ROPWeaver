@@ -15,6 +15,7 @@ struct CLIOptions {
     uint64_t binshAddress = 0;      // /bin/sh address
     bool useManualBinsh = false;    // true if user provides --binsh-addr
     bool generatePayload = false;   // payload generation
+    bool forceUpload = false;       // --force, -f (overwrite / skip deduplication)
 };
 
 class CLI {

@@ -1,0 +1,31 @@
+# C++ Build Directories
+build/
+build-win/
+Makefile/CMakeFiles/
+Makefile/build/
+Makefile/build-win/
+Makefile/CMakeCache.txt
+Makefile/cmake_install.cmake
+Makefile/ropweaver
+Makefile/ropweaver.exe
+*.o
+*.obj
+*.exe
+*.so
+*.dylib
+
+# Node / React
+web-react/node_modules/
+node_modules/
+
+# Editor & IDE
+.vscode/
+.clangd
+.clangd/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db

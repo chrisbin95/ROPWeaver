@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include "nlohmann/json.hpp"
 #include <ctime>
+#include <filesystem>
 
 using json = nlohmann::json;
 
@@ -33,7 +34,13 @@ std::string to_python_hex(const std::vector<char>& payload) {
     return ss.str();
 }
 
-void PayloadGenerator::generate(const ROPChain& chain, size_t paddingSize, const std::string& filename) {
+void PayloadGenerator::generate(const ROPChain& chain, size_t paddingSize, const std::string& filename,
+                                const std::vector<Gadget>& gadgets,
+                                const std::string& architecture,
+                                const std::string& fileType,
+                                const json& protections,
+                                const std::string& customReportId,
+                                const std::string& fileHash) {
     // --- 1. Construct the Raw Payload ---
     std::vector<char> payload;
     payload.assign(paddingSize, 'A');
@@ -46,7 +53,11 @@ void PayloadGenerator::generate(const ROPChain& chain, size_t paddingSize, const
 
     try {
         // Basic Metadata
-        report["report_id"] = "ROPW-" + std::to_string(now);
+        if (!customReportId.empty()) {
+            report["report_id"] = customReportId;
+        } else {
+            report["report_id"] = "ROPW-" + std::to_string(now);
+        }
         
         // Convert std::put_time to string via stringstream before assigning
         std::stringstream ss;
@@ -54,9 +65,24 @@ void PayloadGenerator::generate(const ROPChain& chain, size_t paddingSize, const
         report["report_date"] = ss.str();
         
         report["tool_version"] = "ROPWeaver_v1.2.3";
+        report["architecture"] = architecture;
+        report["file_type"] = fileType;
+
+        if (protections.empty()) {
+            report["protections"] = {
+                {"NX", false},
+                {"PIE", false},
+                {"Canary", false},
+                {"RELRO", "None"}
+            };
+        } else {
+            report["protections"] = protections;
+        }
+
         report["target_binary"] = {
             {"filename", filename},
-            // ...
+            {"hash", fileHash.empty() ? filename : fileHash},
+            {"sha256", fileHash}
         };
         
         // ROP Chain Details
@@ -66,8 +92,30 @@ void PayloadGenerator::generate(const ROPChain& chain, size_t paddingSize, const
             {"chain_notes", "Attempted ROP chain generation."},
         };
         
-        report["rop_chain_details"] = json::array(); 
+        report["rop_chain_details"] = chain.toJson(); 
         
+        // Discovered Gadgets
+        json gadgetsArr = json::array();
+        for (const auto& g : gadgets) {
+            std::stringstream addrSs;
+            addrSs << "0x" << std::hex << std::setw(16) << std::setfill('0') << g.address;
+
+            std::string instrStr;
+            for (size_t i = 0; i < g.instructions.size(); ++i) {
+                instrStr += g.instructions[i].mnemonic;
+                if (!g.instructions[i].op_str.empty()) instrStr += " " + g.instructions[i].op_str;
+                if (i + 1 < g.instructions.size()) instrStr += " ; ";
+            }
+
+            gadgetsArr.push_back({
+                {"address", addrSs.str()},
+                {"gadget", instrStr},
+                {"instructions", instrStr},
+                {"category", g.architecture}
+            });
+        }
+        report["gadgets"] = gadgetsArr;
+
         // Final Raw Payload Data
         report["raw_payload"] = {
             {"format", "python_hex_string"},
@@ -82,6 +130,8 @@ void PayloadGenerator::generate(const ROPChain& chain, size_t paddingSize, const
 
     // --- 3. Write the JSON Report File ---
     const std::string REPORT_PATH = "reports/output.json";
+    std::error_code ec;
+    std::filesystem::create_directories(std::filesystem::path(REPORT_PATH).parent_path(), ec);
     std::ofstream outfile(REPORT_PATH);
 
     if (outfile.is_open()) {

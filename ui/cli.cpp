@@ -64,6 +64,9 @@ CLIOptions CLI::parseArguments(int argc, char** argv) {
         else if (arg == "--payload-gen" || arg == "-p") { // Correctly add the new option here
             opts.generatePayload = true;
         }
+        else if (arg == "--force" || arg == "-f") {
+            opts.forceUpload = true;
+        }
         else if (arg[0] == '-') {
             std::cerr << "[!] Error: Unknown option: \"" << arg << "\"\n";
             printUsage();
@@ -101,6 +104,7 @@ void CLI::printUsage() const {
               << "  --auto-chain, -a      Attempt automatic ROP chain generation\n"
               << "  --binsh-addr [addr]   Manually specify /bin/sh address (hex or decimal)\n"
               << "  --upload-report       Upload json to Firebase\n"
+              << "  --force, -f           Force upload to Firebase (overwrite if report exists)\n"
               << "  --payload-gen, -p     Generate a raw exploit payload from a successful ROP chain\n"
               << "\n" << std::endl;
 }

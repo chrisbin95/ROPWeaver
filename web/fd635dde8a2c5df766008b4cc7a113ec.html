@@ -1,0 +1,106 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Free Online ROP Gadgets Search</title>
+<link rel="stylesheet" href="css/pure-min.css" />
+<link rel="stylesheet" href="css/skin-mine.css" />
+</head>
+<body class="pure-skin-mine">
+<div class="pure-g">
+    <div class="pure-u-1-24">
+    </div>
+    <div class="pure-u-22-24">
+        <div class="pure-menu pure-menu-open pure-menu-horizontal">
+    <a href="index.html" class="pure-menu-heading">ROPWeaver</a>
+    <ul>
+        <li><a href="upload.html">Upload</a></li>
+        <li><a href="search.html">Search</a></li>
+        <li><a href="howto.html">Howto</a></li>
+        <li><a href="about.html">About</a></li>
+    </ul>
+</div>
+
+        <div class="content">
+        
+<pre>
+ropweaver> use <a href="search?h=fd635dde8a2c5df766008b4cc7a113ec">fd635dde8a2c5df766008b4cc7a113ec</a> (<a href="/static/txt/fd635dde8a2c5df766008b4cc7a113ec.txt.gz">download</a>)
+name         : p3 (x86_64/ELF)
+base address : 0x4003c0
+total gadgets: 13008
+</pre>
+
+<form class="pure-form" action="" method="get">
+    <input name="h" type="hidden" value="fd635dde8a2c5df766008b4cc7a113ec">
+    <input name="p" type="text" class="pure-input" placeholder="ASM or ROP code" required>
+    <button type="submit" class="pure-button">Search</button>
+</form>
+
+<pre>
+ropweaver> suggest
+<a href="ropsearch?h=fd635dde8a2c5df766008b4cc7a113ec&s=call">call</a>
+    > 0x0040062c : call rax
+    > 0x0040f175 : call rbx
+    > 0x004700b2 : call rdx
+    > 0x0040408b : call rsi
+    > 0x00443ff9 : call rdi
+<a href="ropsearch?h=fd635dde8a2c5df766008b4cc7a113ec&s=jmp">jmp</a>
+    > 0x004c921e : push rsp; ret
+    > 0x00400667 : jmp rax
+    > 0x004cff1f : jmp rbx
+    > 0x004017c4 : jmp rcx
+    > 0x004006a7 : jmp rdx
+<a href="ropsearch?h=fd635dde8a2c5df766008b4cc7a113ec&s=load+mem">load mem</a>
+    > 0x0040ecb0 : mov rax, [rsi]; ret
+    > 0x0043e9a0 : mov rax, [rdi]; ret
+    > 0x004ce220 : mov eax, [rdx]; ret
+    > 0x0040ecb1 : mov eax, [rsi]; ret
+    > 0x0043e9a1 : mov eax, [rdi]; ret
+<a href="ropsearch?h=fd635dde8a2c5df766008b4cc7a113ec&s=load+reg">load reg</a>
+    > 0x00400f09 : pop rax; ret
+    > 0x00400a13 : pop rbx; ret
+    > 0x004a20d5 : pop rdx; ret
+    > 0x00402f42 : pop rsi; ret
+    > 0x00401b1c : pop rdi; ret
+pop pop ret
+    > 0x004a20d4 : pop r10; ret
+    > 0x00401992 : pop r12; pop r13; ret
+    > 0x00402f3d : pop r12; pop r13; pop r14; ret
+    > 0x00401b15 : pop r12; pop r13; pop r14; pop r15; ret
+    > 0x00416593 : pop r12; pop r13; pop r14; pop r15; pop rbp; ret
+<a href="ropsearch?h=fd635dde8a2c5df766008b4cc7a113ec&s=sp+lifting">sp lifting</a>
+    > 0x0041a7a5 : add rsp, 0x108; ret
+    > 0x0041a7a5 : add rsp, 0x108; ret
+    > 0x0046d691 : add rsp, 0x20; ret
+    > 0x004d037a : add rsp, 0x30; ret
+    > 0x00403c4a : add rsp, 0x48; ret
+<a href="ropsearch?h=fd635dde8a2c5df766008b4cc7a113ec&s=stack+pivoting">stack pivoting</a>
+    > 0x00455d22 : mov rsp, rcx; ret
+    > 0x0040d225 : xchg eax, esp; ret
+    > 0x00455d23 : mov esp, ecx; ret
+    > 0x004d0958 : mov rsp, r8; mov rbp, r9; jmp rdx
+    > 0x004d0959 : mov esp, eax; mov rbp, r9; jmp rdx
+syscall
+    > 0x0049eea5 : syscall ; ret
+<a href="ropsearch?h=fd635dde8a2c5df766008b4cc7a113ec&s=write+mem">write mem</a>
+    > 0x004009ac : add [rsi], ecx; pop rbp; ret
+    > 0x0042f3ef : add [rax + 0x39], ecx; ret
+    > 0x004034b3 : add [rdi + 0x10], rsi; ret
+    > 0x004034b4 : add [rdi + 0x10], esi; ret
+    > 0x004611ac : add [rbp + 0x38], eax; ret
+
+</pre>
+
+
+
+        </div>
+        <div class="footer l-box is-center">
+    <p class="copyright">
+    &copy; 2025 - Powered by <a href="index.html">ROPWeaver</a> | <a href="mailto:admin@ropweaver.com">Contact</a>
+    </p>
+</div>
+
+    </div>
+</div>
+</body>
+</html>
