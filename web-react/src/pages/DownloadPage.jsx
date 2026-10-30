@@ -202,8 +202,8 @@ export default function DownloadPage({ onNavigateTab }) {
       <div className="download-spotlight-card">
         <div className="spotlight-header">
           <div className="spotlight-title-row">
-            <ActiveIcon size={28} className="text-accent-green" />
-            <div>
+            <ActiveIcon size={28} className="text-accent-green" style={{ flexShrink: 0 }} />
+            <div style={{ minWidth: 0, flex: 1 }}>
               <h2 className="spotlight-os-name mono">{active.fullName}</h2>
               <span className="spotlight-meta mono text-xs text-muted">
                 Version: <strong className="text-accent-cyan">{active.version}</strong> &bull; Architecture: {active.arch} &bull; Released: {active.releaseDate}
@@ -283,8 +283,10 @@ export default function DownloadPage({ onNavigateTab }) {
         {/* SHA-256 Checksum */}
         <div className="checksum-row mono text-xs">
           <div className="checksum-left">
-            <ShieldCheck size={14} className="text-accent-green" />
-            <span className="text-dim">SHA-256 DIGEST:</span>
+            <div className="checksum-label-row">
+              <ShieldCheck size={14} className="text-accent-green" style={{ flexShrink: 0 }} />
+              <span className="text-dim">SHA-256 DIGEST:</span>
+            </div>
             <span className="checksum-hash text-muted" title={active.sha256}>
               {active.sha256}
             </span>
