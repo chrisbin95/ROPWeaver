@@ -152,13 +152,13 @@ export default function BinaryGadgetGroup({
       >
         <div className="group-header-left">
           {index && <span className="report-card-index mono">#{index}</span>}
-          <Terminal size={18} className="text-accent-green" />
+          <Terminal size={18} className="text-accent-green" style={{ flexShrink: 0 }} />
           <span 
             className="group-binary-title mono font-bold clickable-title"
             onClick={handleInspectClick}
             title="Inspect full report for this binary"
           >
-            &gt;_ {cleanName}
+            {cleanName}
           </span>
           <span className="badge badge-info mono">{arch.toUpperCase()}</span>
           <span className="badge badge-warning mono">{category.toUpperCase()}</span>

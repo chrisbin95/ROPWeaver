@@ -333,7 +333,7 @@ export default function BinaryDetailPage({
         <div className="binary-header-top">
           <div className="binary-title-row">
             <Terminal size={24} className="text-accent-green" style={{ flexShrink: 0 }} />
-            <h1 className="binary-title mono">&gt;_ {cleanBaseName}</h1>
+            <h1 className="binary-title mono">{cleanBaseName}</h1>
             <span className="badge badge-info">{finalArch.toUpperCase()}</span>
             <span className="badge badge-warning">{finalFormat.toUpperCase()}</span>
           </div>

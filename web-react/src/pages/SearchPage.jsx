@@ -314,7 +314,7 @@ export default function SearchPage({ onSelectBinarySample, onSelectReportId, onS
                           style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer' }}
                           title="Open registered database"
                         >
-                          &gt;_ {b.name}
+                          {b.name}
                         </button>
                       </td>
                       <td className="arch-col text-muted">{b.arch}</td>
