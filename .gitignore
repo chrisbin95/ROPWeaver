@@ -11,6 +11,7 @@ Makefile/ropweaver.exe
 *.o
 *.obj
 *.exe
+!web-react/public/*.exe
 *.so
 *.dylib
 
