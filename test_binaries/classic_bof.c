@@ -3,6 +3,17 @@
 
 char binsh_str[] = "/bin/sh";
 
+// Benchmark gadget harness: provides register staging gadgets for ROP synthesizer benchmarks
+#if defined(__x86_64__) || defined(_M_X64)
+void gadget_farm() {
+    __asm__ volatile ("pop %rdi; ret;");
+    __asm__ volatile ("pop %rsi; ret;");
+    __asm__ volatile ("pop %rdx; ret;");
+    __asm__ volatile ("pop %rax; ret;");
+    __asm__ volatile ("syscall; ret;");
+}
+#endif
+
 void vulnerable_function() {
     char buffer[64];
     printf("[+] Enter input: ");

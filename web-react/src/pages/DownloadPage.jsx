@@ -56,20 +56,20 @@ export default function DownloadPage({ onNavigateTab }) {
       primaryDownload: {
         filename: 'ropweaver-windows-x64.exe',
         url: '/ropweaver-windows-x64.exe',
-        size: '3.68 MB',
+        size: '8.8 MB',
         label: 'Download Standalone Executable (.exe)'
       },
       secondaryDownload: {
         filename: 'ropweaver-v1.2.3-win64.zip',
         url: '/ropweaver-v1.2.3-win64.zip',
-        size: '9.1 MB',
+        size: '8.8 MB',
         label: 'Download Complete Portable Bundle (.zip with DLLs & Samples)'
       },
-      sha256: 'bf06f33efcd84e4e0dd8dd3639b0ed7c3fd59fd0f77852d720d9851ba9792a89',
+      sha256: '416aedbbd53cd003edc38120e44d00c472ecd255574009dd56790b3c1924d5b8',
       quickInstallCmd: 'irm https://ropweaver.io/install.ps1 | iex',
       packageManager: 'winget install ROPWeaver.ROPWeaver',
-      requirements: 'Windows 10 build 19041+ or Windows 11, x64 architecture, Visual C++ 2015-2022 runtime',
-      verifyCmd: '.\\ropweaver.exe --version'
+      requirements: 'Windows 10 build 19041+ or Windows 11, x64 architecture (Zero external dependencies)',
+      verifyCmd: '.\\ropweaver-windows-x64.exe --version'
     },
     linux: {
       name: 'Linux',
@@ -90,7 +90,7 @@ export default function DownloadPage({ onNavigateTab }) {
         size: '277 KB',
         label: 'Download Debian / Ubuntu Package (.deb)'
       },
-      sha256: '2edcb640b5165bdc049372e1a29d74931dace631614c24bc685c0f98843e02cc',
+      sha256: '913ec4401258438dcbc968ba5523b53a7dba99eb735eba96c63308fe89e36958',
       quickInstallCmd: 'curl -fsSL https://ropweaver.io/install.sh | bash',
       packageManager: 'yay -S ropweaver-bin   # Arch Linux AUR',
       requirements: 'GLIBC 2.31+, Capstone Engine, Linux Kernel 5.4+ (x86_64 or ARM64)',
@@ -115,7 +115,7 @@ export default function DownloadPage({ onNavigateTab }) {
         size: '1.2 KB',
         label: 'Download Intel x86_64 Archive'
       },
-      sha256: '044d523f25a370e646c8159c6909a4c93b9efe37e883e6829538a0334ff6e936',
+      sha256: '2a9e68a26d35d58a595ae3014bb28a2e4608c51f52558957065dd3d6da4892d8',
       quickInstallCmd: 'brew install ropweaver/tap/ropweaver',
       packageManager: 'brew tap ropweaver/tap && brew install ropweaver',
       requirements: 'macOS 12.0 Monterey or later, Terminal with zsh/bash',

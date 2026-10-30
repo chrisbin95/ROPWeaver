@@ -144,4 +144,24 @@ void PayloadGenerator::generate(const ROPChain& chain, size_t paddingSize, const
                   << REPORT_PATH << ".\n(Check 'reports/' folder permissions.)" << std::endl;
         return;
     }
+
+    // --- 4. Write Raw Exploit Payload Files (payload.bin and reports/payload.bin) ---
+    if (!payload.empty()) {
+        std::string payloadBinReports = "reports/payload.bin";
+        std::ofstream binFile(payloadBinReports, std::ios::binary);
+        if (binFile.is_open()) {
+            binFile.write(payload.data(), payload.size());
+            binFile.close();
+            std::cout << ANSI_COLOR_GREEN << "[+] Raw exploit payload written to: " 
+                      << payloadBinReports << ANSI_COLOR_RESET << std::endl;
+        }
+
+        std::ofstream binFileCwd("payload.bin", std::ios::binary);
+        if (binFileCwd.is_open()) {
+            binFileCwd.write(payload.data(), payload.size());
+            binFileCwd.close();
+            std::cout << ANSI_COLOR_GREEN << "[+] Exploit payload also saved to: payload.bin" 
+                      << ANSI_COLOR_RESET << std::endl;
+        }
+    }
 }

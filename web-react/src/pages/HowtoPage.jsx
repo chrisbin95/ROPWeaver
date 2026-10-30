@@ -709,9 +709,9 @@ p.interactive()`
       {/* Interactive Vulnerable C Code Playground */}
       <div className="howto-card" style={{ marginTop: '2.5rem' }}>
         <div className="howto-card-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <FileCode size={18} className="text-accent-green" />
-            <span className="mono font-bold text-accent-green text-sm">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <FileCode size={18} className="text-accent-green" style={{ flexShrink: 0 }} />
+            <span className="mono font-bold text-accent-green text-sm" style={{ overflowWrap: 'anywhere' }}>
               VULNERABLE TEST BINARIES &amp; EXPLOIT PLAYGROUND (C &amp; PYTHON)
             </span>
           </div>
@@ -725,7 +725,7 @@ p.interactive()`
         </div>
 
         {/* Code Selector Tabs */}
-        <div className="code-tabs-row" style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+        <div className="code-tabs-row">
           <button
             onClick={() => setActiveCodeTab('classic')}
             className={`btn btn-xs mono ${activeCodeTab === 'classic' ? 'btn-primary' : 'btn-secondary'}`}

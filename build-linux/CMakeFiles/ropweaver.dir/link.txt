@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/main.cpp.o CMakeFiles/ropweaver.dir/home/kali/ROPWeaver/ui/cli.cpp.o -o ropweaver  libropweaver_core.a -lcapstone /usr/lib/x86_64-linux-gnu/libcurl.so

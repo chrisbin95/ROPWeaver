@@ -15,8 +15,8 @@ nlohmann::json toFirestoreValue(const nlohmann::json& value);
 
 class FirebaseUploader {
 public:
-    // Constructor attempts to load configuration from the specified path
-    explicit FirebaseUploader(const std::string& configPath);
+    // Constructor attempts to load configuration from candidate paths or embedded default
+    explicit FirebaseUploader(const std::string& configPath = "");
     
     // Checks if the configuration was loaded successfully
     bool isConfigured() const { return !firebaseUrl.empty() && !apiKey.empty(); }

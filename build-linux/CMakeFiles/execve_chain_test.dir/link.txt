@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/execve_chain_test.dir/home/kali/ROPWeaver/execve_chain_test/execve_chain_test.cpp.o -o execve_chain_test  libropweaver_core.a -lcapstone /usr/lib/x86_64-linux-gnu/libcurl.so

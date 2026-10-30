@@ -141,13 +141,27 @@ ROPChain ChainBuilder::buildExecveChainInternal(uint64_t binsh_addr) {
         auto pop_rax_gadget = findOptimalPopGadget("rax");
         auto syscall_gadget = findSpecificGadget("syscall");
 
-        if (pop_rdi_gadget && pop_rsi_gadget && pop_rdx_gadget && pop_rax_gadget && syscall_gadget) {
+        std::vector<std::string> missing;
+        if (!pop_rdi_gadget) missing.push_back("pop rdi ; ret");
+        if (!pop_rsi_gadget) missing.push_back("pop rsi ; ret");
+        if (!pop_rdx_gadget) missing.push_back("pop rdx ; ret");
+        if (!pop_rax_gadget) missing.push_back("pop rax ; ret");
+        if (!syscall_gadget) missing.push_back("syscall");
+
+        if (missing.empty()) {
             chain.add_step(*pop_rdi_gadget, binsh_addr, "Set RDI to /bin/sh address");
             chain.add_step(*pop_rsi_gadget, 0, "Set RSI to 0");
             chain.add_step(*pop_rdx_gadget, 0, "Set RDX to 0");
             chain.add_step(*pop_rax_gadget, 59, "Set RAX to syscall number 59 (execve)");
             chain.add_step(*syscall_gadget, "Invoke execve syscall");
             return chain;
+        } else {
+            std::string err = "Could not build execve chain. Missing required gadgets: ";
+            for (size_t i = 0; i < missing.size(); ++i) {
+                if (i > 0) err += ", ";
+                err += missing[i];
+            }
+            throw std::runtime_error(err);
         }
     } else if (m_arch == "x86") {
         auto pop_eax_gadget = findOptimalPopGadget("eax");
@@ -156,13 +170,27 @@ ROPChain ChainBuilder::buildExecveChainInternal(uint64_t binsh_addr) {
         auto pop_edx_gadget = findOptimalPopGadget("edx");
         auto int80_gadget = findSpecificGadget("int 0x80");
 
-        if (pop_eax_gadget && pop_ebx_gadget && pop_ecx_gadget && pop_edx_gadget && int80_gadget) {
+        std::vector<std::string> missing;
+        if (!pop_eax_gadget) missing.push_back("pop eax ; ret");
+        if (!pop_ebx_gadget) missing.push_back("pop ebx ; ret");
+        if (!pop_ecx_gadget) missing.push_back("pop ecx ; ret");
+        if (!pop_edx_gadget) missing.push_back("pop edx ; ret");
+        if (!int80_gadget) missing.push_back("int 0x80");
+
+        if (missing.empty()) {
             chain.add_step(*pop_eax_gadget, 11, "Set EAX to syscall number 11 (execve)");
             chain.add_step(*pop_ebx_gadget, binsh_addr, "Set EBX to /bin/sh address");
             chain.add_step(*pop_ecx_gadget, 0, "Set ECX to 0");
             chain.add_step(*pop_edx_gadget, 0, "Set EDX to 0");
             chain.add_step(*int80_gadget, "Invoke int 0x80");
             return chain;
+        } else {
+            std::string err = "Could not build execve chain. Missing required gadgets: ";
+            for (size_t i = 0; i < missing.size(); ++i) {
+                if (i > 0) err += ", ";
+                err += missing[i];
+            }
+            throw std::runtime_error(err);
         }
     } else if (m_arch == "aarch64" || m_arch == "arm64") {
         auto pop_x0_gadget = findOptimalPopGadget("x0");
@@ -171,13 +199,27 @@ ROPChain ChainBuilder::buildExecveChainInternal(uint64_t binsh_addr) {
         auto pop_x8_gadget = findOptimalPopGadget("x8");
         auto svc_gadget = findSpecificGadget("svc #0");
 
-        if (pop_x0_gadget && pop_x1_gadget && pop_x2_gadget && pop_x8_gadget && svc_gadget) {
+        std::vector<std::string> missing;
+        if (!pop_x0_gadget) missing.push_back("pop x0");
+        if (!pop_x1_gadget) missing.push_back("pop x1");
+        if (!pop_x2_gadget) missing.push_back("pop x2");
+        if (!pop_x8_gadget) missing.push_back("pop x8");
+        if (!svc_gadget) missing.push_back("svc #0");
+
+        if (missing.empty()) {
             chain.add_step(*pop_x0_gadget, binsh_addr, "Set X0 to /bin/sh address");
             chain.add_step(*pop_x1_gadget, 0, "Set X1 to 0");
             chain.add_step(*pop_x2_gadget, 0, "Set X2 to 0");
             chain.add_step(*pop_x8_gadget, 221, "Set X8 to syscall number 221 (execve)");
             chain.add_step(*svc_gadget, "Invoke execve syscall");
             return chain;
+        } else {
+            std::string err = "Could not build execve chain. Missing required gadgets: ";
+            for (size_t i = 0; i < missing.size(); ++i) {
+                if (i > 0) err += ", ";
+                err += missing[i];
+            }
+            throw std::runtime_error(err);
         }
     } else if (m_arch == "armv7" || m_arch == "arm") {
         auto pop_r0_gadget = findOptimalPopGadget("r0");
@@ -186,13 +228,27 @@ ROPChain ChainBuilder::buildExecveChainInternal(uint64_t binsh_addr) {
         auto pop_r7_gadget = findOptimalPopGadget("r7");
         auto svc_gadget = findSpecificGadget("svc #0");
 
-        if (pop_r0_gadget && pop_r1_gadget && pop_r2_gadget && pop_r7_gadget && svc_gadget) {
+        std::vector<std::string> missing;
+        if (!pop_r0_gadget) missing.push_back("pop r0");
+        if (!pop_r1_gadget) missing.push_back("pop r1");
+        if (!pop_r2_gadget) missing.push_back("pop r2");
+        if (!pop_r7_gadget) missing.push_back("pop r7");
+        if (!svc_gadget) missing.push_back("svc #0");
+
+        if (missing.empty()) {
             chain.add_step(*pop_r0_gadget, binsh_addr, "Set R0 to /bin/sh address");
             chain.add_step(*pop_r1_gadget, 0, "Set R1 to 0");
             chain.add_step(*pop_r2_gadget, 0, "Set R2 to 0");
             chain.add_step(*pop_r7_gadget, 11, "Set R7 to syscall number 11 (execve)");
             chain.add_step(*svc_gadget, "Invoke execve syscall");
             return chain;
+        } else {
+            std::string err = "Could not build execve chain. Missing required gadgets: ";
+            for (size_t i = 0; i < missing.size(); ++i) {
+                if (i > 0) err += ", ";
+                err += missing[i];
+            }
+            throw std::runtime_error(err);
         }
     } else if (m_arch == "riscv" || m_arch == "riscv32" || m_arch == "riscv64") {
         auto pop_a0_gadget = findOptimalPopGadget("a0");
@@ -201,17 +257,31 @@ ROPChain ChainBuilder::buildExecveChainInternal(uint64_t binsh_addr) {
         auto pop_a7_gadget = findOptimalPopGadget("a7");
         auto ecall_gadget = findSpecificGadget("ecall");
 
-        if (pop_a0_gadget && pop_a1_gadget && pop_a2_gadget && pop_a7_gadget && ecall_gadget) {
+        std::vector<std::string> missing;
+        if (!pop_a0_gadget) missing.push_back("pop a0");
+        if (!pop_a1_gadget) missing.push_back("pop a1");
+        if (!pop_a2_gadget) missing.push_back("pop a2");
+        if (!pop_a7_gadget) missing.push_back("pop a7");
+        if (!ecall_gadget) missing.push_back("ecall");
+
+        if (missing.empty()) {
             chain.add_step(*pop_a0_gadget, binsh_addr, "Set A0 to /bin/sh address");
             chain.add_step(*pop_a1_gadget, 0, "Set A1 to 0");
             chain.add_step(*pop_a2_gadget, 0, "Set A2 to 0");
             chain.add_step(*pop_a7_gadget, 103, "Set A7 to syscall number 103 (execve)");
             chain.add_step(*ecall_gadget, "Invoke ecall");
             return chain;
+        } else {
+            std::string err = "Could not build execve chain. Missing required gadgets: ";
+            for (size_t i = 0; i < missing.size(); ++i) {
+                if (i > 0) err += ", ";
+                err += missing[i];
+            }
+            throw std::runtime_error(err);
         }
     }
 
-    throw std::runtime_error("Could not build execve chain. Missing required gadgets.");
+    throw std::runtime_error("Could not build execve chain. Architecture " + m_arch + " not supported for automated chain.");
 }
 
 ROPChain ChainBuilder::buildExecveChain(const std::vector<MemoryRegion>& memoryRegions) {

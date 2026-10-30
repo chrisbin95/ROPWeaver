@@ -27,6 +27,15 @@ CLIOptions CLI::parseArguments(int argc, char** argv) {
             opts.valid = true;
             return opts;
         } 
+        else if (arg == "--version" || arg == "-v") {
+            std::cout << ANSI_COLOR_GREEN << "ROPWeaver v1.2.3" << ANSI_COLOR_RESET << " (Academic Research Edition)\n"
+                      << "Disassembly Engine: Capstone v5.0+ | Transport: libcurl\n"
+                      << "Supported Targets: x86_64, i386, ARM, AArch64, RISC-V | Formats: PE, ELF, Mach-O, RAW\n"
+                      << "Oxford Brookes University Master of Science Research Tool\n";
+            opts.helpRequested = true;
+            opts.valid = true;
+            return opts;
+        } 
         else if (arg == "--arch") {
             if (i + 1 < argc && argv[i+1][0] != '-') {
                 opts.architecture = argv[++i];
@@ -38,11 +47,12 @@ CLIOptions CLI::parseArguments(int argc, char** argv) {
         else if (arg == "--suggest-gadgets") {
             opts.suggestGadgets = true;
         } 
-        else if (arg == "--auto-chain" || arg == "-a") {
+        else if (arg == "--auto-chain" || arg == "-a" || arg == "autochain") {
             opts.autoChain = true;
         } 
-        else if (arg == "--upload-report") {
+        else if (arg == "--upload-report" || arg == "--upload" || arg == "upload") {
             opts.uploadReport = true;
+            opts.autoChain = true;
         } 
         else if (arg == "--binsh-addr") {
             if (i + 1 < argc && argv[i+1][0] != '-') {
@@ -61,11 +71,14 @@ CLIOptions CLI::parseArguments(int argc, char** argv) {
                 return opts;
             }
         }
-        else if (arg == "--payload-gen" || arg == "-p") { // Correctly add the new option here
+        else if (arg == "--payload-gen" || arg == "--payload" || arg == "-p" || arg == "payload") {
             opts.generatePayload = true;
+            opts.autoChain = true;
         }
-        else if (arg == "--force" || arg == "-f") {
+        else if (arg == "--force" || arg == "-f" || arg == "force") {
             opts.forceUpload = true;
+            opts.uploadReport = true;
+            opts.autoChain = true;
         }
         else if (arg[0] == '-') {
             std::cerr << "[!] Error: Unknown option: \"" << arg << "\"\n";
@@ -98,6 +111,7 @@ void CLI::printUsage() const {
               << "[i] usage: ./ropweaver <binary> [options]\n\n"
               << ANSI_COLOR_ORANGE << "Options:\n" << ANSI_COLOR_RESET
               << "  --help, -h            Show help message\n"
+              << "  --version, -v         Display tool version\n"
               << "  --arch [arch]         Specify architecture (optional, auto-detected by default)\n"
               << "  --list-gadgets        List all ROP gadgets found in the binary\n"
               << "  --suggest-gadgets     List suggested gadgets grouped by category\n"

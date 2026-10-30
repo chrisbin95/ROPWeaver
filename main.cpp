@@ -59,7 +59,14 @@ static std::string timestamp_now_string() {
     return std::string(buf);
 }
 
+#if defined(_WIN32)
+#include <windows.h>
+#endif
+
 int main(int argc, char* argv[]) {
+#if defined(_WIN32)
+    SetConsoleOutputCP(CP_UTF8);
+#endif
     std::cout << "\n==«✪»==" << ANSI_COLOR_ORANGE << "ROPWeaver: ROP Exploit Generator" << ANSI_COLOR_RESET << "==«✪»== \n" << std::endl;
 
     CLI cli;
@@ -67,7 +74,10 @@ int main(int argc, char* argv[]) {
     if (options.helpRequested) return 0;
     if (!options.valid) return 1;
 
-    // If generating payload or uploading a report, we need auto-chain (report depends on chain)
+    // If generating payload, uploading a report, or force uploading, auto-chain is required
+    if (options.forceUpload) {
+        options.uploadReport = true;
+    }
     if (options.generatePayload || options.uploadReport) {
         options.autoChain = true;
     }
@@ -176,9 +186,27 @@ int main(int argc, char* argv[]) {
 
             std::cout << "[+] ROP chain created successfully:\n" << ropChain.to_string() << std::endl;
         } catch (const std::runtime_error &e) {
-            std::cerr << "[x] error: " << e.what() << std::endl;
-            std::cerr << "[!] Hint: Make sure your binary contains '/bin/sh' string or provide its address manually." << std::endl;
-            std::cerr << "[i] Usage: ./ropweaver file_name --auto-chain --binsh-addr 0x0000000000000000" << std::endl;
+            std::cerr << "[x] " << e.what() << std::endl;
+            std::string targetBinary = options.filename.empty() ? "filename.exe" : options.filename;
+            std::string targetBase = (options.filename.empty() || options.filename == "filename.exe") ? "filename" : fs::path(options.filename).stem().string();
+            std::string targetSource = targetBase + ".c";
+
+            if (binsh_addr == 0 && options.binshAddress == 0) {
+                std::cerr << "[!] Reason: Could not find '/bin/sh' in binary memory sections.\n";
+                std::cerr << "[i] How to fix: Provide the memory address manually:\n";
+                std::cerr << "    ropweaver-windows-x64 " << targetBinary << " -a --binsh-addr 0x<address>\n";
+            } else {
+                std::cerr << "\n[!] Why auto-chain failed:\n";
+                std::cerr << "    Your CLI syntax is correct! However, automated ROP chain synthesis requires\n";
+                std::cerr << "    specific machine instructions ('gadgets') to exist inside the compiled binary.\n";
+                std::cerr << "    ROPWeaver cannot synthesize instructions that were not compiled into the binary.\n\n";
+                std::cerr << "[i] How to perform successful auto-chaining:\n";
+                std::cerr << "    1. Compile source code containing the required gadget sequence:\n";
+                std::cerr << "       gcc -fno-stack-protector -O0 " << targetSource << " -o " << targetBinary << "\n";
+                std::cerr << "    2. Run auto-chain (no --binsh-addr needed when /bin/sh is present):\n";
+                std::cerr << "       ropweaver-windows-x64 " << targetBinary << " -a\n\n";
+                std::cerr << "    (Use '--list-gadgets' or '--suggest-gadgets' to inspect what gadgets exist in this binary)\n";
+            }
 
             // If the user explicitly asked to generate a payload we must fail.
             if (options.generatePayload) {
@@ -210,7 +238,7 @@ int main(int argc, char* argv[]) {
     std::replace(reportDocId.begin(), reportDocId.end(), '.', '_');
     std::replace(reportDocId.begin(), reportDocId.end(), ' ', '_');
 
-    // --- Payload Generation (writes reports/output.json) ---
+    // --- Payload Generation (writes reports/output.json and payload.bin) ---
     if (options.generatePayload || options.uploadReport) {
         PayloadGenerator payloadGen;
         const size_t paddingSize = 104;
@@ -218,6 +246,14 @@ int main(int argc, char* argv[]) {
 
         std::string binaryType = parser ? parser->getBinaryType() : "ELF";
         payloadGen.generate(ropChain, paddingSize, options.filename, gadgets, arch_to_use, binaryType, nlohmann::json::object(), reportId, fileHash);
+
+        if (options.generatePayload && ropChain.isSuccessful()) {
+            std::cout << ANSI_COLOR_GREEN << "\n[+] Exploit payload generated successfully!" << ANSI_COLOR_RESET << std::endl;
+            std::cout << "[i] Delivery one-liner (PowerShell):\n";
+            std::cout << "    cmd /c \"" << options.filename << " < payload.bin\"\n";
+            std::cout << "[i] Delivery one-liner (Python):\n";
+            std::cout << "    python -c \"import sys; sys.stdout.buffer.write(open('payload.bin','rb').read())\" | .\\" << options.filename << "\n" << std::endl;
+        }
     }
 
     // --- Firebase Report Upload ---
@@ -231,27 +267,11 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        // Look for firebase config in two likely locations (project-root or build/ run-from-build)
-        std::vector<fs::path> candidateConfigs = {
-            fs::current_path() / "config" / "firebase_config.json",      // run from project root
-            fs::current_path().parent_path() / "config" / "firebase_config.json", // run from build/
-            fs::current_path() / ".." / "config" / "firebase_config.json" // explicit fallback
-        };
-
-        fs::path foundConfig;
-        for (const auto &c : candidateConfigs) {
-            if (fs::exists(c)) {
-                foundConfig = c;
-                break;
-            }
-        }
-
-        if (foundConfig.empty()) {
-            std::cerr << "[!] Firebase config not found in expected locations — skipping upload.\n";
+        ropweaver::FirebaseUploader uploader;
+        if (!uploader.isConfigured()) {
+            std::cerr << "[!] Firebase config could not be loaded — skipping upload.\n";
             goto end_main;
         }
-
-        ropweaver::FirebaseUploader uploader(foundConfig.string());
 
         // Deduplication Check: Check if report already exists in Firestore!
         if (uploader.reportExists(reportDocId) && !options.forceUpload) {

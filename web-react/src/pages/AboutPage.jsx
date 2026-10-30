@@ -32,7 +32,7 @@ export default function AboutPage() {
       {/* Academic Research Dissertation Banner */}
       <div className="research-citation-card mono text-xs" style={{ marginBottom: '2rem' }}>
         <div className="citation-header">
-          <GraduationCap size={18} className="text-accent-green" />
+          <GraduationCap size={18} className="text-accent-green" style={{ flexShrink: 0 }} />
           <span className="citation-title font-bold text-accent-green">
             OXFORD BROOKES UNIVERSITY &bull; MASTER OF SCIENCE DISSERTATION
           </span>

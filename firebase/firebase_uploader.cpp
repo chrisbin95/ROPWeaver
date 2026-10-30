@@ -69,22 +69,95 @@ json toFirestoreValue(const json& value) {
     return {};
 }
 
+#include <filesystem>
+#if defined(_WIN32)
+#include <windows.h>
+#endif
+
+namespace fs = std::filesystem;
+
+static fs::path getExeDir() {
+#if defined(_WIN32)
+    wchar_t path[MAX_PATH];
+    if (GetModuleFileNameW(NULL, path, MAX_PATH) > 0) {
+        return fs::path(path).parent_path();
+    }
+#endif
+    return fs::current_path();
+}
+
+static const char* EMBEDDED_FIREBASE_CONFIG = R"({
+  "apiKey": "AIzaSyDZ3BEfUstg32hqnbctG7X3LQ5onNJ98qs",
+  "firebase_url": "https://firestore.googleapis.com/v1/projects/ropweaver/databases/(default)/documents/reports",
+  "authDomain": "ropweaver.firebaseapp.com",
+  "projectId": "ropweaver",
+  "storageBucket": "ropweaver.firebasestorage.app",
+  "messagingSenderId": "356547989098",
+  "appId": "1:356547989098:web:16a48b40d0bde270df8413",
+  "measurementId": "G-CR1P508GPH"
+})";
+
 FirebaseUploader::FirebaseUploader(const std::string& configPath) {
     loadConfig(configPath);
 }
 
 void FirebaseUploader::loadConfig(const std::string& configPath) {
-    std::ifstream file(configPath);
-    if (!file.is_open()) {
-        std::cerr << "[x] Failed to open Firebase config file: " << configPath << "\n";
+    json config;
+    bool loaded = false;
+
+    // 1. Try explicit path if provided
+    if (!configPath.empty()) {
+        std::ifstream file(configPath);
+        if (file.is_open()) {
+            try {
+                config = json::parse(file, nullptr, true, true);
+                loaded = true;
+            } catch (...) {}
+        }
+    }
+
+    // 2. Try candidate locations on disk
+    if (!loaded) {
+        fs::path exeDir = getExeDir();
+        std::vector<fs::path> candidates = {
+            fs::current_path() / "config" / "firebase_config.json",
+            fs::current_path() / "firebase_config.json",
+            exeDir / "config" / "firebase_config.json",
+            exeDir / "firebase_config.json",
+            fs::current_path().parent_path() / "config" / "firebase_config.json",
+            fs::current_path() / ".." / "config" / "firebase_config.json"
+        };
+        for (const auto& p : candidates) {
+            std::error_code ec;
+            if (fs::exists(p, ec)) {
+                std::ifstream file(p.string());
+                if (file.is_open()) {
+                    try {
+                        config = json::parse(file, nullptr, true, true);
+                        loaded = true;
+                        break;
+                    } catch (...) {}
+                }
+            }
+        }
+    }
+
+    // 3. Fallback to embedded default configuration
+    if (!loaded) {
+        try {
+            config = json::parse(EMBEDDED_FIREBASE_CONFIG);
+            loaded = true;
+        } catch (...) {}
+    }
+
+    if (!loaded) {
+        std::cerr << "[x] Failed to load any Firebase configuration.\n";
         firebaseUrl.clear();
         apiKey.clear();
         return;
     }
 
     try {
-        // Parse with comments allowed to avoid syntax issues in config files
-        json config = json::parse(file, nullptr, true, true);
         
         // Flexible key resolution for firebaseUrl (or auto-derive from projectId)
         if (config.contains("firebase_url") && config["firebase_url"].is_string()) {
@@ -148,9 +221,18 @@ bool FirebaseUploader::reportExists(const std::string& docId) {
     curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L);
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L);
+#if defined(_WIN32)
+#ifndef CURLSSLOPT_NATIVE_CA
+#define CURLSSLOPT_NATIVE_CA (1L << 4)
+#endif
+    curl_easy_setopt(curl, CURLOPT_SSL_OPTIONS, CURLSSLOPT_NATIVE_CA);
+#endif
 
+    std::string exeCa1 = (getExeDir() / "curl-ca-bundle.crt").string();
     if (std::ifstream("curl-ca-bundle.crt").good()) {
         curl_easy_setopt(curl, CURLOPT_CAINFO, "curl-ca-bundle.crt");
+    } else if (std::ifstream(exeCa1).good()) {
+        curl_easy_setopt(curl, CURLOPT_CAINFO, exeCa1.c_str());
     } else if (std::ifstream("C:/msys64/mingw64/etc/ssl/certs/ca-bundle.crt").good()) {
         curl_easy_setopt(curl, CURLOPT_CAINFO, "C:/msys64/mingw64/etc/ssl/certs/ca-bundle.crt");
     }
@@ -356,10 +438,19 @@ bool FirebaseUploader::uploadToEndpointWithMethod(const std::string& endpoint,
     curl_easy_setopt(curl, CURLOPT_TIMEOUT, 15L);
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L);
+#if defined(_WIN32)
+#ifndef CURLSSLOPT_NATIVE_CA
+#define CURLSSLOPT_NATIVE_CA (1L << 4)
+#endif
+    curl_easy_setopt(curl, CURLOPT_SSL_OPTIONS, CURLSSLOPT_NATIVE_CA);
+#endif
 
-    // Look for local or standard CA bundle
+    // Look for local, exeDir, or standard CA bundle
+    std::string exeCa2 = (getExeDir() / "curl-ca-bundle.crt").string();
     if (std::ifstream("curl-ca-bundle.crt").good()) {
         curl_easy_setopt(curl, CURLOPT_CAINFO, "curl-ca-bundle.crt");
+    } else if (std::ifstream(exeCa2).good()) {
+        curl_easy_setopt(curl, CURLOPT_CAINFO, exeCa2.c_str());
     } else if (std::ifstream("C:/msys64/mingw64/etc/ssl/certs/ca-bundle.crt").good()) {
         curl_easy_setopt(curl, CURLOPT_CAINFO, "C:/msys64/mingw64/etc/ssl/certs/ca-bundle.crt");
     }
