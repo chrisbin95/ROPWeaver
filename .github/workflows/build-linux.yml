@@ -61,26 +61,26 @@ jobs:
           fi
 
           # Control file
-          cat << 'EOF' > "${DEB_STAGE}/DEBIAN/control"
-Package: ropweaver
-Version: 1.2.3
-Section: utils
-Priority: optional
-Architecture: amd64
-Maintainer: Chrisbin Thomas <chrisbin95@users.noreply.github.com>
-Depends: libcapstone4 | libcapstone-dev, libcurl4
-Description: ROPWeaver - Cross-Platform ROP Exploit Generator & Analyzer
- Advanced binary security analysis tool supporting Linux ELF, Windows PE,
- and macOS Mach-O binaries for x86, x86_64, ARM, and RISC-V architectures.
-EOF
+          cat << 'CONTROL_EOF' | sed 's/^[ \t]*//' > "${DEB_STAGE}/DEBIAN/control"
+          Package: ropweaver
+          Version: 1.2.3
+          Section: utils
+          Priority: optional
+          Architecture: amd64
+          Maintainer: Chrisbin Thomas <chrisbin95@users.noreply.github.com>
+          Depends: libcapstone4 | libcapstone-dev, libcurl4
+          Description: ROPWeaver - Cross-Platform ROP Exploit Generator & Analyzer
+           Advanced binary security analysis tool supporting Linux ELF, Windows PE,
+           and macOS Mach-O binaries for x86, x86_64, ARM, and RISC-V architectures.
+          CONTROL_EOF
 
           # Post-installation script to enforce execute permissions
-          cat << 'EOF' > "${DEB_STAGE}/DEBIAN/postinst"
-#!/bin/sh
-set -e
-chmod 0755 /usr/local/bin/ropweaver 2>/dev/null || true
-exit 0
-EOF
+          cat << 'POSTINST_EOF' | sed 's/^[ \t]*//' > "${DEB_STAGE}/DEBIAN/postinst"
+          #!/bin/sh
+          set -e
+          chmod 0755 /usr/local/bin/ropweaver 2>/dev/null || true
+          exit 0
+          POSTINST_EOF
           chmod 0755 "${DEB_STAGE}/DEBIAN/postinst"
 
           dpkg-deb --build "${DEB_STAGE}" ropweaver_1.2.3_amd64.deb
@@ -117,3 +117,4 @@ EOF
           name: ropweaver-v1.2.3-linux-x86_64-tar
           path: ropweaver-v1.2.3-linux-x86_64.tar.gz
           if-no-files-found: error
+
