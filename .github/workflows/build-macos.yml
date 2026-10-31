@@ -66,26 +66,18 @@ jobs:
           chmod +x "${PKG_DIR}/install.sh"
 
           # Add distribution README
-          cat << 'EOF' > "${PKG_DIR}/README.txt"
-================================================================================
-                    ROPWeaver v1.2.3 for macOS (${{ matrix.arch }})
-            Academic Research Tool - Oxford Brookes University
-================================================================================
-
-Requirements:
-  macOS 11.0+ (Big Sur, Monterey, Ventura, Sonoma, Sequoia)
-  Homebrew packages:
-    brew install capstone curl
-
-Quick Start:
-  1. Open Terminal in this folder.
-  2. Run ropweaver on a target binary:
-     ./bin/ropweaver <target_binary> --list-gadgets
-     ./bin/ropweaver <target_binary> --auto-chain
-
-Documentation & Online Explorer:
-  https://github.com/chrisbin95/ROPWeaver
-EOF
+          echo "================================================================================" > "${PKG_DIR}/README.txt"
+          echo "                    ROPWeaver v1.2.3 for macOS (${{ matrix.arch }})" >> "${PKG_DIR}/README.txt"
+          echo "            Academic Research Tool - Oxford Brookes University" >> "${PKG_DIR}/README.txt"
+          echo "================================================================================" >> "${PKG_DIR}/README.txt"
+          echo "" >> "${PKG_DIR}/README.txt"
+          echo "Requirements:" >> "${PKG_DIR}/README.txt"
+          echo "  macOS 11.0+ (Big Sur, Monterey, Ventura, Sonoma, Sequoia)" >> "${PKG_DIR}/README.txt"
+          echo "  Homebrew packages: brew install capstone curl" >> "${PKG_DIR}/README.txt"
+          echo "" >> "${PKG_DIR}/README.txt"
+          echo "Quick Start:" >> "${PKG_DIR}/README.txt"
+          echo "  ./bin/ropweaver <target_binary> --list-gadgets" >> "${PKG_DIR}/README.txt"
+          echo "  ./bin/ropweaver <target_binary> --auto-chain" >> "${PKG_DIR}/README.txt"
 
           tar -czf "${{ matrix.pkg_name }}.tar.gz" -C "${STAGE_DIR}" "${{ matrix.pkg_name }}"
           ls -lh "${{ matrix.pkg_name }}.tar.gz"
@@ -114,18 +106,18 @@ EOF
         uses: actions/download-artifact@v4
         with:
           name: ropweaver-v1.2.3-darwin-arm64
-          path: .
+          path: ./arm64
 
       - name: Download x86_64 Archive
         uses: actions/download-artifact@v4
         with:
           name: ropweaver-v1.2.3-darwin-x86_64
-          path: .
+          path: ./x86_64
 
       - name: Update web-react/public Packages
         run: |
-          mv ropweaver-v1.2.3-darwin-arm64.tar.gz web-react/public/
-          mv ropweaver-v1.2.3-darwin-x86_64.tar.gz web-react/public/
+          mv ./arm64/*.tar.gz web-react/public/
+          mv ./x86_64/*.tar.gz web-react/public/
           ls -lh web-react/public/ropweaver-v1.2.3-darwin-*
           shasum -a 256 web-react/public/ropweaver-v1.2.3-darwin-*
 
