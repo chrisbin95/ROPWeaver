@@ -220,12 +220,12 @@ int main(int argc, char* argv[]) {
             if (binaryType == "PE") {
                 std::cerr << "\n[i] Windows PE Staging Strategy Note:\n";
                 std::cerr << "    Windows x64 ROP chains require staging Win64 parameters:\n";
-                std::cerr << "      - RCX = 1st parameter\n";
-                std::cerr << "      - RDX = 2nd parameter\n";
-                std::cerr << "      - R8  = 3rd parameter\n";
-                std::cerr << "      - R9  = 4th parameter\n";
+                std::cerr << "      - RCX = 1st parameter (e.g. lpAddress / lpCmdLine)\n";
+                std::cerr << "      - RDX = 2nd parameter (e.g. dwSize / uCmdShow)\n";
+                std::cerr << "      - R8  = 3rd parameter (e.g. flNewProtect)\n";
+                std::cerr << "      - R9  = 4th parameter (e.g. lpflOldProtect scratch)\n";
                 std::cerr << "      - Shadow Space: 32 bytes (0x20) allocated above return address\n";
-                std::cerr << "    Direct Linux syscalls (e.g. sys_execve 59) are not valid on the Windows NT kernel.\n";
+                std::cerr << "    Target binary is missing one or more of these parameter staging gadgets.\n";
             } else if (binaryType == "Mach-O") {
                 std::cerr << "\n[i] macOS Mach-O Staging Strategy Note:\n";
                 std::cerr << "    macOS x86_64 ROP chains require the BSD syscall class mask (RAX = 0x200003B),\n";
@@ -249,13 +249,12 @@ int main(int argc, char* argv[]) {
                 }
             }
 
-            // If the user explicitly asked to generate a payload we must fail.
-            if (options.generatePayload) {
+            if (options.uploadReport) {
+                std::cerr << "[!] Continuing without ROP chain because --upload-report was requested. Report may be incomplete.\n";
+            } else if (!options.generatePayload) {
+                // If only -a was requested without upload or payload-gen, terminate cleanly
                 return 1;
             }
-
-            // Otherwise (e.g. upload-only), continue and let payload/report generator produce a partial report.
-            std::cerr << "[!] Continuing without ROP chain because --upload-report was requested. Report may be incomplete.\n";
         }
     }
 
