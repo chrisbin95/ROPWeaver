@@ -25,6 +25,12 @@ if errorlevel 1 (
     echo [!] Warning: Windows make returned error. Continuing with existing binary...
 )
 
+:: Synchronize launchers across build directories
+echo.
+echo [*] Synchronizing platform launchers across build directories...
+call "%ROOT_DIR%\tools\linux_launcher\build_launcher.bat"
+call "%ROOT_DIR%\tools\macos_launcher\build_launcher.bat"
+
 :: 2. Package Windows ZIP Distribution
 echo.
 echo [*] Step 2: Packaging ropweaver-v1.2.3-win64.zip...
@@ -65,7 +71,7 @@ echo Documentation ^& Online Explorer:
 echo   Visit: https://ropweaver.io/ or local web explorer interface.
 ) > "%WIN_PKG%\README.txt"
 
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Compress-Archive -Path '%WIN_PKG%' -DestinationPath '%PUBLIC_DIR%\ropweaver-v1.2.3-win64.zip' -Force"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference = 'SilentlyContinue'; Compress-Archive -Path '%WIN_PKG%' -DestinationPath '%PUBLIC_DIR%\ropweaver-v1.2.3-win64.zip' -Force"
 rd /s /q "%WIN_STAGE%" 2>nul
 echo [+] Updated: %PUBLIC_DIR%\ropweaver-v1.2.3-win64.zip
 
@@ -117,9 +123,50 @@ tar -czf "%PUBLIC_DIR%\ropweaver-v1.2.3-linux-x86_64.tar.gz" -C "%LINUX_STAGE%" 
 rd /s /q "%LINUX_STAGE%" 2>nul
 echo [+] Updated: %PUBLIC_DIR%\ropweaver-v1.2.3-linux-x86_64.tar.gz
 
-:: 5. Package macOS Distributions (Apple Silicon & Intel)
+:: 5. Package Debian Package (ropweaver_1.2.3_amd64.deb)
 echo.
-echo [*] Step 5: Packaging macOS Distributions (darwin-arm64 and darwin-x86_64)...
+echo [*] Step 5: Packaging ropweaver_1.2.3_amd64.deb...
+set DEB_STAGE=%TEMP%\rop_deb_stage_%RANDOM%
+if exist "%DEB_STAGE%" rd /s /q "%DEB_STAGE%"
+mkdir "%DEB_STAGE%\usr\local\bin" 2>nul
+
+if exist "%PUBLIC_DIR%\ropweaver_1.2.3_amd64.deb" (
+    cd /d "%DEB_STAGE%"
+    ar -x "%PUBLIC_DIR%\ropweaver_1.2.3_amd64.deb" debian-binary control.tar.gz >nul 2>nul
+) else (
+    cd /d "%DEB_STAGE%"
+    <nul set /p="2.0" > debian-binary
+    echo.>> debian-binary
+    (
+        echo Package: ropweaver
+        echo Version: 1.2.3
+        echo Section: utils
+        echo Priority: optional
+        echo Architecture: amd64
+        echo Maintainer: ROPWeaver Security Team ^<team@ropweaver.io^>
+        echo Description: Advanced Binary ROP Gadget Finder ^& Automated Chain Synthesizer
+        echo  High-performance ROP gadget discovery, register tracking, and automated
+        echo  execve chain generation for binary exploitation analysis.
+    ) > control
+    tar -czf control.tar.gz control
+)
+
+if exist "%ROOT_DIR%\build-linux\ropweaver" (
+    copy /y "%ROOT_DIR%\build-linux\ropweaver" "%DEB_STAGE%\usr\local\bin\ropweaver" >nul
+) else if exist "%ROOT_DIR%\build\ropweaver" (
+    copy /y "%ROOT_DIR%\build\ropweaver" "%DEB_STAGE%\usr\local\bin\ropweaver" >nul
+)
+
+cd /d "%DEB_STAGE%"
+tar -czf data.tar.gz usr/local/bin/ropweaver
+ar rcs "%PUBLIC_DIR%\ropweaver_1.2.3_amd64.deb" debian-binary control.tar.gz data.tar.gz
+cd /d "%ROOT_DIR%"
+rd /s /q "%DEB_STAGE%" 2>nul
+echo [+] Updated: %PUBLIC_DIR%\ropweaver_1.2.3_amd64.deb
+
+:: 6. Package macOS Distributions (Apple Silicon & Intel)
+echo.
+echo [*] Step 6: Packaging macOS Distributions (darwin-arm64 and darwin-x86_64)...
 set MAC_STAGE=%TEMP%\rop_mac_stage_%RANDOM%
 set MAC_ARM=%MAC_STAGE%\ropweaver-v1.2.3-darwin-arm64
 set MAC_X64=%MAC_STAGE%\ropweaver-v1.2.3-darwin-x86_64
@@ -154,7 +201,7 @@ rd /s /q "%MAC_STAGE%" 2>nul
 echo [+] Updated: %PUBLIC_DIR%\ropweaver-v1.2.3-darwin-arm64.tar.gz
 echo [+] Updated: %PUBLIC_DIR%\ropweaver-v1.2.3-darwin-x86_64.tar.gz
 
-:: 6. Compute SHA-256 Checksums
+:: 7. Compute SHA-256 Checksums
 echo.
 echo ================================================================================
 echo                  RELEASE PACKAGES AND SHA-256 CHECKSUMS

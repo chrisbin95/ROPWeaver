@@ -378,7 +378,7 @@ bool FirebaseUploader::uploadGadgets(const std::string& binaryName,
             json fields = {
                 {"file name", { {"stringValue", binaryName} }},
                 {"architecture", { {"stringValue", architecture} }},
-                {"category", { {"stringValue", "ELF"} }},
+                {"category", { {"stringValue", g.category.empty() ? "others" : g.category} }},
                 {"instructions", { {"stringValue", instrStr} }},
                 {"address", { {"stringValue", addrStr} }},
                 {"offset", { {"stringValue", offStr} }},

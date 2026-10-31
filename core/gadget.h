@@ -20,6 +20,7 @@ struct Gadget {
     // FIX 1: Add the two missing members required by ROPChain::toJson()
     std::string assembly;        // e.g., "pop rdi; pop rsi; ret"
     std::string target_register; // e.g., "rdi" (Used for categorization/chain building)
+    std::string category = "others";
 
     bool isValid() const;
     bool hasMnemonic(const std::string& mnem) const;

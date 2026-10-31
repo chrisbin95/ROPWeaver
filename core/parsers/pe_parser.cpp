@@ -89,6 +89,13 @@ bool PEParser::parse(const std::string& filepath) {
                 imageBase = *reinterpret_cast<const uint32_t*>(&buffer[optHdrOffset + 28]);
             }
         }
+
+        // Parse DllCharacteristics (at offset 70 in both PE32 and PE32+ Optional Header)
+        if (fileHdr->SizeOfOptionalHeader >= 72 && optHdrOffset + 72 <= fileSize) {
+            uint16_t dllCharacteristics = *reinterpret_cast<const uint16_t*>(&buffer[optHdrOffset + 70]);
+            nxEnabled_ = (dllCharacteristics & IMAGE_DLLCHARACTERISTICS_NX_COMPAT) != 0;
+            pieEnabled_ = (dllCharacteristics & IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE) != 0;
+        }
     }
 
     size_t sectionHdrOffset = optHdrOffset + fileHdr->SizeOfOptionalHeader;
@@ -145,7 +152,28 @@ bool PEParser::parse(const std::string& filepath) {
     textBaseAddr_ = imageBase + targetSection->VirtualAddress;
     textSection_.assign(buffer.begin() + rawOffset, buffer.begin() + rawOffset + rawSize);
 
+    // Check imports/symbols for __security_cookie or __security_check_cookie
+    canaryEnabled_ = checkCanaryProtection(buffer);
+
     return !textSection_.empty();
+}
+
+bool PEParser::checkCanaryProtection(const std::vector<uint8_t>& buffer) {
+    const std::vector<std::string> canarySymbols = {
+        "__security_cookie",
+        "__security_check_cookie",
+        "@__security_check_cookie",
+        "__stack_chk_fail",
+        "__stack_chk_guard"
+    };
+
+    for (const auto& sym : canarySymbols) {
+        auto it = std::search(buffer.begin(), buffer.end(), sym.begin(), sym.end());
+        if (it != buffer.end()) {
+            return true;
+        }
+    }
+    return false;
 }
 
 const std::vector<uint8_t>& PEParser::getTextSection() const {

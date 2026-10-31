@@ -42,10 +42,14 @@ void PayloadGenerator::generate(const ROPChain& chain, size_t paddingSize, const
                                 const std::string& customReportId,
                                 const std::string& fileHash) {
     // --- 1. Construct the Raw Payload ---
-    std::vector<char> payload;
-    payload.assign(paddingSize, 'A');
     std::vector<char> chain_bytes = chain.getPayloadBytes();
-    payload.insert(payload.end(), chain_bytes.begin(), chain_bytes.end());
+    std::vector<char> payload;
+    bool has_chain = !chain_bytes.empty();
+
+    if (has_chain) {
+        payload.assign(paddingSize, 'A');
+        payload.insert(payload.end(), chain_bytes.begin(), chain_bytes.end());
+    }
 
     // --- 2. Construct the Comprehensive JSON Report ---
     json report = json::object();
@@ -111,17 +115,27 @@ void PayloadGenerator::generate(const ROPChain& chain, size_t paddingSize, const
                 {"address", addrSs.str()},
                 {"gadget", instrStr},
                 {"instructions", instrStr},
-                {"category", g.architecture}
+                {"category", g.category.empty() ? "others" : g.category}
             });
         }
         report["gadgets"] = gadgetsArr;
 
         // Final Raw Payload Data
-        report["raw_payload"] = {
-            {"format", "python_hex_string"},
-            {"data", to_python_hex(payload)},
-            {"padding_size", paddingSize}
-        };
+        if (!has_chain) {
+            report["raw_payload"] = {
+                {"status", "Payload Generation Incomplete - No ROP Chain Synthesized"},
+                {"format", "N/A"},
+                {"data", ""},
+                {"padding_size", paddingSize}
+            };
+        } else {
+            report["raw_payload"] = {
+                {"status", "Success"},
+                {"format", "python_hex_string"},
+                {"data", to_python_hex(payload)},
+                {"padding_size", paddingSize}
+            };
+        }
 
     } catch (const std::exception& e) {
         std::cerr << "[x] JSON Report Generation Error: " << e.what() << std::endl;
@@ -146,7 +160,7 @@ void PayloadGenerator::generate(const ROPChain& chain, size_t paddingSize, const
     }
 
     // --- 4. Write Raw Exploit Payload Files (payload.bin and reports/payload.bin) ---
-    if (!payload.empty()) {
+    if (has_chain && !payload.empty()) {
         std::string payloadBinReports = "reports/payload.bin";
         std::ofstream binFile(payloadBinReports, std::ios::binary);
         if (binFile.is_open()) {
@@ -163,5 +177,8 @@ void PayloadGenerator::generate(const ROPChain& chain, size_t paddingSize, const
             std::cout << ANSI_COLOR_GREEN << "[+] Exploit payload also saved to: payload.bin" 
                       << ANSI_COLOR_RESET << std::endl;
         }
+    } else {
+        std::cout << ANSI_COLOR_ORANGE << "[!] Skipping payload.bin export: No ROP chain synthesized." 
+                  << ANSI_COLOR_RESET << std::endl;
     }
 }

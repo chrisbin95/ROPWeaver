@@ -257,6 +257,9 @@ void GadgetFinder::findGadgets() {
         if (a.address != b.address) return a.address < b.address;
         return a.instructions.size() < b.instructions.size();
     });
+
+    // Populate Gadget::category during discovery
+    categorizeGadgets();
 }
 
 // Utility helpers for parsing operand strings (simple, conservative)
@@ -271,157 +274,124 @@ static bool op_contains_any_reg(const std::string &opstr, const std::vector<std:
     return false;
 }
 
-// categorizeGadgets to support ARM32 (ARM/Thumb)
-std::map<std::string, std::vector<Gadget>> GadgetFinder::categorizeGadgets() const {
-    std::map<std::string, std::vector<Gadget>> categories;
+std::string GadgetFinder::determineCategory(const Gadget& g) const {
+    // Indirect jump/call detection
+    if (g.isIndirectJumpOrCall()) {
+        return "indirect jump/call";
+    }
 
-    for (const auto& g : m_gadgets) {
-        bool categorized = false;
+    // Stack pivot detection
+    if (g.isStackPivot()) {
+        return "stack pivot";
+    }
 
-        // Indirect jump/call detection
-        if (g.isIndirectJumpOrCall()) {
-            categories["indirect jump/call"].push_back(g);
-            categorized = true;
-        }
+    // Syscall detection: cover ARM SVC/SWI and x86 int 0x80
+    if (g.hasMnemonic("syscall") || g.hasMnemonic("sysenter") || g.hasMnemonic("int80") ||
+        (g.hasMnemonic("int") && !g.instructions.empty() && g.instructions.back().op_str.find("0x80") != std::string::npos)) {
+        return "syscall";
+    }
 
-        // Stack pivot detection
-        if (g.isStackPivot()) {
-            categories["stack pivot"].push_back(g);
-            categorized = true;
-        }
+    // ARM specific: SVC (Supervisor Call) / SWI
+    if ((m_arch == "armv7" || m_arch == "arm") && (g.hasMnemonic("svc") || g.hasMnemonic("swi"))) {
+        return "syscall";
+    }
 
-        // Syscall detection: cover ARM SVC/SWI and x86 int 0x80
-        if (g.hasMnemonic("syscall") || g.hasMnemonic("sysenter") || g.hasMnemonic("int80") ||
-            (g.hasMnemonic("int") && !g.instructions.empty() && g.instructions.back().op_str.find("0x80") != std::string::npos)) {
-            categories["syscall"].push_back(g);
-            categorized = true;
-        }
-        if (!categorized) {
-            // ARM specific: SVC (Supervisor Call) / SWI
-            if ((m_arch == "armv7" || m_arch == "arm") && g.hasMnemonic("svc")) {
-                categories["syscall"].push_back(g);
-                categorized = true;
-            }
-            if ((m_arch == "armv7" || m_arch == "arm") && g.hasMnemonic("swi")) {
-                categories["syscall"].push_back(g);
-                categorized = true;
-            }
-        }
-
-        // POP-style gadgets
-        if (!categorized && g.hasMnemonic("pop")) {
-            // Identify which registers are popped
-            for (const auto &ins : g.instructions) {
-                if (ins.mnemonic == "pop") { 
-                    std::string ops = ins.op_str;
-                    std::transform(ops.begin(), ops.end(), ops.begin(), [](unsigned char c){ return std::tolower(c); });
-
-                    std::vector<std::string> target_regs;
-                    if (m_arch == "x86" || m_arch == "x86_64") {
-                        target_regs = {"rax", "rbx", "rcx", "rdx", "rsi", "rdi", "rbp", "rsp", "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15", "eax", "ebx", "ecx", "edx", "esi", "edi", "ebp", "esp"};
-                    } else {
-                        target_regs = {"r0","r1","r2","r3","r4","r5","r6","r7","r8","r9","r10","r11","r12","sp","lr","pc"};
-                    }
-                    for (const auto &reg : target_regs) {
-                        if (ops.find(reg) != std::string::npos) {
-                            categories["pop " + reg].push_back(g);
-                            categorized = true;
-                        }
-                    }
-                    // Also handle combined pops like "{r0, r1}" -> put into "pop {r0,r1}" bucket
-                    if (!categorized && ops.find('{') != std::string::npos && ops.find('}') != std::string::npos) {
-                        // normalize content inside braces
-                        auto start = ops.find('{');
-                        auto end = ops.find('}');
-                        if (start != std::string::npos && end != std::string::npos && end > start + 1) {
-                            std::string inside = ops.substr(start + 1, end - start - 1);
-                            
-                            inside.erase(std::remove_if(inside.begin(), inside.end(), ::isspace), inside.end());
-                            categories["pop {" + inside + "}"].push_back(g);
-                            categorized = true;
-                        }
-                    }
-                    
-                    if (!categorized && ops.find("pc") != std::string::npos) {
-                        categories["pop pc"].push_back(g);
-                        categorized = true;
-                    }
-                }
-            }
-        }
-
-        // ARM-specific: detect stack pivot patterns and mov/ldr sp gadgets
-        if (!categorized && (m_arch == "armv7" || m_arch == "arm")) {
-            
-            bool found_stack_pivot = false;
-            for (const auto &ins : g.instructions) {
-                std::string mnem = ins.mnemonic; 
-                std::string ops  = ins.op_str;
-                // If 'op_str' is the member name, change to: std::string ops = ins.op_str;
-
-                std::transform(mnem.begin(), mnem.end(), mnem.begin(), [](unsigned char c){ return std::tolower(c); });
+    // POP-style gadgets
+    if (g.hasMnemonic("pop")) {
+        // Identify which registers are popped
+        for (const auto &ins : g.instructions) {
+            if (ins.mnemonic == "pop") { 
+                std::string ops = ins.op_str;
                 std::transform(ops.begin(), ops.end(), ops.begin(), [](unsigned char c){ return std::tolower(c); });
 
-                if (mnem == "mov" && ops.find("sp,") != std::string::npos) {
-                    found_stack_pivot = true;
-                    categories["stack pivot/mov sp"].push_back(g);
-                    categorized = true;
-                    break;
+                std::vector<std::string> target_regs;
+                if (m_arch == "x86" || m_arch == "x86_64") {
+                    target_regs = {"rax", "rbx", "rcx", "rdx", "rsi", "rdi", "rbp", "rsp", "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15", "eax", "ebx", "ecx", "edx", "esi", "edi", "ebp", "esp"};
+                } else {
+                    target_regs = {"r0","r1","r2","r3","r4","r5","r6","r7","r8","r9","r10","r11","r12","sp","lr","pc"};
                 }
-                if ((mnem == "add" || mnem == "sub") && ops.find("sp, sp") != std::string::npos) {
-                    found_stack_pivot = true;
-                    categories["stack pivot/addsub sp"].push_back(g);
-                    categorized = true;
-                    break;
-                }
-                if ((mnem == "ldr" || mnem == "ldm" || mnem == "pop") && ops.find("sp") != std::string::npos) {
-                    // ldr sp, [rX, ...] or ldm sp!, {..} etc
-                    // if it loads into sp, it's a pivot
-                    if (mnem == "ldr" && ops.find("sp,") != std::string::npos) {
-                        found_stack_pivot = true;
-                        categories["stack pivot/ldr sp"].push_back(g);
-                        categorized = true;
-                        break;
-                    }
-                    if (mnem == "ldm" && ops.find("sp") != std::string::npos) {
-                        found_stack_pivot = true;
-                        categories["stack pivot/ldm sp"].push_back(g);
-                        categorized = true;
-                        break;
+                for (const auto &reg : target_regs) {
+                    if (ops.find(reg) != std::string::npos) {
+                        return "pop " + reg;
                     }
                 }
+                // Also handle combined pops like "{r0, r1}" -> put into "pop {r0,r1}" bucket
+                if (ops.find('{') != std::string::npos && ops.find('}') != std::string::npos) {
+                    auto start = ops.find('{');
+                    auto end = ops.find('}');
+                    if (start != std::string::npos && end != std::string::npos && end > start + 1) {
+                        std::string inside = ops.substr(start + 1, end - start - 1);
+                        inside.erase(std::remove_if(inside.begin(), inside.end(), ::isspace), inside.end());
+                        return "pop {" + inside + "}";
+                    }
+                }
+                
+                if (ops.find("pc") != std::string::npos) {
+                    return "pop pc";
+                }
             }
-            if (found_stack_pivot) {
-                // already categorized and pushed above
-            }
-        }
-
-        // pop-specific categorization for x86/x86_64 handled by generic code
-        if (!categorized && g.hasMnemonic("pop") && (m_arch == "x86" || m_arch == "x86_64")) {
-            // rely on g.popInstructionCount() (existing Gadget methods)
-            if (g.popInstructionCount() > 0) {
-                categories["pop"].push_back(g);
-                categorized = true;
-            }
-        }
-
-        // Syscall detection for aarch64
-        if (!categorized && m_arch == "aarch64" && g.hasMnemonic("svc")) {
-            categories["syscall"].push_back(g);
-            categorized = true;
-        }
-
-        // Arithmetic/logic category (generic)
-        if (!categorized && g.hasArithmeticOrLogic()) {
-            categories["arithmetic/logic"].push_back(g);
-            categorized = true;
-        }
-
-        // fallback
-        if (!categorized) {
-            categories["others"].push_back(g);
         }
     }
 
+    // ARM-specific: detect stack pivot patterns and mov/ldr sp gadgets
+    if (m_arch == "armv7" || m_arch == "arm") {
+        for (const auto &ins : g.instructions) {
+            std::string mnem = ins.mnemonic; 
+            std::string ops  = ins.op_str;
+            std::transform(mnem.begin(), mnem.end(), mnem.begin(), [](unsigned char c){ return std::tolower(c); });
+            std::transform(ops.begin(), ops.end(), ops.begin(), [](unsigned char c){ return std::tolower(c); });
+
+            if (mnem == "mov" && ops.find("sp,") != std::string::npos) {
+                return "stack pivot/mov sp";
+            }
+            if ((mnem == "add" || mnem == "sub") && ops.find("sp, sp") != std::string::npos) {
+                return "stack pivot/addsub sp";
+            }
+            if ((mnem == "ldr" || mnem == "ldm" || mnem == "pop") && ops.find("sp") != std::string::npos) {
+                if (mnem == "ldr" && ops.find("sp,") != std::string::npos) {
+                    return "stack pivot/ldr sp";
+                }
+                if (mnem == "ldm" && ops.find("sp") != std::string::npos) {
+                    return "stack pivot/ldm sp";
+                }
+            }
+        }
+    }
+
+    // pop-specific categorization for x86/x86_64 handled by generic code
+    if (g.hasMnemonic("pop") && (m_arch == "x86" || m_arch == "x86_64")) {
+        if (g.popInstructionCount() > 0) {
+            return "pop";
+        }
+    }
+
+    // Syscall detection for aarch64
+    if (m_arch == "aarch64" && g.hasMnemonic("svc")) {
+        return "syscall";
+    }
+
+    // Arithmetic/logic category (generic)
+    if (g.hasArithmeticOrLogic()) {
+        return "arithmetic/logic";
+    }
+
+    return "others";
+}
+
+std::map<std::string, std::vector<Gadget>> GadgetFinder::categorizeGadgets() {
+    std::map<std::string, std::vector<Gadget>> categories;
+    for (auto& g : m_gadgets) {
+        g.category = determineCategory(g);
+        categories[g.category].push_back(g);
+    }
+    return categories;
+}
+
+std::map<std::string, std::vector<Gadget>> GadgetFinder::categorizeGadgets() const {
+    std::map<std::string, std::vector<Gadget>> categories;
+    for (const auto& g : m_gadgets) {
+        std::string cat = g.category.empty() ? determineCategory(g) : g.category;
+        categories[cat].push_back(g);
+    }
     return categories;
 }

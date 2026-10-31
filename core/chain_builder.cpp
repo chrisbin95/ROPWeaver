@@ -15,8 +15,8 @@
 #define ANSI_COLOR_CYAN    "\x1b[36m"
 #define ANSI_COLOR_RESET   "\x1b[0m"
 
-ChainBuilder::ChainBuilder(const std::vector<Gadget>& gadgets, const std::string& arch)
-    : rop_gadgets(gadgets), m_arch(arch) {}
+ChainBuilder::ChainBuilder(const std::vector<Gadget>& gadgets, const std::string& arch, const std::string& fileType)
+    : rop_gadgets(gadgets), m_arch(arch), m_fileType(fileType) {}
 
 // Find a gadget with a specific instruction and a return
 std::optional<Gadget> ChainBuilder::findOptimalPopGadget(const std::string& reg) {
@@ -107,6 +107,10 @@ std::optional<Gadget> ChainBuilder::findSpecificGadget(const std::string& instru
 }
 
 uint64_t ChainBuilder::findBinShAddress(const std::vector<MemoryRegion>& memoryRegions) {
+    if (m_fileType == "PE" || m_fileType == "Mach-O") {
+        return 0; // Avoid searching for Linux /bin/sh in Windows PE and macOS Mach-O binaries
+    }
+
     for (const auto& region : memoryRegions) {
         std::ifstream file(region.path, std::ios::binary);
         if (!file) {
@@ -132,6 +136,36 @@ uint64_t ChainBuilder::findBinShAddress(const std::vector<MemoryRegion>& memoryR
 }
 
 ROPChain ChainBuilder::buildExecveChainInternal(uint64_t binsh_addr) {
+    if (m_fileType == "PE") {
+        std::string diag = "Auto-chaining Linux sys_execve is unsupported on Windows PE targets.\n";
+        diag += "    - Windows ABI Architecture: Microsoft x64 (Fastcall: RCX, RDX, R8, R9)\n";
+        diag += "    - Shadow Space: 32 bytes (0x20) must be reserved on stack above return address\n";
+        diag += "    - User-mode binaries dispatch via Win32 API imports (e.g. VirtualProtect/WinExec in KERNEL32.dll), not raw 'syscall'\n";
+        diag += "    - Win64 Staging Gadget Inspection: ";
+
+        auto pop_rcx = findOptimalPopGadget("rcx");
+        auto pop_rdx = findOptimalPopGadget("rdx");
+        auto pop_r8  = findOptimalPopGadget("r8");
+        auto pop_r9  = findOptimalPopGadget("r9");
+        auto shadow_adj = findSpecificGadget("add rsp, 0x20");
+
+        diag += "RCX=" + std::string(pop_rcx ? "FOUND" : "MISSING") + ", ";
+        diag += "RDX=" + std::string(pop_rdx ? "FOUND" : "MISSING") + ", ";
+        diag += "R8=" + std::string(pop_r8 ? "FOUND" : "MISSING") + ", ";
+        diag += "R9=" + std::string(pop_r9 ? "FOUND" : "MISSING") + ", ";
+        diag += "ShadowAdjust(add rsp, 0x20)=" + std::string(shadow_adj ? "FOUND" : "MISSING");
+
+        throw std::runtime_error(diag);
+    }
+
+    if (m_fileType == "Mach-O") {
+        std::string diag = "Auto-chaining Linux sys_execve is unsupported on macOS Mach-O targets.\n";
+        diag += "    - macOS Darwin Calling Convention: BSD syscall class mask 0x2000000 (RAX = 0x200003B for sys_execve)\n";
+        diag += "    - Apple Silicon (ARM64) uses X16 for syscall index with svc #0x80 and enforces Pointer Authentication (PAC)\n";
+        diag += "    - macOS strictly enforces 16-byte stack alignment (MOVAPS) and dyld dynamic linker stub linkage rather than direct static syscalls";
+        throw std::runtime_error(diag);
+    }
+
     ROPChain chain;
 
     if (m_arch == "x86_64") {

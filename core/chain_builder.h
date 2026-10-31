@@ -14,7 +14,7 @@ struct MemoryRegion {
 
 class ChainBuilder {
 public:
-    ChainBuilder(const std::vector<Gadget>& gadgets, const std::string& arch);
+    ChainBuilder(const std::vector<Gadget>& gadgets, const std::string& arch, const std::string& fileType = "ELF");
 
     std::optional<Gadget> findOptimalPopGadget(const std::string& reg);
     std::optional<Gadget> findSpecificGadget(const std::string& instruction);
@@ -26,6 +26,7 @@ public:
 private:
     std::vector<Gadget> rop_gadgets;
     std::string m_arch;
+    std::string m_fileType;
     
     ROPChain buildExecveChainInternal(uint64_t binsh_addr);
 };

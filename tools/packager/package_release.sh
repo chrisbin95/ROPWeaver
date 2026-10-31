@@ -43,7 +43,34 @@ tar -czf "$PUBLIC_DIR/ropweaver-v1.2.3-linux-x86_64.tar.gz" -C "$STAGE_LINUX" ro
 rm -rf "$STAGE_LINUX"
 echo "[+] Created: $PUBLIC_DIR/ropweaver-v1.2.3-linux-x86_64.tar.gz"
 
-# 2. Package macOS archives
+# 2. Package Debian package (.deb)
+if command -v ar >/dev/null 2>&1; then
+    echo "[*] Packaging Debian package (ropweaver_1.2.3_amd64.deb)..."
+    STAGE_DEB="$(mktemp -d)"
+    mkdir -p "$STAGE_DEB/usr/local/bin"
+    if [ -f "$ROOT_DIR/build-linux/ropweaver" ]; then
+        cp "$ROOT_DIR/build-linux/ropweaver" "$STAGE_DEB/usr/local/bin/"
+    elif [ -f "$ROOT_DIR/build/ropweaver" ]; then
+        cp "$ROOT_DIR/build/ropweaver" "$STAGE_DEB/usr/local/bin/"
+    fi
+    echo "2.0" > "$STAGE_DEB/debian-binary"
+    cat << 'EOF' > "$STAGE_DEB/control"
+Package: ropweaver
+Version: 1.2.3
+Section: utils
+Priority: optional
+Architecture: amd64
+Maintainer: ROPWeaver Security Team <team@ropweaver.io>
+Description: Advanced Binary ROP Gadget Finder & Automated Chain Synthesizer
+ High-performance ROP gadget discovery, register tracking, and automated
+ execve chain generation for binary exploitation analysis.
+EOF
+    (cd "$STAGE_DEB" && tar -czf control.tar.gz control && tar -czf data.tar.gz usr/local/bin/ropweaver && ar rcs "$PUBLIC_DIR/ropweaver_1.2.3_amd64.deb" debian-binary control.tar.gz data.tar.gz)
+    rm -rf "$STAGE_DEB"
+    echo "[+] Created: $PUBLIC_DIR/ropweaver_1.2.3_amd64.deb"
+fi
+
+# 3. Package macOS archives
 echo "[*] Packaging macOS distributions..."
 STAGE_MAC="$(mktemp -d)"
 PKG_ARM="$STAGE_MAC/ropweaver-v1.2.3-darwin-arm64"

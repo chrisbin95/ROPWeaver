@@ -17,6 +17,11 @@ public:
     virtual bool is64Bit() const = 0;
     virtual std::string getBinaryType() const = 0; // ELF, PE, Mach-O
     virtual std::string getFilePath() const = 0;
+
+    virtual bool isNxEnabled() const { return false; }
+    virtual bool isPieEnabled() const { return false; }
+    virtual bool isCanaryEnabled() const { return false; }
+    virtual std::string getRelro() const { return "None"; }
 protected:
     std::string m_filepath;
 };

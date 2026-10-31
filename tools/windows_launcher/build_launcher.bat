@@ -20,5 +20,7 @@ if errorlevel 1 (
 
 echo [+] Successfully generated standalone ropweaver-windows-x64.exe
 copy /y ropweaver-windows-x64.exe ..\..\web-react\public\ropweaver-windows-x64.exe
-echo [+] Updated web-react\public\ropweaver-windows-x64.exe
+copy /y ropweaver-windows-x64.exe ..\..\build-win\ropweaver-windows-x64.exe
+copy /y ropweaver-windows-x64.exe ..\..\build-win\launcher\ropweaver-standalone.exe 2>nul
+echo [+] Updated web-react\public\ropweaver-windows-x64.exe and build-win distributions
 endlocal
