@@ -1,6 +1,14 @@
 # C++ Build Directories
 build/
 build-win/
+build-linux/
+build-mac/
+CMakeCache.txt
+*/CMakeCache.txt
+*/*/CMakeCache.txt
+CMakeFiles/
+*/CMakeFiles/
+*/*/CMakeFiles/
 Makefile/CMakeFiles/
 Makefile/build/
 Makefile/build-win/

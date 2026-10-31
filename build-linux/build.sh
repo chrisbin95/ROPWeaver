@@ -41,6 +41,10 @@ fi
 echo "[*] Configuring CMake project..."
 cd "$SCRIPT_DIR"
 
+# Clean any stale CMakeCache.txt files from previous environments
+rm -f "$SCRIPT_DIR/CMakeCache.txt" "$PROJECT_ROOT/Makefile/CMakeCache.txt" "$PROJECT_ROOT/CMakeCache.txt"
+find "$PROJECT_ROOT" -maxdepth 3 -name "CMakeCache.txt" -delete 2>/dev/null || true
+
 if [ -f "$PROJECT_ROOT/CMakeLists.txt" ]; then
     CMAKE_SRC="$PROJECT_ROOT"
 elif [ -f "$PROJECT_ROOT/Makefile/CMakeLists.txt" ]; then
