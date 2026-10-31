@@ -32,10 +32,16 @@ This frontend connects directly to **Google Cloud Firestore** to query real-time
    - In-browser magic byte validation for ELF (`\x7fELF`) and PE (`MZ`) binaries with architecture identification.
    - Reference binary database table matching CTF and system binaries (`vdso`, `p3`, `libc.so.6`, `ROPiah`, etc.).
 
-5. **🔍 Detailed Binary Analysis View**:
-   - Interactive breakdown of binaries (matching legacy `p3` / `fd635dde8a2c5df766008b4cc7a113ec.html`) across 9 categorized gadget groups (`call`, `jmp`, `load mem`, `load reg`, `pop pop ret`, `sp lifting`, `stack pivoting`, `syscall`, `write mem`).
+5. **🔍 Detailed Binary Analysis & Categorized Reports**:
+   - Interactive breakdown of binaries across 9 categorized gadget groups (`call`, `jmp`, `load mem`, `load reg`, `pop pop ret`, `sp lifting`, `stack pivoting`, `syscall`, `write mem`).
+   - Formatted `.txt` report export grouping discovered gadgets by their semantic category with individual category count headers.
+   - Defensive payload diagnostics clearly warning when chain synthesis is incomplete.
 
-6. **📖 Documentation & About Guides**:
+6. **📦 Multi-Platform Release Downloads**:
+   - Dedicated Download center (`DownloadPage.jsx`) offering standalone executables, portable archives, and `.deb` Linux packages.
+   - Automated SHA-256 integrity checksum verification commands for PowerShell, Linux `sha256sum`, and macOS `shasum`.
+
+7. **📖 Documentation & About Guides**:
    - Interactive CLI command terminal reference with 1-click command copying.
    - Open source dependencies and project architecture guide.
 
@@ -54,7 +60,13 @@ web-react/
 ├── vite.config.js          # Vite build and dev server configuration
 ├── README.md               # Repository documentation and setup instructions
 ├── public/
-│   └── favicon.svg         # Custom cyberpunk SVG favicon
+│   ├── favicon.svg         # Custom cyberpunk SVG favicon
+│   ├── icons.svg           # Scalable vector icons
+│   ├── ropweaver-windows-x64.exe             # Standalone Windows x64 launcher
+│   ├── ropweaver-v1.2.3-win64.zip            # Windows portable zip bundle
+│   ├── ropweaver_1.2.3_amd64.deb             # Debian/Ubuntu installer package
+│   ├── ropweaver-v1.2.3-linux-x86_64.tar.gz  # Linux ELF distribution
+│   └── ropweaver-v1.2.3-darwin-*.tar.gz      # macOS ARM64 & x86_64 distributions
 └── src/
     ├── main.jsx            # Application root entry point
     ├── App.jsx             # Top-level view router and state coordinator
@@ -71,6 +83,7 @@ web-react/
     │   └── LazyList.jsx    # Progressive batch loader for smooth scrolling of large collections
     └── pages/
         ├── ExplorerPage.jsx     # Main real-time Firestore explorer
+        ├── DownloadPage.jsx     # Multi-platform release download center
         ├── UploadPage.jsx       # Binary dropzone & client-side header inspector
         ├── SearchPage.jsx       # Gadget pattern & database query interface
         ├── BinaryDetailPage.jsx # Categorized gadget breakdown for sample binaries

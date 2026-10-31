@@ -47,21 +47,28 @@ While foundational tools like *ROPgadget* extract gadgets and frameworks like *A
      - `> stack pivoting`: Stack redirection primitives (`xchg esp, eax ; ret`, `leave ; ret`).
      - `> call / jmp`: Indirect branch control.
 
-4. **Automated Exploit Chain Synthesis**
-   - Evaluates available registers and automatically organizes functional ROP chains.
-   - Automatic 16-byte stack alignment insertion (satisfies SSE `MOVAPS` requirements on Linux x86_64).
-   - Prepares parameter staging for Linux `sys_execve("/bin/sh", 0, 0)` and Windows Win64 `VirtualProtect` API.
+4. **Platform-Aware Exploit Chain Synthesis**
+   - Automatically discriminates between host and target binary execution environments:
+     - **Linux x86_64 ELF**: Synthesizes `sys_execve("/bin/sh", 0, 0)` chains staging `RDI`, `RSI`, `RDX`, `RAX` (syscall 59), and `syscall` with 16-byte stack alignment (`ret` padding) to prevent glibc/SSE `MOVAPS` crashes.
+     - **Windows x86_64 PE**: Implements Win64 calling convention awareness (`RCX`, `RDX`, `R8`, `R9` parameter registers + 32-byte shadow stack space) for staging Windows API primitives (`VirtualProtect`, `WinExec`).
+     - **macOS x86_64 Mach-O**: Incorporates Darwin BSD 64-bit syscall conventions and class masks (`0x2000000`).
+   - **Deceptive Payload Suppression**: If a functional ROP chain cannot be assembled, raw payload dumps are safely suppressed and explicitly flagged as `"status": "Payload Generation Incomplete - No ROP Chain Synthesized"`.
 
 5. **Binary Hardening & Defense Inspector**
-   - Detects the presence of:
-     - **NX / DEP**: Non-Executable Stack (`GNU_STACK` flag / `IMAGE_DLLCHARACTERISTICS_NX_COMPAT`).
-     - **Stack Canaries**: Canary cookies (`__stack_chk_fail` / `GS`).
-     - **PIE / ASLR**: Position Independent Executables / Dynamic Base.
-     - **RELRO**: Relocation Read-Only (None, Partial, Full).
+   - Performs native binary inspection across ELF and PE binaries:
+     - **NX / DEP**: Non-Executable Stack (`GNU_STACK` ELF segment / PE Optional Header `IMAGE_DLLCHARACTERISTICS_NX_COMPAT` `0x0100`).
+     - **Stack Canaries**: Buffer overflow cookies (`__stack_chk_fail` on Linux ELF / `__security_cookie` & `__security_check_cookie` via PE Import Address Table).
+     - **PIE / ASLR**: Position-Independent Executables (ELF `ET_DYN` / PE `IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE` `0x0040`).
+     - **RELRO**: Relocation Read-Only (`Full RELRO`, `Partial RELRO`, `No RELRO` on ELF; `N/A (PE format)` on Windows PE).
 
-6. **Cloud Collaboration & Web Dashboard**
+6. **Multi-Platform Deployment & Utility Launchers**
+   - **Standalone Windows Executable (`ropweaver-windows-x64.exe`)**: Zero-dependency launcher embedding the full portable runtime, certificates, and libraries inside a Windows resource archive that auto-extracts on demand.
+   - **Native Distribution Packages**: Ships pre-built `.zip` (Windows), `.deb` (Debian/Ubuntu), and `.tar.gz` (Linux & macOS Intel/Apple Silicon) packages.
+   - **Universal Launcher**: Cross-platform Python launcher (`tools/universal_launcher/ropweaver_universal.py`) auto-detecting host operating systems and library search paths (`LD_LIBRARY_PATH`, `DYLD_LIBRARY_PATH`, `PATH`).
+
+7. **Cloud Collaboration & Web Dashboard**
    - Native C++ `libcurl` REST client securely publishes gadget catalogs and exploit reports to **Firebase Firestore**.
-   - Responsive **React web application** with live Firestore querying, gadget pattern search, report download (`.txt`), and a multi-OS developer guide.
+   - Responsive **React web application** with live Firestore querying, gadget pattern search, categorized `.txt` report downloads, and a multi-OS developer guide.
 
 ---
 
@@ -143,7 +150,17 @@ ROPWeaver/
 ├── ui/                          # User Interfaces
 │   ├── cli.cpp/.h               # High-speed command-line interface
 │   └── qt_gui.cpp/.h            # Optional Qt desktop interface
+├── tools/                       # Platform Launchers & Release Automation
+│   ├── windows_launcher/        # Standalone Windows EXE packager (resource embedder)
+│   ├── linux_launcher/          # Linux shell & native wrapper launchers
+│   ├── macos_launcher/          # macOS Darwin wrapper & library path resolver
+│   ├── universal_launcher/      # Universal Python launcher (auto OS detection)
+│   └── packager/                # Multi-platform release packaging scripts (.bat / .sh)
+├── build-win/                   # Windows native build & runtime DLLs
+├── build-linux/                 # Linux ELF binary build & test harness
+├── build-mac/                   # macOS build configuration & launcher
 ├── web-react/                   # Cloud Explorer & Developer Dashboard
+│   ├── public/                  # Pre-compiled release artifacts (.exe, .zip, .tar.gz, .deb)
 │   ├── src/
 │   │   ├── components/          # Navbar, Footer, LazyList, ReportCard, etc.
 │   │   ├── pages/               # ExplorerPage, DownloadPage, HowtoPage, SearchPage, AboutPage
@@ -164,7 +181,25 @@ ROPWeaver/
 
 ## 🚀 Quickstart & Installation
 
-### 1. Prerequisites
+### ⚡ Option A: Pre-compiled Release Packages & Launchers (Fastest)
+
+Download ready-to-run releases from [`web-react/public/`](web-react/public/) or the web dashboard:
+
+| Platform | Package | Description | Quick Execution |
+| :--- | :--- | :--- | :--- |
+| **Windows x64** | `ropweaver-windows-x64.exe` | Zero-dependency standalone launcher with embedded runtime | `.\ropweaver-windows-x64.exe target.exe --list-gadgets` |
+| **Windows x64** | `ropweaver-v1.2.3-win64.zip` | Complete portable bundle with runtime DLLs & sample targets | `.\ropweaver.exe target.exe --auto-chain` |
+| **Debian / Ubuntu** | `ropweaver_1.2.3_amd64.deb` | Native `.deb` system installer package | `sudo dpkg -i ropweaver_1.2.3_amd64.deb`<br>`ropweaver target.elf --list-gadgets` |
+| **Linux x86_64** | `ropweaver-v1.2.3-linux-x86_64.tar.gz` | Linux ELF archive with launcher & sample targets | `tar -xzf ropweaver-v1.2.3-linux-x86_64.tar.gz`<br>`./bin/ropweaver target.elf --auto-chain` |
+| **macOS (Apple Silicon)** | `ropweaver-v1.2.3-darwin-arm64.tar.gz` | macOS ARM64 tarball with Homebrew auto-resolution | `tar -xzf ropweaver-v1.2.3-darwin-arm64.tar.gz`<br>`./bin/ropweaver target --auto-chain` |
+| **macOS (Intel)** | `ropweaver-v1.2.3-darwin-x86_64.tar.gz` | macOS x86_64 tarball with Homebrew auto-resolution | `tar -xzf ropweaver-v1.2.3-darwin-x86_64.tar.gz`<br>`./bin/ropweaver target --auto-chain` |
+| **Any Platform** | `tools/universal_launcher/ropweaver_universal.py` | Cross-platform Python launcher (auto-detects OS & engine) | `python tools/universal_launcher/ropweaver_universal.py target --auto-chain` |
+
+---
+
+### 🛠️ Option B: Building from Source
+
+#### 1. Prerequisites
 
 #### Linux (Debian / Ubuntu / Kali Linux)
 ```bash
@@ -252,14 +287,14 @@ Open **`http://localhost:5173/`** in your browser to access the Cloud Explorer.
 
 ## 🛡️ Binary Hardening & Defense Mitigation Matrix
 
-ROPWeaver includes a native mitigation detector that inspects binary headers and reports exploitability:
+ROPWeaver includes a native mitigation detector that inspects both Linux ELF headers and Windows PE optional headers to report exploitability:
 
-| Mitigation | Security Purpose | Disabling Flag for Lab Benchmarks | ROP Bypass Strategy |
-| :--- | :--- | :--- | :--- |
-| **NX / DEP** | Prevents execution on stack and heap ($W \oplus X$) | `-z execstack` (GCC) / `/NXCOMPAT:NO` (MSVC) | Chain existing executable code sequences ending in `ret`. |
-| **Stack Canary** | Guard value detecting buffer overwrites | `-fno-stack-protector` (GCC) / `/GS-` (MSVC) | Information leak to recover cookie or target return address directly. |
-| **PIE / ASLR** | Randomizes virtual memory bases on execution | `-no-pie` (GCC) / `/DYNAMICBASE:NO` (MSVC) | Information leak to calculate base offset or partial overwrites. |
-| **RELRO** | Marks Global Offset Table (GOT) read-only | `-Wl,-z,norelro` (GCC) | Target stack return pointers instead of modifying GOT entries. |
+| Mitigation | ELF Detection Mechanism | PE Detection Mechanism | Disabling Flag for Lab Benchmarks | ROP Bypass Strategy |
+| :--- | :--- | :--- | :--- | :--- |
+| **NX / DEP** | `PT_GNU_STACK` flags (`PF_X` execution check) | Optional Header `IMAGE_DLLCHARACTERISTICS_NX_COMPAT` (`0x0100`) | `-z execstack` (GCC) / `/NXCOMPAT:NO` (MSVC) | Chain existing executable code sequences ending in `ret`. |
+| **Stack Canary** | Symbol lookup for `__stack_chk_fail` | Import Address Table (IAT) & symbol lookup for `__security_cookie` / `__security_check_cookie` | `-fno-stack-protector` (GCC) / `/GS-` (MSVC) | Information leak to recover cookie or target return address directly. |
+| **PIE / ASLR** | `e_type == ET_DYN` with dynamic relocation metadata | Optional Header `IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE` (`0x0040`) | `-no-pie` (GCC) / `/DYNAMICBASE:NO` (MSVC) | Information leak to calculate base offset or partial overwrites. |
+| **RELRO** | `PT_GNU_RELRO` program header & `DT_BIND_NOW` (Full / Partial / None) | *N/A (PE format)* | `-Wl,-z,norelro` (GCC) | Target stack return pointers instead of modifying GOT entries. |
 
 ---
 
