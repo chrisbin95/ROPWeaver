@@ -1,8 +1,14 @@
 # C++ Build Directories
 build/
 build-win/
-build-linux/
 build-mac/
+build-linux/CMakeCache.txt
+build-linux/CMakeFiles/
+build-linux/Makefile
+build-linux/cmake_install.cmake
+build-linux/ropweaver
+build-linux/ropweaver_autogen/
+build-linux/libropweaver_core.a
 CMakeCache.txt
 */CMakeCache.txt
 */*/CMakeCache.txt
