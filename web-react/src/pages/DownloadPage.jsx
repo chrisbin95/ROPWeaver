@@ -106,13 +106,13 @@ export default function DownloadPage({ onNavigateTab }) {
       primaryDownload: {
         filename: 'ropweaver-v1.2.3-darwin-arm64.tar.gz',
         url: '/ropweaver-v1.2.3-darwin-arm64.tar.gz',
-        size: '1.2 KB',
+        size: '~1.5 MB',
         label: 'Download Apple Silicon Archive (arm64)'
       },
       secondaryDownload: {
         filename: 'ropweaver-v1.2.3-darwin-x86_64.tar.gz',
         url: '/ropweaver-v1.2.3-darwin-x86_64.tar.gz',
-        size: '1.2 KB',
+        size: '~1.5 MB',
         label: 'Download Intel x86_64 Archive'
       },
       sha256: '2a9e68a26d35d58a595ae3014bb28a2e4608c51f52558957065dd3d6da4892d8',

@@ -1,0 +1,142 @@
+name: Build macOS Native Releases
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'core/**'
+      - 'main.cpp'
+      - 'ui/**'
+      - 'firebase/**'
+      - 'build-mac/**'
+      - '.github/workflows/build-macos.yml'
+
+jobs:
+  build-macos:
+    name: Build macOS (${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            os: macos-14
+            pkg_name: ropweaver-v1.2.3-darwin-arm64
+          - arch: x86_64
+            os: macos-13
+            pkg_name: ropweaver-v1.2.3-darwin-x86_64
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Homebrew Dependencies
+        run: |
+          brew install capstone curl pkg-config cmake
+
+      - name: Configure CMake
+        run: |
+          cd build-mac
+          cmake -B build -S . \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET="11.0"
+
+      - name: Build ROPWeaver Binary
+        run: |
+          cmake --build build-mac/build --config Release -j$(sysctl -n hw.ncpu)
+
+      - name: Verify Executable
+        run: |
+          file build-mac/build/ropweaver
+          chmod +x build-mac/build/ropweaver
+          ./build-mac/build/ropweaver --help || true
+
+      - name: Package Distribution Archive (.tar.gz)
+        run: |
+          STAGE_DIR=$(mktemp -d)
+          PKG_DIR="${STAGE_DIR}/${{ matrix.pkg_name }}"
+          mkdir -p "${PKG_DIR}/bin" "${PKG_DIR}/samples"
+
+          # Copy compiled Mach-O binary and launcher
+          cp build-mac/build/ropweaver "${PKG_DIR}/bin/ropweaver"
+          chmod +x "${PKG_DIR}/bin/ropweaver"
+          cp tools/macos_launcher/launcher.sh "${PKG_DIR}/install.sh"
+          chmod +x "${PKG_DIR}/install.sh"
+
+          # Add distribution README
+          cat << 'EOF' > "${PKG_DIR}/README.txt"
+================================================================================
+                    ROPWeaver v1.2.3 for macOS (${{ matrix.arch }})
+            Academic Research Tool - Oxford Brookes University
+================================================================================
+
+Requirements:
+  macOS 11.0+ (Big Sur, Monterey, Ventura, Sonoma, Sequoia)
+  Homebrew packages:
+    brew install capstone curl
+
+Quick Start:
+  1. Open Terminal in this folder.
+  2. Run ropweaver on a target binary:
+     ./bin/ropweaver <target_binary> --list-gadgets
+     ./bin/ropweaver <target_binary> --auto-chain
+
+Documentation & Online Explorer:
+  https://github.com/chrisbin95/ROPWeaver
+EOF
+
+          tar -czf "${{ matrix.pkg_name }}.tar.gz" -C "${STAGE_DIR}" "${{ matrix.pkg_name }}"
+          ls -lh "${{ matrix.pkg_name }}.tar.gz"
+          shasum -a 256 "${{ matrix.pkg_name }}.tar.gz"
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.pkg_name }}
+          path: ${{ matrix.pkg_name }}.tar.gz
+
+  commit-releases:
+    name: Commit & Update Public Release Archives
+    needs: build-macos
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Download arm64 Archive
+        uses: actions/download-artifact@v4
+        with:
+          name: ropweaver-v1.2.3-darwin-arm64
+          path: .
+
+      - name: Download x86_64 Archive
+        uses: actions/download-artifact@v4
+        with:
+          name: ropweaver-v1.2.3-darwin-x86_64
+          path: .
+
+      - name: Update web-react/public Packages
+        run: |
+          mv ropweaver-v1.2.3-darwin-arm64.tar.gz web-react/public/
+          mv ropweaver-v1.2.3-darwin-x86_64.tar.gz web-react/public/
+          ls -lh web-react/public/ropweaver-v1.2.3-darwin-*
+          shasum -a 256 web-react/public/ropweaver-v1.2.3-darwin-*
+
+      - name: Commit & Push to Repository
+        run: |
+          git config user.name "Chrisbin Thomas"
+          git config user.email "80977531+chrisbin95@users.noreply.github.com"
+          git add web-react/public/ropweaver-v1.2.3-darwin-arm64.tar.gz web-react/public/ropweaver-v1.2.3-darwin-x86_64.tar.gz
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "ci: update macOS native Mach-O release archives (arm64 & x86_64) [skip ci]"
+            git push origin main
+          fi

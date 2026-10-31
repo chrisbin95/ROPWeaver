@@ -15,6 +15,7 @@ endif()
 
 if(HOMEBREW_PREFIX)
     list(APPEND CMAKE_PREFIX_PATH "${HOMEBREW_PREFIX}")
+    set(ENV{PKG_CONFIG_PATH} "${HOMEBREW_PREFIX}/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
     include_directories("${HOMEBREW_PREFIX}/include")
     link_directories("${HOMEBREW_PREFIX}/lib")
 endif()
@@ -46,6 +47,7 @@ set(CORE_SRC
 add_library(ropweaver_core STATIC ${CORE_SRC})
 
 target_include_directories(ropweaver_core PUBLIC
+    ${PROJECT_ROOT}
     ${PROJECT_ROOT}/include
     PRIVATE
     ${PROJECT_ROOT}/core
