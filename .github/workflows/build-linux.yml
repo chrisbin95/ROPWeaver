@@ -1,0 +1,119 @@
+name: Build Linux Native Releases
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'core/**'
+      - 'main.cpp'
+      - 'ui/**'
+      - 'firebase/**'
+      - 'Makefile/**'
+      - 'build-linux/**'
+      - '.github/workflows/build-linux.yml'
+
+jobs:
+  build-linux:
+    name: Build Linux x86_64 (.deb & .tar.gz)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential libcapstone-dev libcurl4-openssl-dev pkg-config file
+
+      - name: Configure CMake
+        run: |
+          cmake -B build -S Makefile \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DUSE_GUI=OFF
+
+      - name: Build ROPWeaver Binary
+        run: |
+          cmake --build build --config Release -j$(nproc)
+
+      - name: Verify Executable
+        run: |
+          file build/ropweaver
+          chmod +x build/ropweaver
+          ./build/ropweaver --help
+
+      - name: Package Debian (.deb) Release
+        run: |
+          DEB_STAGE=$(mktemp -d)
+          mkdir -p "${DEB_STAGE}/DEBIAN"
+          mkdir -p "${DEB_STAGE}/usr/local/bin"
+          mkdir -p "${DEB_STAGE}/etc/ropweaver"
+
+          # Copy binary with explicit executable mode
+          cp build/ropweaver "${DEB_STAGE}/usr/local/bin/ropweaver"
+          chmod 0755 "${DEB_STAGE}/usr/local/bin/ropweaver"
+
+          # Copy config
+          if [ -f config/firebase_config.json ]; then
+            cp config/firebase_config.json "${DEB_STAGE}/etc/ropweaver/firebase_config.json"
+          fi
+
+          # Control file
+          cat << 'EOF' > "${DEB_STAGE}/DEBIAN/control"
+Package: ropweaver
+Version: 1.2.3
+Section: utils
+Priority: optional
+Architecture: amd64
+Maintainer: Chrisbin Thomas <chrisbin95@users.noreply.github.com>
+Depends: libcapstone4 | libcapstone-dev, libcurl4
+Description: ROPWeaver - Cross-Platform ROP Exploit Generator & Analyzer
+ Advanced binary security analysis tool supporting Linux ELF, Windows PE,
+ and macOS Mach-O binaries for x86, x86_64, ARM, and RISC-V architectures.
+EOF
+
+          # Post-installation script to enforce execute permissions
+          cat << 'EOF' > "${DEB_STAGE}/DEBIAN/postinst"
+#!/bin/sh
+set -e
+chmod 0755 /usr/local/bin/ropweaver 2>/dev/null || true
+exit 0
+EOF
+          chmod 0755 "${DEB_STAGE}/DEBIAN/postinst"
+
+          dpkg-deb --build "${DEB_STAGE}" ropweaver_1.2.3_amd64.deb
+          echo "[+] Created ropweaver_1.2.3_amd64.deb ($(du -h ropweaver_1.2.3_amd64.deb | cut -f1))"
+
+      - name: Package Distribution Tarball (.tar.gz)
+        run: |
+          PKG_DIR="ropweaver-v1.2.3-linux-x86_64"
+          mkdir -p "${PKG_DIR}/bin" "${PKG_DIR}/samples" "${PKG_DIR}/config"
+          cp build/ropweaver "${PKG_DIR}/bin/ropweaver"
+          chmod +x "${PKG_DIR}/bin/ropweaver"
+
+          if [ -d test_binaries ]; then
+            cp -r test_binaries/* "${PKG_DIR}/samples/" 2>/dev/null || true
+          fi
+          if [ -f config/firebase_config.json ]; then
+            cp config/firebase_config.json "${PKG_DIR}/config/" 2>/dev/null || true
+          fi
+          cp README.md "${PKG_DIR}/" 2>/dev/null || true
+
+          tar -czvf "ropweaver-v1.2.3-linux-x86_64.tar.gz" "${PKG_DIR}"
+          echo "[+] Created ropweaver-v1.2.3-linux-x86_64.tar.gz"
+
+      - name: Upload Debian Package (.deb) Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ropweaver-1.2.3-linux-amd64-deb
+          path: ropweaver_1.2.3_amd64.deb
+          if-no-files-found: error
+
+      - name: Upload Linux Tarball (.tar.gz) Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ropweaver-v1.2.3-linux-x86_64-tar
+          path: ropweaver-v1.2.3-linux-x86_64.tar.gz
+          if-no-files-found: error
