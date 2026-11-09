@@ -1360,20 +1360,32 @@
 }
 
 .binary-meta-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem 1.5rem;
   background: var(--bg-secondary);
   border-radius: var(--radius-sm);
-  padding: 0.75rem 1rem;
+  padding: 0.75rem 1.25rem;
+  flex-wrap: wrap;
+}
+
+.binary-meta-grid > div,
+.binary-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .binary-meta-hash-col {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+  flex: 0 1 auto;
   min-width: 0;
-  max-width: 100%;
+  max-width: 280px;
 }
 
 .binary-meta-hash-col .meta-label {
@@ -3725,6 +3737,12 @@
     gap: 0.85rem !important;
     width: 100% !important;
     box-sizing: border-box !important;
+  }
+
+  .binary-meta-grid {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.65rem !important;
   }
 
   /* Search & Filter Rows */
