@@ -23,10 +23,10 @@ jobs:
         include:
           - arch: arm64
             os: macos-15
-            pkg_name: ropweaver-v1.2.3-darwin-arm64
+            pkg_name: ropweaver-v1.2.4-darwin-arm64
           - arch: x86_64
-            os: macos-13
-            pkg_name: ropweaver-v1.2.3-darwin-x86_64
+            os: macos-15-intel
+            pkg_name: ropweaver-v1.2.4-darwin-x86_64
 
     steps:
       - name: Checkout Repository
@@ -41,17 +41,61 @@ jobs:
           cd build-mac
           cmake -B build -S . \
             -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_OSX_ARCHITECTURES="${{ matrix.arch }}" \
             -DCMAKE_OSX_DEPLOYMENT_TARGET="11.0"
 
       - name: Build ROPWeaver Binary
         run: |
           cmake --build build-mac/build --config Release -j$(sysctl -n hw.ncpu)
 
-      - name: Verify Executable
+      - name: Verify Architecture and Binary Integrity
         run: |
-          file build-mac/build/ropweaver
-          chmod +x build-mac/build/ropweaver
-          ./build-mac/build/ropweaver --help || true
+          BIN="build-mac/build/ropweaver"
+          if [ ! -f "$BIN" ]; then
+            echo "::error::Executable not found at $BIN"
+            exit 1
+          fi
+          chmod +x "$BIN"
+
+          FILE_INFO=$(file "$BIN")
+          echo "Binary file info: $FILE_INFO"
+
+          # Verify it is a 64-bit Mach-O executable
+          if ! echo "$FILE_INFO" | grep -q "Mach-O 64-bit executable"; then
+            echo "::error::Binary is not a valid 64-bit Mach-O executable: $FILE_INFO"
+            exit 1
+          fi
+
+          # Verify exact architecture match
+          TARGET_ARCH="${{ matrix.arch }}"
+          if [ "$TARGET_ARCH" = "arm64" ]; then
+            if ! echo "$FILE_INFO" | grep -q "arm64"; then
+              echo "::error::Expected arm64 architecture, got: $FILE_INFO"
+              exit 1
+            fi
+          elif [ "$TARGET_ARCH" = "x86_64" ]; then
+            if ! echo "$FILE_INFO" | grep -q "x86_64"; then
+              echo "::error::Expected x86_64 architecture, got: $FILE_INFO"
+              exit 1
+            fi
+          fi
+
+          # lipo verification if available
+          if command -v lipo >/dev/null 2>&1; then
+            LIPO_INFO=$(lipo -info "$BIN")
+            echo "lipo -info: $LIPO_INFO"
+            if ! echo "$LIPO_INFO" | grep -q "$TARGET_ARCH"; then
+              echo "::error::lipo does not confirm target architecture $TARGET_ARCH"
+              exit 1
+            fi
+          fi
+
+          # Smoke test execution if host matches target
+          RUNNER_ARCH=$(uname -m)
+          echo "Host runner: $RUNNER_ARCH, Target arch: $TARGET_ARCH"
+          if [ "$RUNNER_ARCH" = "$TARGET_ARCH" ] || [ "$TARGET_ARCH" = "x86_64" -a "$RUNNER_ARCH" = "arm64" ]; then
+            "$BIN" --version || "$BIN" --help || true
+          fi
 
       - name: Package Distribution Archive (.tar.gz)
         run: |
@@ -59,29 +103,82 @@ jobs:
           PKG_DIR="${STAGE_DIR}/${{ matrix.pkg_name }}"
           mkdir -p "${PKG_DIR}/bin" "${PKG_DIR}/samples"
 
-          # Copy compiled Mach-O binary and launcher
+          # Copy compiled Mach-O binary and launcher wrapper
           cp build-mac/build/ropweaver "${PKG_DIR}/bin/ropweaver"
           chmod +x "${PKG_DIR}/bin/ropweaver"
           cp tools/macos_launcher/launcher.sh "${PKG_DIR}/install.sh"
           chmod +x "${PKG_DIR}/install.sh"
 
+          # Copy sample test binary if available
+          if [ -f "test_binaries/test" ]; then
+            cp "test_binaries/test" "${PKG_DIR}/samples/"
+          fi
+
           # Add distribution README
-          echo "================================================================================" > "${PKG_DIR}/README.txt"
-          echo "                    ROPWeaver v1.2.3 for macOS (${{ matrix.arch }})" >> "${PKG_DIR}/README.txt"
-          echo "            Academic Research Tool - Oxford Brookes University" >> "${PKG_DIR}/README.txt"
-          echo "================================================================================" >> "${PKG_DIR}/README.txt"
-          echo "" >> "${PKG_DIR}/README.txt"
-          echo "Requirements:" >> "${PKG_DIR}/README.txt"
-          echo "  macOS 11.0+ (Big Sur, Monterey, Ventura, Sonoma, Sequoia)" >> "${PKG_DIR}/README.txt"
-          echo "  Homebrew packages: brew install capstone curl" >> "${PKG_DIR}/README.txt"
-          echo "" >> "${PKG_DIR}/README.txt"
-          echo "Quick Start:" >> "${PKG_DIR}/README.txt"
-          echo "  ./bin/ropweaver <target_binary> --list-gadgets" >> "${PKG_DIR}/README.txt"
-          echo "  ./bin/ropweaver <target_binary> --auto-chain" >> "${PKG_DIR}/README.txt"
+          cat << 'EOF' > "${PKG_DIR}/README.txt"
+================================================================================
+                    ROPWeaver v1.2.4 for macOS (${{ matrix.arch }})
+            Academic Research Tool - Oxford Brookes University
+                        Build Identifier: 6e110c2
+================================================================================
+
+Requirements:
+  macOS 11.0+ (Sonoma, Ventura, Monterey, Big Sur)
+  Homebrew packages: brew install capstone curl
+
+Quick Start:
+  ./bin/ropweaver <target_binary> --list-gadgets
+  ./bin/ropweaver <target_binary> --suggest-gadgets
+  ./bin/ropweaver <target_binary> --auto-chain
+
+Installed Execution:
+  Run ./install.sh to verify Homebrew dependencies and link ropweaver into PATH.
+EOF
 
           tar -czf "${{ matrix.pkg_name }}.tar.gz" -C "${STAGE_DIR}" "${{ matrix.pkg_name }}"
           ls -lh "${{ matrix.pkg_name }}.tar.gz"
           shasum -a 256 "${{ matrix.pkg_name }}.tar.gz"
+
+      - name: Verify Archive Contains Mach-O Executable
+        run: |
+          PKG_TAR="${{ matrix.pkg_name }}.tar.gz"
+          echo "Inspecting archive: $PKG_TAR"
+
+          # Verify tar contents list
+          CONTENTS=$(tar -ztvf "$PKG_TAR")
+          echo "$CONTENTS"
+
+          if ! echo "$CONTENTS" | grep -E "bin/ropweaver$"; then
+            echo "::error::Archive missing bin/ropweaver"
+            exit 1
+          fi
+
+          # Extract and verify file size and type
+          VERIFY_DIR=$(mktemp -d)
+          tar -xzf "$PKG_TAR" -C "$VERIFY_DIR"
+          EXT_BIN="$VERIFY_DIR/${{ matrix.pkg_name }}/bin/ropweaver"
+
+          if [ ! -f "$EXT_BIN" ]; then
+            echo "::error::Extracted executable not found at $EXT_BIN"
+            exit 1
+          fi
+
+          EXT_SIZE=$(wc -c < "$EXT_BIN")
+          echo "Extracted binary size: $EXT_SIZE bytes"
+          if [ "$EXT_SIZE" -lt 50000 ]; then
+            echo "::error::Extracted binary size ($EXT_SIZE bytes) is too small; executable must be a compiled binary"
+            exit 1
+          fi
+
+          EXT_FILE=$(file "$EXT_BIN")
+          echo "Extracted binary type: $EXT_FILE"
+          if ! echo "$EXT_FILE" | grep -q "Mach-O 64-bit"; then
+            echo "::error::Archive contains script or invalid format instead of Mach-O executable: $EXT_FILE"
+            exit 1
+          fi
+
+          rm -rf "$VERIFY_DIR"
+          echo "[+] Verified: Archive contains real Mach-O 64-bit executable ($EXT_SIZE bytes)."
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -105,30 +202,40 @@ jobs:
       - name: Download arm64 Archive
         uses: actions/download-artifact@v4
         with:
-          name: ropweaver-v1.2.3-darwin-arm64
+          name: ropweaver-v1.2.4-darwin-arm64
           path: ./arm64
 
       - name: Download x86_64 Archive
         uses: actions/download-artifact@v4
         with:
-          name: ropweaver-v1.2.3-darwin-x86_64
+          name: ropweaver-v1.2.4-darwin-x86_64
           path: ./x86_64
 
       - name: Update web-react/public Packages
         run: |
-          mv ./arm64/*.tar.gz web-react/public/
-          mv ./x86_64/*.tar.gz web-react/public/
-          ls -lh web-react/public/ropweaver-v1.2.3-darwin-*
-          shasum -a 256 web-react/public/ropweaver-v1.2.3-darwin-*
+          mkdir -p web-react/public
+          cp ./arm64/ropweaver-v1.2.4-darwin-arm64.tar.gz web-react/public/ropweaver-v1.2.4-darwin-arm64.tar.gz
+          cp ./arm64/ropweaver-v1.2.4-darwin-arm64.tar.gz web-react/public/ropweaver-v1.2.3-darwin-arm64.tar.gz
+          cp ./x86_64/ropweaver-v1.2.4-darwin-x86_64.tar.gz web-react/public/ropweaver-v1.2.4-darwin-x86_64.tar.gz
+          cp ./x86_64/ropweaver-v1.2.4-darwin-x86_64.tar.gz web-react/public/ropweaver-v1.2.3-darwin-x86_64.tar.gz
+
+          echo "Updated macOS release packages in web-react/public/:"
+          ls -lh web-react/public/ropweaver-*-darwin-*.tar.gz
+          shasum -a 256 web-react/public/ropweaver-*-darwin-*.tar.gz
 
       - name: Commit & Push to Repository
         run: |
           git config user.name "Chrisbin Thomas"
           git config user.email "80977531+chrisbin95@users.noreply.github.com"
-          git add web-react/public/ropweaver-v1.2.3-darwin-arm64.tar.gz web-react/public/ropweaver-v1.2.3-darwin-x86_64.tar.gz
+          # Strictly stage ONLY the macOS packages to prevent touching or overwriting other platform archives
+          git add \
+            web-react/public/ropweaver-v1.2.4-darwin-arm64.tar.gz \
+            web-react/public/ropweaver-v1.2.4-darwin-x86_64.tar.gz \
+            web-react/public/ropweaver-v1.2.3-darwin-arm64.tar.gz \
+            web-react/public/ropweaver-v1.2.3-darwin-x86_64.tar.gz
           if git diff --staged --quiet; then
             echo "No changes to commit."
           else
-            git commit -m "ci: update macOS native Mach-O release archives (arm64 & x86_64) [skip ci]"
+            git commit -m "ci: update macOS native Mach-O release archives (v1.2.4 arm64 & x86_64) [skip ci]"
             git push origin main
           fi
