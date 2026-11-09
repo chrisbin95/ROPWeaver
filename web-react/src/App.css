@@ -557,6 +557,9 @@
   font-weight: 700;
   line-height: 1.1;
   color: #ffffff;
+  display: flex;
+  align-items: center;
+  min-height: 1.6rem;
 }
 
 .kpi-label {
@@ -1363,6 +1366,59 @@
   background: var(--bg-secondary);
   border-radius: var(--radius-sm);
   padding: 0.75rem 1rem;
+}
+
+.binary-meta-hash-col {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.binary-meta-hash-col .meta-label {
+  flex-shrink: 0;
+}
+
+.hash-scroll-wrap {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 255, 136, 0.3) transparent;
+  padding: 1px 0;
+}
+
+.hash-scroll-wrap::-webkit-scrollbar {
+  height: 4px;
+}
+
+.hash-scroll-wrap::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+}
+
+.hash-scroll-wrap::-webkit-scrollbar-thumb {
+  background: #252f44;
+  border-radius: 2px;
+}
+
+.hash-scroll-wrap::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-green);
+}
+
+.hash-scroll-wrap .hash-val {
+  user-select: all;
+  letter-spacing: 0.02em;
+}
+
+.hash-copy-btn {
+  padding: 2px 6px;
+  font-size: 0.65rem;
+  flex-shrink: 0;
+  cursor: pointer;
 }
 
 .categorized-sections-wrap {

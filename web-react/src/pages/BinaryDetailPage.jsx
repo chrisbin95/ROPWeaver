@@ -393,7 +393,30 @@ export default function BinaryDetailPage({
 
         {/* Binary Metadata Grid: ARCH, Uploaded on Date/Time, Hash, Base Address, Gadget Count */}
         <div className="binary-meta-grid mono text-xs">
-          <div>Hash: <span className="text-dim" title={finalHash}>{finalHash.length > 24 ? finalHash.slice(0, 24) + '...' : finalHash}</span></div>
+          <div className="binary-meta-hash-col">
+            <span className="meta-label">Hash:</span>
+            <div className="hash-scroll-wrap" title={finalHash}>
+              <span className="text-dim hash-val">{finalHash}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleCopy(finalHash, 'meta-hash')}
+              className="copy-mini-btn hash-copy-btn"
+              title="Copy Hash"
+            >
+              {copiedAddr === 'meta-hash' ? (
+                <>
+                  <Check size={11} className="text-accent-green" />
+                  <span className="text-accent-green" style={{ fontSize: '0.65rem' }}>COPIED</span>
+                </>
+              ) : (
+                <>
+                  <Copy size={11} />
+                  <span style={{ fontSize: '0.65rem' }}>COPY</span>
+                </>
+              )}
+            </button>
+          </div>
           <div>ARCH: <span className="text-accent-green font-bold">{finalArch}</span></div>
           <div>Uploaded on: <span className="text-dim">{finalDate}</span></div>
           <div>Base Address: <span className="text-accent-cyan">{baseAddress}</span></div>

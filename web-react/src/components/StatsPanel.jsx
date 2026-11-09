@@ -1,5 +1,5 @@
 import React from 'react';
-import { Cpu, FileCode2, Database, RefreshCw, Radio } from 'lucide-react';
+import { Cpu, FileCode2, Database, RefreshCw, Radio, Loader2 } from 'lucide-react';
 
 export default function StatsPanel({
   stats,
@@ -34,7 +34,9 @@ export default function StatsPanel({
             <FileCode2 size={20} />
           </div>
           <div className="kpi-info">
-            <span className="kpi-value mono">{stats.totalReports}</span>
+            <span className="kpi-value mono">
+              {loading ? <Loader2 size={18} className="spin text-muted" /> : stats.totalReports}
+            </span>
             <span className="kpi-label">Exploit Reports</span>
           </div>
         </div>
@@ -44,7 +46,9 @@ export default function StatsPanel({
             <Database size={20} />
           </div>
           <div className="kpi-info">
-            <span className="kpi-value mono">{stats.totalGadgets}</span>
+            <span className="kpi-value mono">
+              {loading ? <Loader2 size={18} className="spin text-muted" /> : stats.totalGadgets}
+            </span>
             <span className="kpi-label">Indexed Gadgets</span>
           </div>
         </div>
@@ -54,7 +58,9 @@ export default function StatsPanel({
             <Cpu size={20} />
           </div>
           <div className="kpi-info">
-            <span className="kpi-value mono">{recentBinaries.length}</span>
+            <span className="kpi-value mono">
+              {loading ? <Loader2 size={18} className="spin text-muted" /> : recentBinaries.length}
+            </span>
             <span className="kpi-label">Target Binaries</span>
           </div>
         </div>
