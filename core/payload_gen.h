@@ -4,7 +4,9 @@
 #include "nlohmann/json.hpp"
 #include <vector>
 #include <string>
-#include <cstddef> 
+#include <cstddef>
+
+class FileParser;
 
 class PayloadGenerator {
 public:
@@ -14,5 +16,6 @@ public:
                   const std::string& fileType = "ELF",
                   const nlohmann::json& protections = {},
                   const std::string& customReportId = "",
-                  const std::string& fileHash = "");
+                  const std::string& fileHash = "",
+                  const FileParser* parser = nullptr);
 };

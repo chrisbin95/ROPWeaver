@@ -7,6 +7,8 @@
 
 // ANSI escape codes for coloring
 #define ANSI_COLOR_GREEN   "\x1b[32m"
+#define ANSI_COLOR_ORANGE  "\033[33m"
+#define ANSI_COLOR_CYAN    "\x1b[36m"
 #define ANSI_COLOR_RESET   "\x1b[0m"
 
 // Gadget Methods
@@ -86,6 +88,12 @@ size_t Gadget::popInstructionCount() const {
                          [](const Instruction& instr) { return instr.mnemonic == "pop"; });
 }
 
+// ---------------------------------------------------------------------------
+// isStackPivot: Genuine stack pivot ONLY (Requirement 2)
+// Swapping or replacing the stack pointer with an arbitrary or register-based address.
+// NOTE: Relative stack adjustments (add rsp, N / sub rsp, N) are strictly stack
+// adjustments, NOT stack pivots!
+// ---------------------------------------------------------------------------
 bool Gadget::isStackPivot() const {
     if (instructions.empty()) return false;
 
@@ -95,25 +103,47 @@ bool Gadget::isStackPivot() const {
         std::transform(mnem.begin(), mnem.end(), mnem.begin(), [](unsigned char c){ return std::tolower(c); });
         std::transform(ops.begin(), ops.end(), ops.begin(), [](unsigned char c){ return std::tolower(c); });
 
-        // x86/x86_64
+        // x86/x86_64 genuine stack pivots
         if (architecture == "x86" || architecture == "x86_64") {
+            // Frame pointer pivot
             if (mnem == "leave") return true;
-            if (mnem == "xchg" && (ops.find("rsp") != std::string::npos || ops.find("esp") != std::string::npos)) return true;
-            if (mnem == "mov" && (ops.rfind("rsp,", 0) == 0 || ops.rfind("esp,", 0) == 0)) return true;
-            if ((mnem == "add" || mnem == "sub") && (ops.rfind("rsp,", 0) == 0 || ops.rfind("esp,", 0) == 0)) return true;
+
+            // Register exchange with stack pointer
+            if (mnem == "xchg" && (ops.find("rsp") != std::string::npos || ops.find("esp") != std::string::npos)) {
+                return true;
+            }
+
+            // Direct loading of stack pointer from another register or memory
+            if (mnem == "mov") {
+                // e.g. "mov rsp, rax", "mov esp, ebp"
+                size_t comma = ops.find(',');
+                if (comma != std::string::npos) {
+                    std::string dst = ops.substr(0, comma);
+                    std::string src = ops.substr(comma + 1);
+                    dst.erase(std::remove_if(dst.begin(), dst.end(), ::isspace), dst.end());
+                    src.erase(std::remove_if(src.begin(), src.end(), ::isspace), src.end());
+                    if ((dst == "rsp" || dst == "esp") && src != "rsp" && src != "esp") {
+                        return true;
+                    }
+                }
+            }
+
+            // Direct pop into stack pointer
+            if (mnem == "pop" && (ops == "rsp" || ops == "esp")) {
+                return true;
+            }
         }
 
         // AArch64
         if (architecture == "aarch64" || architecture == "arm64") {
-            if (mnem == "mov" && ops.find("sp,") != std::string::npos) return true;
-            if ((mnem == "add" || mnem == "sub") && ops.find("sp,") != std::string::npos) return true;
+            if (mnem == "mov" && ops.rfind("sp,", 0) == 0 && ops != "sp, sp") return true;
         }
 
         // ARM32/Thumb
         if (architecture == "arm" || architecture == "thumb" || architecture == "armv7") {
-            if (mnem == "mov" && ops.find("sp,") != std::string::npos) return true;
-            if ((mnem == "add" || mnem == "sub") && ops.find("sp,") != std::string::npos) return true;
-            if ((mnem == "ldr" || mnem == "ldm" || mnem == "pop") && ops.find("sp") != std::string::npos) return true;
+            if (mnem == "mov" && ops.rfind("sp,", 0) == 0 && ops != "sp, sp") return true;
+            if (mnem == "ldr" && ops.rfind("sp,", 0) == 0) return true;
+            if (mnem == "pop" && ops.find("sp") != std::string::npos) return true;
         }
     }
 
@@ -121,7 +151,10 @@ bool Gadget::isStackPivot() const {
 }
 
 bool Gadget::hasArithmeticOrLogic() const {
-    static const std::vector<std::string> arithOps = {"add", "sub", "xor", "and", "or"};
+    static const std::vector<std::string> arithOps = {
+        "add", "sub", "xor", "and", "or", "mul", "imul", "div", "idiv",
+        "inc", "dec", "neg", "not", "shl", "shr", "sar", "rol", "ror", "test", "cmp"
+    };
     return std::any_of(instructions.begin(), instructions.end(),
                        [&](const Instruction& instr) {
                            return std::find(arithOps.begin(), arithOps.end(), instr.mnemonic) != arithOps.end();
@@ -139,6 +172,20 @@ std::string Gadget::toString() const {
         if (!instructions[i].op_str.empty())
             ss << " " << instructions[i].op_str;
         if (i < instructions.size() - 1) ss << " ; ";
+    }
+
+    // Add multi-category tags and stack delta
+    if (!categories.empty()) {
+        ss << "  " << ANSI_COLOR_CYAN << "[";
+        for (size_t c = 0; c < categories.size(); ++c) {
+            ss << categories[c];
+            if (c + 1 < categories.size()) ss << ", ";
+        }
+        ss << "]" << ANSI_COLOR_RESET;
+    }
+
+    if (stack_delta != 0) {
+        ss << " (" << (stack_delta > 0 ? "+" : "") << std::dec << stack_delta << " stack delta)";
     }
 
     return ss.str();

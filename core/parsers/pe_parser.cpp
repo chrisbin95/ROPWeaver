@@ -59,70 +59,60 @@ bool PEParser::parse(const std::string& filepath) {
     }
 
     // IMAGE_FILE_NO_SEH: file header Characteristics bit 0x0400
-    noSEH_ = (fileHdr->Characteristics & IMAGE_FILE_NO_SEH) != 0;
+    mitigations_.no_seh = (fileHdr->Characteristics & IMAGE_FILE_NO_SEH) != 0;
 
     size_t optHdrOffset = ntHdrOffset + 4 + sizeof(PE_FILE_HEADER);
     imageBase_ = 0x400000; // safe default
 
+    uint32_t loadConfigRva = 0;
+    uint32_t loadConfigSize = 0;
+
     if (fileHdr->SizeOfOptionalHeader >= 2 && optHdrOffset + fileHdr->SizeOfOptionalHeader <= fileSize) {
         uint16_t optMagic = *reinterpret_cast<const uint16_t*>(&buffer[optHdrOffset]);
-
-        // ----------------------------------------------------------------
-        // Optional Header field offsets (from start of optional header):
-        //
-        //  Field                  PE32 (0x010b)   PE32+ (0x020b)
-        //  Magic                   0               0
-        //  AddressOfEntryPoint     16              16
-        //  ImageBase               28 (uint32)     24 (uint64)
-        //  DllCharacteristics      94              70
-        // ----------------------------------------------------------------
         size_t dllCharOffset = 0;
+        size_t dataDirOffset = 0;
 
         if (optMagic == 0x020b) { // PE32+ (64-bit)
             is64Bit_ = true;
-            // ImageBase at offset 24 (uint64)
             if (fileHdr->SizeOfOptionalHeader >= 32 && optHdrOffset + 32 <= fileSize) {
                 imageBase_ = *reinterpret_cast<const uint64_t*>(&buffer[optHdrOffset + 24]);
             }
-            // AddressOfEntryPoint at offset 16 (uint32 RVA)
             if (fileHdr->SizeOfOptionalHeader >= 20 && optHdrOffset + 20 <= fileSize) {
-                uint32_t epRVA = *reinterpret_cast<const uint32_t*>(&buffer[optHdrOffset + 16]);
-                entryPoint_ = imageBase_ + epRVA;
+                entryPoint_ = imageBase_ + *reinterpret_cast<const uint32_t*>(&buffer[optHdrOffset + 16]);
             }
-            // DllCharacteristics at offset 70 for PE32+
             dllCharOffset = optHdrOffset + 70;
+            dataDirOffset = optHdrOffset + 112;
 
         } else if (optMagic == 0x010b) { // PE32 (32-bit)
             is64Bit_ = false;
-            // ImageBase at offset 28 (uint32)
             if (fileHdr->SizeOfOptionalHeader >= 32 && optHdrOffset + 32 <= fileSize) {
                 imageBase_ = *reinterpret_cast<const uint32_t*>(&buffer[optHdrOffset + 28]);
             }
-            // AddressOfEntryPoint at offset 16 (uint32 RVA)
             if (fileHdr->SizeOfOptionalHeader >= 20 && optHdrOffset + 20 <= fileSize) {
-                uint32_t epRVA = *reinterpret_cast<const uint32_t*>(&buffer[optHdrOffset + 16]);
-                entryPoint_ = imageBase_ + epRVA;
+                entryPoint_ = imageBase_ + *reinterpret_cast<const uint32_t*>(&buffer[optHdrOffset + 16]);
             }
-            // DllCharacteristics at offset 94 for PE32
             dllCharOffset = optHdrOffset + 94;
+            dataDirOffset = optHdrOffset + 96;
         }
 
         // Parse DllCharacteristics with correct architecture-specific offset
         if (dllCharOffset > 0 && dllCharOffset + 2 <= fileSize) {
             uint16_t dllChar = *reinterpret_cast<const uint16_t*>(&buffer[dllCharOffset]);
-            nxEnabled_      = (dllChar & IMAGE_DLLCHARACTERISTICS_NX_COMPAT)      != 0;
-            pieEnabled_     = (dllChar & IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE)   != 0;
-            highEntropyVA_  = (dllChar & IMAGE_DLLCHARACTERISTICS_HIGH_ENTROPY_VA) != 0;
-            cfgEnabled_     = (dllChar & IMAGE_DLLCHARACTERISTICS_GUARD_CF)       != 0;
+            mitigations_.nx_compat       = (dllChar & IMAGE_DLLCHARACTERISTICS_NX_COMPAT)       != 0;
+            mitigations_.dynamic_base    = (dllChar & IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE)    != 0;
+            mitigations_.high_entropy_va = (dllChar & IMAGE_DLLCHARACTERISTICS_HIGH_ENTROPY_VA)  != 0;
+            mitigations_.guard_cf        = (dllChar & IMAGE_DLLCHARACTERISTICS_GUARD_CF)        != 0;
+        }
+
+        // Parse Load Config Data Directory entry (index 10)
+        size_t loadConfigDirEntry = dataDirOffset + (IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG * 8);
+        if (loadConfigDirEntry + 8 <= optHdrOffset + fileHdr->SizeOfOptionalHeader && loadConfigDirEntry + 8 <= fileSize) {
+            loadConfigRva  = *reinterpret_cast<const uint32_t*>(&buffer[loadConfigDirEntry]);
+            loadConfigSize = *reinterpret_cast<const uint32_t*>(&buffer[loadConfigDirEntry + 4]);
         }
     }
 
-    // ----------------------------------------------------------------
-    // Section parsing: collect ALL executable sections.
-    // Primary text section = first .text or first executable section.
-    // Concatenate all executable sections into textSection_ for gadget
-    // discovery (preserving contiguous VA ordering).
-    // ----------------------------------------------------------------
+    // Parse all Section Headers
     size_t sectionHdrOffset = optHdrOffset + fileHdr->SizeOfOptionalHeader;
     size_t totalSectionHdrsSize = static_cast<size_t>(fileHdr->NumberOfSections) * sizeof(PE_SECTION_HEADER);
     if (sectionHdrOffset + totalSectionHdrsSize > fileSize) {
@@ -130,9 +120,9 @@ bool PEParser::parse(const std::string& filepath) {
         return false;
     }
 
-    const PE_SECTION_HEADER* sections = reinterpret_cast<const PE_SECTION_HEADER*>(&buffer[sectionHdrOffset]);
+    const PE_SECTION_HEADER* peSections = reinterpret_cast<const PE_SECTION_HEADER*>(&buffer[sectionHdrOffset]);
+    sections_.clear();
 
-    // Collect executable sections in VA order
     struct ExecSection {
         uint64_t va;
         size_t   rawOffset;
@@ -143,16 +133,25 @@ bool PEParser::parse(const std::string& filepath) {
 
     for (uint16_t i = 0; i < fileHdr->NumberOfSections; ++i) {
         char name[9] = {0};
-        std::memcpy(name, sections[i].Name, 8);
+        std::memcpy(name, peSections[i].Name, 8);
 
-        bool isExec = (sections[i].Characteristics & IMAGE_SCN_MEM_EXECUTE) ||
-                      (sections[i].Characteristics & IMAGE_SCN_CNT_CODE);
-        if (!isExec) continue;
+        SectionInfo secInfo;
+        secInfo.name = name;
+        secInfo.virtual_address = imageBase_ + peSections[i].VirtualAddress;
+        secInfo.virtual_size = peSections[i].VirtualSize;
+        secInfo.raw_offset = peSections[i].PointerToRawData;
+        secInfo.raw_size = peSections[i].SizeOfRawData;
+        secInfo.characteristics = peSections[i].Characteristics;
+        secInfo.is_executable = (peSections[i].Characteristics & IMAGE_SCN_MEM_EXECUTE) ||
+                                (peSections[i].Characteristics & IMAGE_SCN_CNT_CODE);
+        sections_.push_back(secInfo);
 
-        size_t rawOffset = sections[i].PointerToRawData;
-        size_t rawSize   = sections[i].SizeOfRawData;
-        if (sections[i].VirtualSize > 0 && sections[i].VirtualSize < rawSize) {
-            rawSize = sections[i].VirtualSize;
+        if (!secInfo.is_executable) continue;
+
+        size_t rawOffset = peSections[i].PointerToRawData;
+        size_t rawSize   = peSections[i].SizeOfRawData;
+        if (peSections[i].VirtualSize > 0 && peSections[i].VirtualSize < rawSize) {
+            rawSize = peSections[i].VirtualSize;
         }
         if (rawOffset >= fileSize) continue;
         if (rawOffset + rawSize > fileSize) {
@@ -160,7 +159,71 @@ bool PEParser::parse(const std::string& filepath) {
         }
         if (rawSize == 0) continue;
 
-        execSections.push_back({ imageBase_ + sections[i].VirtualAddress, rawOffset, rawSize, name });
+        execSections.push_back({ imageBase_ + peSections[i].VirtualAddress, rawOffset, rawSize, name });
+    }
+
+    // Inspect Load Config Directory if present
+    if (loadConfigRva != 0 && loadConfigSize >= 64) {
+        mitigations_.has_load_config = true;
+        mitigations_.load_config_size = loadConfigSize;
+
+        // Resolve loadConfigRva to file offset
+        uint64_t loadConfigPreferredVa = imageBase_ + loadConfigRva;
+        uint64_t lcFileOff = 0, lcRva = 0;
+        if (vaToOffsets(loadConfigPreferredVa, lcFileOff, lcRva) && lcFileOff + 64 <= fileSize) {
+            if (is64Bit_) {
+                // In IMAGE_LOAD_CONFIG_DIRECTORY64:
+                // SecurityCookie is at offset 88 (uint64_t)
+                if (loadConfigSize >= 96 && lcFileOff + 96 <= fileSize) {
+                    mitigations_.security_cookie_va = *reinterpret_cast<const uint64_t*>(&buffer[lcFileOff + 88]);
+                }
+                // GuardFlags is at offset 112 (uint32_t)
+                if (loadConfigSize >= 116 && lcFileOff + 116 <= fileSize) {
+                    mitigations_.guard_flags = *reinterpret_cast<const uint32_t*>(&buffer[lcFileOff + 112]);
+                    mitigations_.cf_instrumented  = (mitigations_.guard_flags & IMAGE_GUARD_CF_INSTRUMENTED) != 0;
+                    mitigations_.cf_table_present = (mitigations_.guard_flags & IMAGE_GUARD_CF_FUNCTION_TABLE_PRESENT) != 0;
+                    mitigations_.cet_compat       = (mitigations_.guard_flags & IMAGE_GUARD_EH_CONTINUATION_TABLE_PRESENT) != 0;
+                    mitigations_.cet_unknown      = false;
+                }
+            } else {
+                // In IMAGE_LOAD_CONFIG_DIRECTORY32:
+                // SecurityCookie is at offset 60 (uint32_t)
+                if (loadConfigSize >= 64 && lcFileOff + 64 <= fileSize) {
+                    mitigations_.security_cookie_va = *reinterpret_cast<const uint32_t*>(&buffer[lcFileOff + 60]);
+                }
+                // GuardFlags is at offset 84 (uint32_t)
+                if (loadConfigSize >= 88 && lcFileOff + 88 <= fileSize) {
+                    mitigations_.guard_flags = *reinterpret_cast<const uint32_t*>(&buffer[lcFileOff + 84]);
+                    mitigations_.cf_instrumented  = (mitigations_.guard_flags & IMAGE_GUARD_CF_INSTRUMENTED) != 0;
+                    mitigations_.cf_table_present = (mitigations_.guard_flags & IMAGE_GUARD_CF_FUNCTION_TABLE_PRESENT) != 0;
+                    mitigations_.cet_compat       = (mitigations_.guard_flags & IMAGE_GUARD_EH_CONTINUATION_TABLE_PRESENT) != 0;
+                    mitigations_.cet_unknown      = false;
+                }
+            }
+        }
+    } else {
+        mitigations_.has_load_config = false;
+        mitigations_.cet_unknown = true; // Evidence insufficient because Load Config is absent
+    }
+
+    // Determine GS Cookie status
+    if (mitigations_.has_load_config && mitigations_.security_cookie_va != 0) {
+        mitigations_.gs_status = "CONFIRMED (Load Config SecurityCookie registered)";
+    } else if (checkCanaryProtection(buffer)) {
+        mitigations_.gs_status = "HEURISTIC_PRESENT (Symbolic check in imports/strings)";
+    } else {
+        mitigations_.gs_status = "NOT_DETECTED";
+    }
+
+    // Determine SafeSEH status
+    if (is64Bit_) {
+        mitigations_.safeseh_status = "NOT_APPLICABLE (x86_64 uses .pdata/.xdata table unwinding)";
+    } else if (mitigations_.no_seh) {
+        mitigations_.safeseh_status = "NO_SEH (Image specifies no SEH)";
+    } else if (mitigations_.has_load_config) {
+        mitigations_.safeseh_status = "DISABLED (No registered SafeSEH handlers in Load Config)";
+    } else {
+        mitigations_.safeseh_status = "UNKNOWN (Load Config table absent)";
     }
 
     if (execSections.empty()) {
@@ -168,30 +231,20 @@ bool PEParser::parse(const std::string& filepath) {
         return false;
     }
 
-    // Sort by VA to process in address order
+    // Sort executable sections by VA
     std::sort(execSections.begin(), execSections.end(),
               [](const ExecSection& a, const ExecSection& b){ return a.va < b.va; });
 
-    // Use the first executable section as the base address for GadgetFinder
     textBaseAddr_ = execSections[0].va;
 
-    // Concatenate all executable section bytes into one flat buffer.
-    // GadgetFinder will see one contiguous byte stream; gadget addresses
-    // remain correct because m_baseAddress is set to textBaseAddr_ and
-    // Capstone uses that as the starting address.
-    // Note: gaps between non-contiguous sections are filled with 0xCC (int3)
-    // so the disassembler stops cleanly at section boundaries.
     textSection_.clear();
     uint64_t prevEnd = textBaseAddr_;
     for (const auto& sec : execSections) {
         if (sec.va > prevEnd) {
-            // Fill gap with INT3 (0xCC) to prevent cross-section gadgets
             size_t gap = static_cast<size_t>(sec.va - prevEnd);
-            // Limit gap fill to avoid huge allocations for sparse maps
             if (gap <= 0x10000) {
                 textSection_.insert(textSection_.end(), gap, 0xCC);
             } else {
-                // Large gap: use a minimal 4-byte fence
                 textSection_.push_back(0xCC);
                 textSection_.push_back(0xCC);
                 textSection_.push_back(0xCC);
@@ -202,9 +255,6 @@ bool PEParser::parse(const std::string& filepath) {
         textSection_.insert(textSection_.end(), ptr, ptr + sec.rawSize);
         prevEnd = sec.va + sec.rawSize;
     }
-
-    // Check imports/symbols for __security_cookie or __security_check_cookie
-    canaryEnabled_ = checkCanaryProtection(buffer);
 
     return !textSection_.empty();
 }

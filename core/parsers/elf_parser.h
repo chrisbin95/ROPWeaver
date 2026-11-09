@@ -27,8 +27,9 @@ public:
     const Elf64_Ehdr& getHeader64() const { return hdr64; }
 
     // Extended information
-    uint64_t getEntryPoint() const { return m_entry_point; }
-    uint64_t getImageBase() const { return 0; } // ELF PIE base is 0 by convention
+    uint64_t getEntryPoint() const override { return m_entry_point; }
+    uint64_t getImageBase() const override { return m_image_base; }
+    const std::vector<SectionInfo>& getSections() const override { return m_sections; }
 
     // Security mitigations (override FileParser defaults)
     bool isNxEnabled() const override { return m_nx_enabled; }
@@ -45,7 +46,9 @@ private:
     std::vector<uint8_t> m_text_section;
     uint64_t m_text_section_base_address = 0;
     uint64_t m_entry_point = 0;
+    uint64_t m_image_base = 0;
     std::string m_arch = "unknown";
+    std::vector<SectionInfo> m_sections;
 
     // Mitigation detection results
     bool m_nx_enabled     = false;

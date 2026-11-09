@@ -18,7 +18,8 @@ public:
     ~GadgetFinder();
 
     void findGadgets();
-    std::vector<Gadget> getGadgets() const { return m_gadgets; }
+    std::vector<Gadget>& getGadgets() { return m_gadgets; }
+    const std::vector<Gadget>& getGadgets() const { return m_gadgets; }
 
     std::string determineCategory(const Gadget& g) const;
     std::map<std::string, std::vector<Gadget>> categorizeGadgets();

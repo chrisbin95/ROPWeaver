@@ -32,12 +32,14 @@ template <typename Elf_Ehdr, typename Elf_Shdr>
 bool extract_exec_sections(const uint8_t* data, size_t size, const Elf_Ehdr& ehdr,
                            std::vector<uint8_t>& out_text,
                            uint64_t& out_base_addr,
-                           uint64_t& out_entry_point)
+                           uint64_t& out_entry_point,
+                           std::vector<SectionInfo>& out_sections)
 {
     size_t sh_off     = ehdr.e_shoff;
     uint16_t sh_num   = ehdr.e_shnum;
     uint16_t sh_esz   = ehdr.e_shentsize;
 
+    out_sections.clear();
     // Entry point (may be 0 for PIE / relocatable)
     out_entry_point = static_cast<uint64_t>(ehdr.e_entry);
 
@@ -65,7 +67,7 @@ bool extract_exec_sections(const uint8_t* data, size_t size, const Elf_Ehdr& ehd
     }
     const char* shstr_table = reinterpret_cast<const char*>(data + shstr_hdr.sh_offset);
 
-    // Collect executable sections
+    // Record all sections and collect executable ones
     struct SecInfo {
         uint64_t va;
         size_t   offset;
@@ -75,6 +77,18 @@ bool extract_exec_sections(const uint8_t* data, size_t size, const Elf_Ehdr& ehd
 
     for (uint16_t i = 0; i < sh_num; ++i) {
         const Elf_Shdr& shdr = shdr_table[i];
+        const char* sec_name = shstr_table + shdr.sh_name;
+
+        SectionInfo sec;
+        sec.name = sec_name;
+        sec.virtual_address = shdr.sh_addr;
+        sec.virtual_size = shdr.sh_size;
+        sec.raw_offset = shdr.sh_offset;
+        sec.raw_size = shdr.sh_size;
+        sec.characteristics = static_cast<uint32_t>(shdr.sh_flags);
+        sec.is_executable = (shdr.sh_flags & SHF_EXECINSTR) != 0;
+        out_sections.push_back(sec);
+
         // SHF_EXECINSTR = 0x4
         if (!(shdr.sh_flags & SHF_EXECINSTR)) continue;
         if (shdr.sh_type == SHT_NOBITS) continue;  // .bss-like
@@ -252,7 +266,7 @@ bool ELFParser::parse(const std::string& filepath) {
 
         if (!extract_exec_sections<Elf32_Ehdr, Elf32_Shdr>(
                 data, size, hdr32,
-                m_text_section, m_text_section_base_address, m_entry_point)) {
+                m_text_section, m_text_section_base_address, m_entry_point, m_sections)) {
             return false;
         }
 
@@ -267,7 +281,7 @@ bool ELFParser::parse(const std::string& filepath) {
 
         if (!extract_exec_sections<Elf64_Ehdr, Elf64_Shdr>(
                 data, size, hdr64,
-                m_text_section, m_text_section_base_address, m_entry_point)) {
+                m_text_section, m_text_section_base_address, m_entry_point, m_sections)) {
             return false;
         }
 

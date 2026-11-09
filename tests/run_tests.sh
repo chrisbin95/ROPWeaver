@@ -59,14 +59,21 @@ echo -e "\n[*] Test 2: PE64 Analysis & Mitigation Detection (classic_bof.exe)...
 PE_BIN="${PROJECT_ROOT}/test_binaries/classic_bof.exe"
 rm -f "${OUT_JSON}"
 
-PE_OUTPUT=$("${ROPWEAVER}" "${PE_BIN}" -p 2>&1 || true)
-assert_test "PE shows DEP/NX" "echo '${PE_OUTPUT}' | grep -q 'DEP/NX=ON'"
-assert_test "PE shows ASLR" "echo '${PE_OUTPUT}' | grep -q 'ASLR=ON'"
+PE_OUTPUT=$("${ROPWEAVER}" "${PE_BIN}" -a -p 2>&1 || true)
+assert_test "PE shows NX_COMPAT" "echo '${PE_OUTPUT}' | grep -q 'NX_COMPAT'"
+assert_test "PE shows DYNAMIC_BASE" "echo '${PE_OUTPUT}' | grep -q 'DYNAMIC_BASE'"
+assert_test "PE shows CET UNKNOWN" "echo '${PE_OUTPUT}' | grep -q 'CET=UNKNOWN'"
 assert_test "PE does NOT display RELRO in console" "! echo '${PE_OUTPUT}' | grep -q 'RELRO='"
+assert_test "PE shows unsupported auto-chain message" "echo '${PE_OUTPUT}' | grep -q 'unsupported for Windows PE'"
 if [[ -f "${OUT_JSON}" ]]; then
     assert_test "PE JSON protections do NOT have RELRO" "! grep -q '\"RELRO\"' '${OUT_JSON}'"
-    assert_test "PE JSON has DEP_NX" "grep -q '\"DEP_NX\": true' '${OUT_JSON}'"
-    assert_test "PE JSON has HighEntropyVA" "grep -q '\"HighEntropyVA\": true' '${OUT_JSON}'"
+    assert_test "PE JSON has NX_COMPAT" "grep -q '\"NX_COMPAT\"' '${OUT_JSON}'"
+    assert_test "PE JSON has DYNAMIC_BASE" "grep -q '\"DYNAMIC_BASE\"' '${OUT_JSON}'"
+    assert_test "PE JSON has CET_COMPAT UNKNOWN" "grep -q '\"UNKNOWN\"' '${OUT_JSON}'"
+    assert_test "PE JSON has preferred_va" "grep -q '\"preferred_va\"' '${OUT_JSON}'"
+    assert_test "PE JSON has file_offset" "grep -q '\"file_offset\"' '${OUT_JSON}'"
+    assert_test "PE JSON has rva" "grep -q '\"rva\"' '${OUT_JSON}'"
+    assert_test "PE JSON raw_payload is Unsupported" "grep -q '\"status\": \"Unsupported' '${OUT_JSON}'"
 fi
 
 # Test 3: Malformed binary error handling
@@ -89,3 +96,4 @@ if [[ ${FAILED} -gt 0 ]]; then
 else
     exit 0
 fi
+
