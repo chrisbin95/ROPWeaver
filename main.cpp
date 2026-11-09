@@ -69,7 +69,7 @@ int main(int argc, char* argv[]) {
 #if defined(_WIN32)
     SetConsoleOutputCP(CP_UTF8);
 #endif
-    std::cout << "\n==«✪»==" << ANSI_COLOR_ORANGE << "ROPWeaver: ROP Exploit Generator" << ANSI_COLOR_RESET << "==«✪»== \n" << std::endl;
+    std::cout << "\n==«✪»==" << ANSI_COLOR_ORANGE << "ROPWeaver: ROP Exploit Generator v1.2.4 (Build: ae613b6)" << ANSI_COLOR_RESET << "==«✪»== \n" << std::endl;
 
     CLI cli;
     CLIOptions options = cli.parseArguments(argc, argv);
@@ -322,7 +322,7 @@ int main(int argc, char* argv[]) {
     std::string base = basename_noext(options.filename);
     std::string fileHash = Utils::computeFileSHA256(options.filename);
     std::string hashShort = (fileHash.size() >= 12) ? fileHash.substr(0, 12) : base;
-    std::string reportId = "ROPW-" + base + "_" + hashShort;
+    std::string reportId = "ROPW-" + base + "_" + hashShort + "_v1.2.4";
 
     // Deterministic Firestore document ID (safe characters only)
     std::string reportDocId = base + "_" + ((fileHash.size() >= 16) ? fileHash.substr(0, 16) : base);

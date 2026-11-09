@@ -1,5 +1,8 @@
 {
     "architecture": "x86_64",
+    "build_date": "2026-11-09",
+    "build_id": "ae613b6",
+    "commit_hash": "ae613b6",
     "discovered_gadgets_count": 323,
     "entry_point": "0x0000000140001400",
     "file_type": "PE",
@@ -12713,8 +12716,8 @@
         "status": "Unsupported: Automated ROP chain synthesis not implemented for Windows PE",
         "verified_padding_offset": null
     },
-    "report_date": "2026-11-09T15:35:00Z",
-    "report_id": "ROPW-classic_bof_c5140d3fe9ac",
+    "report_date": "2026-11-09T15:53:13Z",
+    "report_id": "ROPW-classic_bof_c5140d3fe9ac_v1.2.4",
     "rop_chain_details": null,
     "rop_chain_generation": {
         "chain_notes": "Automated ROP chain synthesis currently targets POSIX execve on Linux ELF. Windows x64 requires Win64 Fastcall staging (RCX, RDX, R8, R9, 32-byte shadow space) and dynamic API resolution (e.g. VirtualProtect / WinExec).",
@@ -12877,10 +12880,10 @@
         }
     ],
     "target_binary": {
-        "filename": "C:\\Users\\Chrisbin Thomas\\Desktop\\ROPWeaver\\test_binaries\\classic_bof.exe",
+        "filename": "test_binaries\\classic_bof.exe",
         "hash": "c5140d3fe9acfbce8b8cf1678e168e7402b8eb59f8d5148b848969cb8297d31f",
         "sha256": "c5140d3fe9acfbce8b8cf1678e168e7402b8eb59f8d5148b848969cb8297d31f"
     },
-    "tool_version": "ROPWeaver_v1.3.0",
+    "tool_version": "ROPWeaver_v1.2.4",
     "total_gadgets": 323
 }
