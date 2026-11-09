@@ -6,16 +6,19 @@ import {
 } from 'lucide-react';
 
 export default function HowtoPage({ onNavigateTab }) {
-  // Read saved OS cookie or detect from user agent
+  // Detect OS from browser client hints or user agent
   const getInitialOS = () => {
     try {
-      const match = document.cookie.match(/(?:^|; )ropweaver_preferred_os=([^;]*)/);
-      if (match && match[1]) return match[1];
+      const hint = (navigator.userAgentData?.platform || '').toLowerCase();
+      if (hint.includes('win')) return 'windows';
+      if (hint.includes('mac')) return 'macos';
+      if (hint.includes('linux')) return 'linux';
     } catch (e) {}
 
-    const ua = navigator.userAgent || '';
-    if (/win/i.test(ua)) return 'windows';
-    if (/mac/i.test(ua)) return 'macos';
+    const platform = (navigator.platform || '').toLowerCase();
+    const ua = (navigator.userAgent || '').toLowerCase();
+    if (platform.includes('win') || ua.includes('win')) return 'windows';
+    if (platform.includes('mac') || ua.includes('mac')) return 'macos';
     return 'linux';
   };
 
@@ -25,9 +28,6 @@ export default function HowtoPage({ onNavigateTab }) {
 
   const handleOSChange = (newOS) => {
     setSelectedOS(newOS);
-    try {
-      document.cookie = `ropweaver_preferred_os=${newOS}; path=/; max-age=31536000; SameSite=Lax`;
-    } catch (e) {}
   };
 
   const handleCopyCode = (code, id) => {

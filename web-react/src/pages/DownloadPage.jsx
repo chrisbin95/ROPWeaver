@@ -2,40 +2,45 @@ import React, { useState, useEffect } from 'react';
 import { Download, Check, Copy, Terminal, ShieldCheck, Laptop, Apple, Sparkles, Package, FileDown, ExternalLink, RefreshCw, BookOpen } from 'lucide-react';
 
 export default function DownloadPage({ onNavigateTab }) {
-  // Automatic OS detection via User-Agent & Platform or Cookie
-  const detectUserOS = () => {
+  // Reliable hardware/OS detection directly from browser environment (never cookies)
+  const detectClientPlatform = () => {
+    // 1. High-Entropy Client Hints API (Chromium / Chrome / Edge)
     try {
-      const match = document.cookie.match(/(?:^|; )ropweaver_preferred_os=([^;]*)/);
-      if (match && match[1]) {
-        return { os: match[1], source: 'cookie' };
-      }
+      const hint = (navigator.userAgentData?.platform || '').toLowerCase();
+      if (hint.includes('win')) return 'windows';
+      if (hint.includes('mac')) return 'macos';
+      if (hint.includes('linux') || hint.includes('android')) return 'linux';
     } catch (e) {}
 
-    const ua = (navigator.userAgent || '').toLowerCase();
+    // 2. Navigator platform & userAgent strings
     const platform = (navigator.platform || '').toLowerCase();
+    const ua = (navigator.userAgent || '').toLowerCase();
 
-    if (ua.includes('win') || platform.includes('win')) {
-      return { os: 'windows', source: 'user-agent' };
+    if (platform.includes('win') || ua.includes('win')) {
+      return 'windows';
     }
-    if (ua.includes('mac') || platform.includes('mac') || ua.includes('darwin')) {
-      return { os: 'macos', source: 'user-agent' };
+    if (platform.includes('mac') || platform.includes('darwin') || ua.includes('mac') || ua.includes('darwin')) {
+      return 'macos';
     }
-    if (ua.includes('linux') || platform.includes('linux') || ua.includes('x11')) {
-      return { os: 'linux', source: 'user-agent' };
+    if (platform.includes('linux') || platform.includes('x11') || ua.includes('linux')) {
+      return 'linux';
     }
-    return { os: 'linux', source: 'default' };
+    return 'windows';
   };
 
-  const detected = detectUserOS();
-  const [selectedOS, setSelectedOS] = useState(detected.os);
-  const [detectionInfo, setDetectionInfo] = useState(detected);
+  const clientOS = detectClientPlatform();
+  const [selectedOS, setSelectedOS] = useState(clientOS);
   const [copiedItem, setCopiedItem] = useState(null);
+
+  // Clean up any stale ropweaver_preferred_os cookie so it cannot contaminate client state
+  useEffect(() => {
+    try {
+      document.cookie = 'ropweaver_preferred_os=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+    } catch (e) {}
+  }, []);
 
   const handleSelectOS = (osKey) => {
     setSelectedOS(osKey);
-    try {
-      document.cookie = `ropweaver_preferred_os=${osKey}; path=/; max-age=31536000; SameSite=Lax`;
-    } catch (e) {}
   };
 
   const handleCopy = (text, id) => {
@@ -56,16 +61,16 @@ export default function DownloadPage({ onNavigateTab }) {
       primaryDownload: {
         filename: 'ropweaver-windows-x64.exe',
         url: '/ropweaver-windows-x64.exe',
-        size: '8.9 MB',
+        size: '9.4 MB',
         label: 'Download Standalone Executable (.exe)'
       },
       secondaryDownload: {
         filename: 'ropweaver-v1.2.4-win64.zip',
         url: '/ropweaver-v1.2.4-win64.zip',
-        size: '8.9 MB',
+        size: '9.3 MB',
         label: 'Download Complete Portable Bundle (.zip with DLLs & Samples)'
       },
-      sha256: '416aedbbd53cd003edc38120e44d00c472ecd255574009dd56790b3c1924d5b8',
+      sha256: '5746CFE87826C3E26FBA9D9E54260C1FDE487BE848F5A34B2204FCEF810CF1D3',
       quickInstallCmd: 'irm https://ropweaver.io/install.ps1 | iex',
       packageManager: 'winget install ROPWeaver.ROPWeaver',
       requirements: 'Windows 10 build 19041+ or Windows 11, x64 architecture (Zero external dependencies)',
@@ -81,16 +86,16 @@ export default function DownloadPage({ onNavigateTab }) {
       primaryDownload: {
         filename: 'ropweaver-v1.2.4-linux-x86_64.tar.gz',
         url: '/ropweaver-v1.2.4-linux-x86_64.tar.gz',
-        size: '280 KB',
+        size: '285 KB',
         label: 'Download Binary Archive (.tar.gz with ELF executable)'
       },
       secondaryDownload: {
         filename: 'ropweaver_1.2.4_amd64.deb',
         url: '/ropweaver_1.2.4_amd64.deb',
-        size: '277 KB',
+        size: '282 KB',
         label: 'Download Debian / Ubuntu Package (.deb)'
       },
-      sha256: '913ec4401258438dcbc968ba5523b53a7dba99eb735eba96c63308fe89e36958',
+      sha256: '15B259F6E104C4D02E4D5AC78D0F45D80788F50B4867F5935BF875C2336FC661',
       quickInstallCmd: 'curl -fsSL https://ropweaver.io/install.sh | bash',
       packageManager: 'yay -S ropweaver-bin   # Arch Linux AUR',
       requirements: 'GLIBC 2.31+, Capstone Engine, Linux Kernel 5.4+ (x86_64 or ARM64)',
@@ -106,16 +111,16 @@ export default function DownloadPage({ onNavigateTab }) {
       primaryDownload: {
         filename: 'ropweaver-v1.2.4-darwin-arm64.tar.gz',
         url: '/ropweaver-v1.2.4-darwin-arm64.tar.gz',
-        size: '~1.5 MB',
+        size: '235 KB',
         label: 'Download Apple Silicon Archive (arm64)'
       },
       secondaryDownload: {
         filename: 'ropweaver-v1.2.4-darwin-x86_64.tar.gz',
         url: '/ropweaver-v1.2.4-darwin-x86_64.tar.gz',
-        size: '~1.5 MB',
+        size: '249 KB',
         label: 'Download Intel x86_64 Archive'
       },
-      sha256: '2a9e68a26d35d58a595ae3014bb28a2e4608c51f52558957065dd3d6da4892d8',
+      sha256: '7BF02144D115F436E8127083135913E1EE8971AD1CC800EFEA885634F96428CF',
       quickInstallCmd: 'brew install ropweaver/tap/ropweaver',
       packageManager: 'brew tap ropweaver/tap && brew install ropweaver',
       requirements: 'macOS 12.0 Monterey or later, Terminal with zsh/bash',
@@ -141,22 +146,26 @@ export default function DownloadPage({ onNavigateTab }) {
         <div className="detection-left">
           <Sparkles size={16} className="text-accent-green" />
           <span>
-            AUTO-DETECTED PLATFORM: <strong className="text-accent-cyan">{detectionInfo.os.toUpperCase()}</strong>
-            {detectionInfo.source === 'cookie' ? ' (from saved preference cookie)' : ' (from browser User-Agent)'}
+            DEVICE PLATFORM: <strong className="text-accent-cyan">{clientOS.toUpperCase()}</strong>
+            <span className="text-muted"> (auto-detected from browser environment)</span>
           </span>
         </div>
-        <button
-          onClick={() => {
-            const fresh = detectUserOS();
-            setDetectionInfo(fresh);
-            setSelectedOS(fresh.os);
-          }}
-          className="refresh-detect-btn"
-          title="Re-run browser platform detection"
-        >
-          <RefreshCw size={12} />
-          <span>Re-detect</span>
-        </button>
+        {selectedOS !== clientOS ? (
+          <button
+            type="button"
+            onClick={() => setSelectedOS(clientOS)}
+            className="refresh-detect-btn"
+            title={`Switch view back to your auto-detected device (${clientOS.toUpperCase()})`}
+          >
+            <RefreshCw size={12} />
+            <span>Show My Device ({clientOS.toUpperCase()})</span>
+          </button>
+        ) : (
+          <div className="text-accent-green mono" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            <Check size={14} />
+            <span>Viewing Recommended</span>
+          </div>
+        )}
       </div>
 
       {/* OS Picker Tabs / Dropdown */}
@@ -186,7 +195,7 @@ export default function DownloadPage({ onNavigateTab }) {
               >
                 <div className="os-box-top">
                   <ItemIcon size={24} className={isSelected ? 'text-accent-green' : 'text-dim'} />
-                  {key === detectionInfo.os && (
+                  {key === clientOS && (
                     <span className="recommended-badge mono">RECOMMENDED</span>
                   )}
                 </div>
