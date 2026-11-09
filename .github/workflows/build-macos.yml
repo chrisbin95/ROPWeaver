@@ -115,25 +115,23 @@ jobs:
           fi
 
           # Add distribution README
-          cat << 'EOF' > "${PKG_DIR}/README.txt"
-================================================================================
-                    ROPWeaver v1.2.4 for macOS (${{ matrix.arch }})
-            Academic Research Tool - Oxford Brookes University
-                        Build Identifier: 6e110c2
-================================================================================
-
-Requirements:
-  macOS 11.0+ (Sonoma, Ventura, Monterey, Big Sur)
-  Homebrew packages: brew install capstone curl
-
-Quick Start:
-  ./bin/ropweaver <target_binary> --list-gadgets
-  ./bin/ropweaver <target_binary> --suggest-gadgets
-  ./bin/ropweaver <target_binary> --auto-chain
-
-Installed Execution:
-  Run ./install.sh to verify Homebrew dependencies and link ropweaver into PATH.
-EOF
+          echo "================================================================================" > "${PKG_DIR}/README.txt"
+          echo "                    ROPWeaver v1.2.4 for macOS (${{ matrix.arch }})" >> "${PKG_DIR}/README.txt"
+          echo "            Academic Research Tool - Oxford Brookes University" >> "${PKG_DIR}/README.txt"
+          echo "                        Build Identifier: 6e110c2" >> "${PKG_DIR}/README.txt"
+          echo "================================================================================" >> "${PKG_DIR}/README.txt"
+          echo "" >> "${PKG_DIR}/README.txt"
+          echo "Requirements:" >> "${PKG_DIR}/README.txt"
+          echo "  macOS 11.0+ (Sonoma, Ventura, Monterey, Big Sur)" >> "${PKG_DIR}/README.txt"
+          echo "  Homebrew packages: brew install capstone curl" >> "${PKG_DIR}/README.txt"
+          echo "" >> "${PKG_DIR}/README.txt"
+          echo "Quick Start:" >> "${PKG_DIR}/README.txt"
+          echo "  ./bin/ropweaver <target_binary> --list-gadgets" >> "${PKG_DIR}/README.txt"
+          echo "  ./bin/ropweaver <target_binary> --suggest-gadgets" >> "${PKG_DIR}/README.txt"
+          echo "  ./bin/ropweaver <target_binary> --auto-chain" >> "${PKG_DIR}/README.txt"
+          echo "" >> "${PKG_DIR}/README.txt"
+          echo "Installed Execution:" >> "${PKG_DIR}/README.txt"
+          echo "  Run ./install.sh to verify Homebrew dependencies and link ropweaver into PATH." >> "${PKG_DIR}/README.txt"
 
           tar -czf "${{ matrix.pkg_name }}.tar.gz" -C "${STAGE_DIR}" "${{ matrix.pkg_name }}"
           ls -lh "${{ matrix.pkg_name }}.tar.gz"
