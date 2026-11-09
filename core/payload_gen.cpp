@@ -135,25 +135,25 @@ void PayloadGenerator::generate(const ROPChain& chain, size_t paddingSize, const
             pe_prots["NX_COMPAT"] = {
                 {"enabled", peMit.nx_compat},
                 {"static_indicator", peMit.nx_compat ? "COMPATIBLE" : "NOT_COMPATIBLE"},
-                {"runtime_enforcement", "Data Execution Prevention (DEP) enforced by hardware and OS memory manager"},
+                {"description", "Binary explicitly opts into DEP via PE header; runtime enforcement is governed by host OS policy and hardware NX support"},
                 {"flag", "IMAGE_DLLCHARACTERISTICS_NX_COMPAT (0x0100)"}
             };
             pe_prots["DYNAMIC_BASE"] = {
                 {"enabled", peMit.dynamic_base},
                 {"static_indicator", peMit.dynamic_base ? "COMPATIBLE" : "NOT_COMPATIBLE"},
-                {"runtime_enforcement", "Address Space Layout Randomization (ASLR) randomized at process initialization"},
+                {"description", "Binary explicitly opts into ASLR via PE header; runtime address randomization is governed by host OS ASLR policy"},
                 {"flag", "IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE (0x0040)"}
             };
             pe_prots["HIGH_ENTROPY_VA"] = {
                 {"enabled", peMit.high_entropy_va},
                 {"static_indicator", peMit.high_entropy_va ? "COMPATIBLE" : "NOT_COMPATIBLE"},
-                {"runtime_enforcement", "64-bit ASLR address space randomization (>4GB virtual address space)"},
+                {"description", "Binary declares compatibility with 64-bit high-entropy ASLR (>4GB virtual address space) when loaded by OS"},
                 {"flag", "IMAGE_DLLCHARACTERISTICS_HIGH_ENTROPY_VA (0x0020)"}
             };
             pe_prots["GUARD_CF"] = {
                 {"enabled", peMit.guard_cf},
                 {"static_indicator", peMit.guard_cf ? "COMPATIBLE" : "NOT_COMPATIBLE"},
-                {"runtime_enforcement", "Control Flow Guard (CFG) indirect branch verification"},
+                {"description", "Control Flow Guard compiler instrumentation; inactive if CFG function table or static flag is absent"},
                 {"cf_instrumented", peMit.cf_instrumented},
                 {"cf_table_present", peMit.cf_table_present},
                 {"flag", "IMAGE_DLLCHARACTERISTICS_GUARD_CF (0x4000)"}
@@ -161,13 +161,13 @@ void PayloadGenerator::generate(const ROPChain& chain, size_t paddingSize, const
             pe_prots["CET_COMPAT"] = {
                 {"enabled", peMit.cet_unknown ? nullptr : json(peMit.cet_compat)},
                 {"static_indicator", peMit.cet_unknown ? "UNKNOWN" : (peMit.cet_compat ? "COMPATIBLE" : "NOT_COMPATIBLE")},
-                {"runtime_enforcement", "Control-flow Enforcement Technology (Shadow Stack / Indirect Branch Tracking)"},
-                {"evidence", peMit.cet_unknown ? "Insufficient evidence: Load Config Directory absent or insufficient" : "Load Config flags verified"}
+                {"description", "Control-flow Enforcement Technology (Shadow Stack / IBT); reported as UNKNOWN when Load Config Directory is absent"},
+                {"evidence", peMit.cet_unknown ? "Insufficient evidence: Load Config Directory absent or empty" : "Load Config flags verified"}
             };
             pe_prots["GS_COOKIE"] = {
                 {"enabled", peMit.gs_status != "NOT_DETECTED"},
                 {"static_indicator", peMit.gs_status},
-                {"runtime_enforcement", "Compiler stack buffer overrun detection (__security_cookie)"},
+                {"description", "Compiler stack buffer overrun guard (__security_cookie); static scan of sections and imports"},
                 {"security_cookie_va", peMit.security_cookie_va != 0 ? ("0x" + ([&](){
                     std::stringstream ss; ss << std::hex << peMit.security_cookie_va; return ss.str();
                 })()) : "N/A"}
@@ -175,7 +175,7 @@ void PayloadGenerator::generate(const ROPChain& chain, size_t paddingSize, const
             pe_prots["SafeSEH"] = {
                 {"enabled", peMit.safeseh_status == "ENABLED"},
                 {"static_indicator", peMit.safeseh_status},
-                {"runtime_enforcement", "Structured Exception Handler table verification (x86 only; x64 uses table SEH)"}
+                {"description", "Structured Exception Handler table verification (x86 only; x86_64 PE targets use table-based unwind in .pdata/.xdata)"}
             };
 
             // Backward-compatibility boolean aliases (NEVER include RELRO)

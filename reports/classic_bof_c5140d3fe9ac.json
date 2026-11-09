@@ -12662,22 +12662,22 @@
     "protections": {
         "ASLR_PIE": true,
         "CET_COMPAT": {
+            "description": "Control-flow Enforcement Technology (Shadow Stack / IBT); reported as UNKNOWN when Load Config Directory is absent",
             "enabled": null,
-            "evidence": "Insufficient evidence: Load Config Directory absent or insufficient",
-            "runtime_enforcement": "Control-flow Enforcement Technology (Shadow Stack / Indirect Branch Tracking)",
+            "evidence": "Insufficient evidence: Load Config Directory absent or empty",
             "static_indicator": "UNKNOWN"
         },
         "CFG": false,
         "DEP_NX": true,
         "DYNAMIC_BASE": {
+            "description": "Binary explicitly opts into ASLR via PE header; runtime address randomization is governed by host OS ASLR policy",
             "enabled": true,
             "flag": "IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE (0x0040)",
-            "runtime_enforcement": "Address Space Layout Randomization (ASLR) randomized at process initialization",
             "static_indicator": "COMPATIBLE"
         },
         "GS_COOKIE": {
+            "description": "Compiler stack buffer overrun guard (__security_cookie); static scan of sections and imports",
             "enabled": false,
-            "runtime_enforcement": "Compiler stack buffer overrun detection (__security_cookie)",
             "security_cookie_va": "N/A",
             "static_indicator": "NOT_DETECTED"
         },
@@ -12685,27 +12685,27 @@
         "GUARD_CF": {
             "cf_instrumented": false,
             "cf_table_present": false,
+            "description": "Control Flow Guard compiler instrumentation; inactive if CFG function table or static flag is absent",
             "enabled": false,
             "flag": "IMAGE_DLLCHARACTERISTICS_GUARD_CF (0x4000)",
-            "runtime_enforcement": "Control Flow Guard (CFG) indirect branch verification",
             "static_indicator": "NOT_COMPATIBLE"
         },
         "HIGH_ENTROPY_VA": {
+            "description": "Binary declares compatibility with 64-bit high-entropy ASLR (>4GB virtual address space) when loaded by OS",
             "enabled": true,
             "flag": "IMAGE_DLLCHARACTERISTICS_HIGH_ENTROPY_VA (0x0020)",
-            "runtime_enforcement": "64-bit ASLR address space randomization (>4GB virtual address space)",
             "static_indicator": "COMPATIBLE"
         },
         "HighEntropyVA": true,
         "NX_COMPAT": {
+            "description": "Binary explicitly opts into DEP via PE header; runtime enforcement is governed by host OS policy and hardware NX support",
             "enabled": true,
             "flag": "IMAGE_DLLCHARACTERISTICS_NX_COMPAT (0x0100)",
-            "runtime_enforcement": "Data Execution Prevention (DEP) enforced by hardware and OS memory manager",
             "static_indicator": "COMPATIBLE"
         },
         "SafeSEH": {
+            "description": "Structured Exception Handler table verification (x86 only; x86_64 PE targets use table-based unwind in .pdata/.xdata)",
             "enabled": false,
-            "runtime_enforcement": "Structured Exception Handler table verification (x86 only; x64 uses table SEH)",
             "static_indicator": "NOT_APPLICABLE (x86_64 uses .pdata/.xdata table unwinding)"
         },
         "SafeSEH_NoSEH": false
@@ -12716,7 +12716,7 @@
         "status": "Unsupported: Automated ROP chain synthesis not implemented for Windows PE",
         "verified_padding_offset": null
     },
-    "report_date": "2026-11-09T15:53:13Z",
+    "report_date": "2026-11-09T16:05:40Z",
     "report_id": "ROPW-classic_bof_c5140d3fe9ac_v1.2.4",
     "rop_chain_details": null,
     "rop_chain_generation": {

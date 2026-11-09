@@ -59,7 +59,7 @@ export default function Navbar({ activeTab, setActiveTab }) {
             >
               <Download size={14} />
               <span>DOWNLOAD</span>
-              <span className="download-pill mono">v1.2.3</span>
+              <span className="download-pill mono">v1.2.4</span>
             </button>
           </div>
 
@@ -98,7 +98,7 @@ export default function Navbar({ activeTab, setActiveTab }) {
             className={`mobile-nav-link mobile-nav-download ${activeTab === 'download' ? 'mobile-nav-link-active' : ''}`}
           >
             <Download size={18} />
-            <span>Download ROPWeaver (v1.2.3)</span>
+            <span>Download ROPWeaver (v1.2.4)</span>
           </button>
         </div>
       )}

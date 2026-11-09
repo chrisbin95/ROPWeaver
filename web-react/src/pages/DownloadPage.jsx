@@ -49,20 +49,20 @@ export default function DownloadPage({ onNavigateTab }) {
     windows: {
       name: 'Windows',
       fullName: 'Windows 10 / 11 / Server (x64)',
-      version: 'v1.2.3',
+      version: 'v1.2.4',
       arch: 'x86_64 / AMD64',
-      releaseDate: 'October 2026',
+      releaseDate: 'November 2026',
       icon: Laptop,
       primaryDownload: {
         filename: 'ropweaver-windows-x64.exe',
         url: '/ropweaver-windows-x64.exe',
-        size: '8.8 MB',
+        size: '8.9 MB',
         label: 'Download Standalone Executable (.exe)'
       },
       secondaryDownload: {
-        filename: 'ropweaver-v1.2.3-win64.zip',
-        url: '/ropweaver-v1.2.3-win64.zip',
-        size: '8.8 MB',
+        filename: 'ropweaver-v1.2.4-win64.zip',
+        url: '/ropweaver-v1.2.4-win64.zip',
+        size: '8.9 MB',
         label: 'Download Complete Portable Bundle (.zip with DLLs & Samples)'
       },
       sha256: '416aedbbd53cd003edc38120e44d00c472ecd255574009dd56790b3c1924d5b8',
@@ -74,19 +74,19 @@ export default function DownloadPage({ onNavigateTab }) {
     linux: {
       name: 'Linux',
       fullName: 'Linux (Ubuntu, Debian, Kali, Arch, Fedora)',
-      version: 'v1.2.3',
+      version: 'v1.2.4',
       arch: 'x86_64 / AArch64 (ARM64)',
-      releaseDate: 'October 2026',
+      releaseDate: 'November 2026',
       icon: Terminal,
       primaryDownload: {
-        filename: 'ropweaver-v1.2.3-linux-x86_64.tar.gz',
-        url: '/ropweaver-v1.2.3-linux-x86_64.tar.gz',
+        filename: 'ropweaver-v1.2.4-linux-x86_64.tar.gz',
+        url: '/ropweaver-v1.2.4-linux-x86_64.tar.gz',
         size: '280 KB',
         label: 'Download Binary Archive (.tar.gz with ELF executable)'
       },
       secondaryDownload: {
-        filename: 'ropweaver_1.2.3_amd64.deb',
-        url: '/ropweaver_1.2.3_amd64.deb',
+        filename: 'ropweaver_1.2.4_amd64.deb',
+        url: '/ropweaver_1.2.4_amd64.deb',
         size: '277 KB',
         label: 'Download Debian / Ubuntu Package (.deb)'
       },
@@ -99,19 +99,19 @@ export default function DownloadPage({ onNavigateTab }) {
     macos: {
       name: 'macOS',
       fullName: 'macOS Sonoma, Ventura & Monterey',
-      version: 'v1.2.3',
+      version: 'v1.2.4',
       arch: 'Apple Silicon (arm64) & Intel (x86_64)',
-      releaseDate: 'October 2026',
+      releaseDate: 'November 2026',
       icon: Apple,
       primaryDownload: {
-        filename: 'ropweaver-v1.2.3-darwin-arm64.tar.gz',
-        url: '/ropweaver-v1.2.3-darwin-arm64.tar.gz',
+        filename: 'ropweaver-v1.2.4-darwin-arm64.tar.gz',
+        url: '/ropweaver-v1.2.4-darwin-arm64.tar.gz',
         size: '~1.5 MB',
         label: 'Download Apple Silicon Archive (arm64)'
       },
       secondaryDownload: {
-        filename: 'ropweaver-v1.2.3-darwin-x86_64.tar.gz',
-        url: '/ropweaver-v1.2.3-darwin-x86_64.tar.gz',
+        filename: 'ropweaver-v1.2.4-darwin-x86_64.tar.gz',
+        url: '/ropweaver-v1.2.4-darwin-x86_64.tar.gz',
         size: '~1.5 MB',
         label: 'Download Intel x86_64 Archive'
       },

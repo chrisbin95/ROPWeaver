@@ -56,7 +56,7 @@ export default function ReportDetailModal({ report, index, onClose }) {
   const format = getFormat();
   const reportId = report.report_id || report.id || 'ROPW-N/A';
   const date = report.report_date || (report.timestamp && report.timestamp.toDate ? report.timestamp.toDate().toLocaleString() : new Date().toISOString());
-  const toolVersion = report.tool_version || 'ROPWeaver_v1.2.3';
+  const toolVersion = report.tool_version || 'ROPWeaver_v1.2.4';
 
   // Mitigations
   const rawProts = report.protections || (report.binary_analysis && report.binary_analysis.hardening_features);

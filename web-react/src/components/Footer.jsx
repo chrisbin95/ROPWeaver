@@ -12,7 +12,7 @@ export default function Footer({ onNavigate }) {
     <footer className="footer-container">
       <div className="footer-content">
         <div className="footer-left">
-          <span className="mono text-accent-green">&gt; ropweaver_v1.2.3</span>
+          <span className="mono text-accent-green">&gt; ropweaver_v1.2.4</span>
           <span className="footer-desc">Automated ROP Chain Synthesizer & Gadget Cloud Hub</span>
         </div>
 
