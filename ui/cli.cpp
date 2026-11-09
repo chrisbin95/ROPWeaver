@@ -1,4 +1,5 @@
 #include "cli.h"
+#include "version.h"
 #include <iostream>
 #include <string>
 #include <sstream>
@@ -28,7 +29,7 @@ CLIOptions CLI::parseArguments(int argc, char** argv) {
             return opts;
         } 
         else if (arg == "--version" || arg == "-v") {
-            std::cout << ANSI_COLOR_GREEN << "ROPWeaver v1.2.4" << ANSI_COLOR_RESET << " (Academic Research Edition | Build: ae613b6)\n"
+            std::cout << ANSI_COLOR_GREEN << "ROPWeaver " << ROPWEAVER_VERSION << ANSI_COLOR_RESET << " (Academic Research Edition | Build: " << ROPWEAVER_BUILD_ID << ")\n"
                       << "Disassembly Engine: Capstone v5.0+ | Transport: libcurl\n"
                       << "Supported Targets: x86_64, i386, ARM, AArch64, RISC-V | Formats: PE, ELF, Mach-O, RAW\n"
                       << "Oxford Brookes University Master of Science Research Tool\n";

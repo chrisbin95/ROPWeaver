@@ -7,7 +7,7 @@
 set -e
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-VERSION="v1.2.3"
+VERSION="v1.2.4"
 
 # 1. Locate ropweaver binary
 BIN=""

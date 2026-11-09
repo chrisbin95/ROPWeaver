@@ -58,7 +58,7 @@ if exist "%ROOT_DIR%\build-win\test" (
 echo ================================================================================
 echo                     ROPWeaver v1.2.4 for Windows (x86_64)
 echo             Academic Research Tool - Oxford Brookes University
-echo                        Build Identifier: 77b5e0a
+echo                        Build Identifier: 6e110c2
 echo ================================================================================
 echo.
 echo Quick Start:
@@ -109,7 +109,7 @@ copy /y "%ROOT_DIR%\tools\linux_launcher\launcher.sh" "%LINUX_PKG%\install.sh" >
 echo ================================================================================
 echo                     ROPWeaver v1.2.4 for Linux (x86_64)
 echo             Academic Research Tool - Oxford Brookes University
-echo                        Build Identifier: 77b5e0a
+echo                        Build Identifier: 6e110c2
 echo ================================================================================
 echo.
 echo Requirements:
@@ -170,29 +170,71 @@ set MAC_ARM=%MAC_STAGE%\ropweaver-v1.2.4-darwin-arm64
 set MAC_X64=%MAC_STAGE%\ropweaver-v1.2.4-darwin-x86_64
 if exist "%MAC_STAGE%" rd /s /q "%MAC_STAGE%"
 mkdir "%MAC_ARM%\bin" 2>nul
+mkdir "%MAC_ARM%\build-mac" 2>nul
 mkdir "%MAC_X64%\bin" 2>nul
+mkdir "%MAC_X64%\build-mac" 2>nul
 
 copy /y "%ROOT_DIR%\tools\macos_launcher\launcher.sh" "%MAC_ARM%\bin\ropweaver" >nul
 copy /y "%ROOT_DIR%\tools\macos_launcher\launcher.sh" "%MAC_ARM%\install.sh" >nul
+copy /y "%ROOT_DIR%\build-mac\*" "%MAC_ARM%\build-mac\" >nul 2>nul
+
 copy /y "%ROOT_DIR%\tools\macos_launcher\launcher.sh" "%MAC_X64%\bin\ropweaver" >nul
 copy /y "%ROOT_DIR%\tools\macos_launcher\launcher.sh" "%MAC_X64%\install.sh" >nul
+copy /y "%ROOT_DIR%\build-mac\*" "%MAC_X64%\build-mac\" >nul 2>nul
 
 (
 echo ================================================================================
-echo                     ROPWeaver v1.2.4 for macOS
+echo                     ROPWeaver v1.2.4 for macOS (arm64 / Apple Silicon)
 echo             Academic Research Tool - Oxford Brookes University
-echo                        Build Identifier: 77b5e0a
+echo                        Build Identifier: 6e110c2
 echo ================================================================================
 echo.
 echo Requirements:
-echo   macOS 12.0+ (Sonoma, Ventura, Monterey)
-echo   Homebrew packages: brew install capstone curl
+echo   macOS 11.0+ (Sonoma, Ventura, Monterey, Big Sur)
+echo   Homebrew packages: brew install capstone curl cmake
 echo.
-echo Run:
-echo   ./bin/ropweaver ^<target_binary^> --auto-chain
+echo Quick Start:
+echo   1. Automated installation and compilation on macOS:
+echo      ./install.sh
+echo      or:
+echo      cd build-mac ^&^& ./build.sh
+echo.
+echo   2. Run ropweaver:
+echo      ./bin/ropweaver ^<target_binary^> --list-gadgets
+echo      ./bin/ropweaver ^<target_binary^> --suggest-gadgets
+echo      ./bin/ropweaver ^<target_binary^> --auto-chain
+echo.
+echo Continuous Integration:
+echo   Native Mach-O binaries for Apple Silicon and Intel are continuously built
+echo   and released via GitHub Actions: .github/workflows/build-macos.yml
 ) > "%MAC_ARM%\README.txt"
 
-copy /y "%MAC_ARM%\README.txt" "%MAC_X64%\README.txt" >nul
+(
+echo ================================================================================
+echo                     ROPWeaver v1.2.4 for macOS (x86_64 / Intel)
+echo             Academic Research Tool - Oxford Brookes University
+echo                        Build Identifier: 6e110c2
+echo ================================================================================
+echo.
+echo Requirements:
+echo   macOS 11.0+ (Sonoma, Ventura, Monterey, Big Sur)
+echo   Homebrew packages: brew install capstone curl cmake
+echo.
+echo Quick Start:
+echo   1. Automated installation and compilation on macOS:
+echo      ./install.sh
+echo      or:
+echo      cd build-mac ^&^& ./build.sh
+echo.
+echo   2. Run ropweaver:
+echo      ./bin/ropweaver ^<target_binary^> --list-gadgets
+echo      ./bin/ropweaver ^<target_binary^> --suggest-gadgets
+echo      ./bin/ropweaver ^<target_binary^> --auto-chain
+echo.
+echo Continuous Integration:
+echo   Native Mach-O binaries for Apple Silicon and Intel are continuously built
+echo   and released via GitHub Actions: .github/workflows/build-macos.yml
+) > "%MAC_X64%\README.txt"
 
 tar -czf "%PUBLIC_DIR%\ropweaver-v1.2.4-darwin-arm64.tar.gz" -C "%MAC_STAGE%" ropweaver-v1.2.4-darwin-arm64
 copy /y "%PUBLIC_DIR%\ropweaver-v1.2.4-darwin-arm64.tar.gz" "%PUBLIC_DIR%\ropweaver-v1.2.3-darwin-arm64.tar.gz" >nul

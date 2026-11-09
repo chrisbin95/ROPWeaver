@@ -7,7 +7,7 @@
 set -e
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-VERSION="v1.2.3"
+VERSION="v1.2.4"
 
 # 1. Source Homebrew environment if installed
 if [ -x "/opt/homebrew/bin/brew" ]; then

@@ -129,6 +129,74 @@ if (Test-Path $OutJson) {
         }
     }
     Assert-Test -Name "ADD RSP is classified as stack_adjustment and NOT stack_pivot" -Condition ($addRspClean -eq $true)
+
+    # -----------------------------------------------------------------
+    # Multi-Dimensional Classification Regression Suite (Item 3)
+    # -----------------------------------------------------------------
+    # A. Register-only arithmetic (e.g. add al, ch ; ret)
+    $regArith = $json.gadgets | Where-Object { $_.gadget -eq "add al, ch ; ret" } | Select-Object -First 1
+    Assert-Test -Name "Register-only arithmetic exists in classic_bof.exe" -Condition ($regArith -ne $null)
+    if ($regArith) {
+        Assert-Test -Name "Register-only arithmetic has has_memory_read=false" -Condition ($regArith.has_memory_read -eq $false)
+        Assert-Test -Name "Register-only arithmetic has has_memory_write=false" -Condition ($regArith.has_memory_write -eq $false)
+        Assert-Test -Name "Register-only arithmetic category is arithmetic" -Condition ($regArith.category -eq "arithmetic")
+        Assert-Test -Name "Register-only arithmetic categories contain arithmetic" -Condition ($regArith.categories -contains "arithmetic")
+        Assert-Test -Name "Register-only arithmetic categories contain control_transfer" -Condition ($regArith.categories -contains "control_transfer")
+        Assert-Test -Name "Register-only arithmetic categories do NOT contain memory_read" -Condition ($regArith.categories -notcontains "memory_read")
+        Assert-Test -Name "Register-only arithmetic tracks registers_read (al, ch, rsp)" -Condition (
+            ($regArith.registers_read -contains "al") -and ($regArith.registers_read -contains "ch") -and ($regArith.registers_read -contains "rsp")
+        )
+        Assert-Test -Name "Register-only arithmetic tracks registers_modified (al, rsp)" -Condition (
+            ($regArith.registers_modified -contains "al") -and ($regArith.registers_modified -contains "rsp")
+        )
+    }
+
+    # B. Memory read gadget
+    $memReadGadgets = $json.gadgets | Where-Object { $_.instructions -match "\[.*\]" -and $_.has_memory_read -eq $true }
+    Assert-Test -Name "Explicit memory read gadgets detected and classified with memory_read" -Condition ($memReadGadgets.Count -gt 0)
+
+    # C. Memory write gadget
+    $memWriteGadgets = $json.gadgets | Where-Object { $_.instructions -match "\[.*\]" -and $_.has_memory_write -eq $true }
+    Assert-Test -Name "Explicit memory write gadgets detected and classified with memory_write" -Condition ($memWriteGadgets.Count -gt 0)
+
+    # D. Stack reads / Register load (pop reg ; ret)
+    $popGadgets = $json.gadgets | Where-Object { $_.instructions -match "^pop\s+[a-z0-9]+\s*;\s*ret$" }
+    $popClean = $true
+    if ($popGadgets) {
+        foreach ($pg in $popGadgets) {
+            if ($pg.has_memory_read -eq $true -or ($pg.categories -notcontains "register_load") -or ($pg.stack_consumption -le 0)) {
+                $popClean = $false; break
+            }
+        }
+    }
+    Assert-Test -Name "Pop gadgets classified as register_load with stack_consumption > 0 and has_memory_read=false" -Condition ($popClean -eq $true -and $popGadgets.Count -gt 0)
+
+    # E. Control transfer terminators
+    $retGadgets = $json.gadgets | Where-Object { $_.terminator_type -eq "RET" }
+    $retClean = $true
+    foreach ($rg in $retGadgets) {
+        if ($rg.categories -notcontains "control_transfer") { $retClean = $false; break }
+    }
+    Assert-Test -Name "All RET-terminated gadgets belong to control_transfer category" -Condition ($retClean -eq $true -and $retGadgets.Count -gt 0)
+
+    # F. Complete 323 Gadget Classification Audit
+    $auditBadReads = 0
+    $auditBadWrites = 0
+    $auditUnverified = 0
+    $auditNoCategories = 0
+    foreach ($g in $json.gadgets) {
+        $asm = $g.gadget
+        $hasBracket = ($asm.Contains("[") -or $asm.Contains("ptr") -or $asm.Contains("ldr"))
+        if ($g.has_memory_read -and -not $hasBracket) { $auditBadReads++ }
+        $hasWriteBracket = ($asm.Contains("[") -or $asm.Contains("str"))
+        if ($g.has_memory_write -and -not $hasWriteBracket) { $auditBadWrites++ }
+        if (-not $g.byte_verified) { $auditUnverified++ }
+        if ($g.categories.Count -eq 0) { $auditNoCategories++ }
+    }
+    Assert-Test -Name "Complete 323-gadget audit: 0 unverified gadgets" -Condition ($auditUnverified -eq 0)
+    Assert-Test -Name "Complete 323-gadget audit: 0 false memory reads without dereference" -Condition ($auditBadReads -eq 0)
+    Assert-Test -Name "Complete 323-gadget audit: 0 false memory writes without dereference" -Condition ($auditBadWrites -eq 0)
+    Assert-Test -Name "Complete 323-gadget audit: 0 gadgets missing categories" -Condition ($auditNoCategories -eq 0)
 }
 
 # -------------------------------------------------------------

@@ -68,7 +68,7 @@ int wmain(int argc, wchar_t* argv[]) {
     }
 
     wchar_t appDir[MAX_PATH * 2];
-    swprintf(appDir, MAX_PATH * 2, L"%ls\\ROPWeaver\\app-v1.2.3-r6", localAppData);
+    swprintf(appDir, MAX_PATH * 2, L"%ls\\ROPWeaver\\app-v1.2.4", localAppData);
 
     wchar_t stampFile[MAX_PATH * 2];
     swprintf(stampFile, MAX_PATH * 2, L"%ls\\.installed", appDir);
@@ -84,7 +84,7 @@ int wmain(int argc, wchar_t* argv[]) {
     }
 
     if (needExtract) {
-        wprintf(L"[*] ROPWeaver v1.2.3: Initializing standalone environment...\n");
+        wprintf(L"[*] ROPWeaver v1.2.4: Initializing standalone environment...\n");
 
         ensure_directory(appDir);
 
@@ -132,7 +132,7 @@ int wmain(int argc, wchar_t* argv[]) {
                 L"powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "
                 L"\"$tmp = Join-Path $env:TEMP ('rop_unzip_' + [Guid]::NewGuid().ToString('N')); "
                 L"Expand-Archive -LiteralPath '%ls' -DestinationPath $tmp -Force; "
-                L"Copy-Item (Join-Path $tmp 'ropweaver-v1.2.3-win64\\*') '%ls' -Recurse -Force; "
+                L"Copy-Item (Join-Path $tmp 'ropweaver-v1.2.4-win64\\*') '%ls' -Recurse -Force; "
                 L"Remove-Item $tmp -Recurse -Force\"",
                 tempZip, appDir);
             success = run_command_hidden(cmd);
@@ -149,7 +149,7 @@ int wmain(int argc, wchar_t* argv[]) {
         // Write stamp file
         HANDLE hStamp = CreateFileW(stampFile, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
         if (hStamp != INVALID_HANDLE_VALUE) {
-            const char stampContent[] = "v1.2.3-r6-standalone\n";
+            const char stampContent[] = "v1.2.4-standalone\n";
             DWORD stampWritten = 0;
             WriteFile(hStamp, stampContent, (DWORD)strlen(stampContent), &stampWritten, NULL);
             CloseHandle(hStamp);

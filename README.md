@@ -22,7 +22,7 @@ Return-Oriented Programming (ROP) is an essential class of code-reuse attacks th
 
 While foundational tools like *ROPgadget* extract gadgets and frameworks like *Angr* provide symbolic execution, existing tools have historically suffered from steep learning curves, excessive resource usage, or a lack of unified cross-architecture synthesis and runtime simulation.
 
-**ROPWeaver** bridges this gap: a lightweight, high-performance C++ toolchain combined with a real-time reactive cloud registry. It automates gadget extraction across **x86, x86_64, ARMv7, AArch64, and RISC-V**, performs automated semantic categorization, synthesizes full ROP chains (such as `sys_execve` shell spawns and Windows `VirtualProtect` DEP bypasses), and enables distributed security auditing via **Google Firebase Firestore** and an interactive **React web dashboard**.
+**ROPWeaver** bridges this gap: a lightweight, high-performance C++ toolchain combined with a real-time reactive cloud registry. It automates gadget extraction across **x86, x86_64, ARMv7, AArch64, and RISC-V**, performs multi-dimensional semantic categorization, synthesizes full ROP chains for Linux x86_64 (`sys_execve` shell spawns with automatic 16-byte stack alignment), exports structured gadget telemetry for Windows PE targets, and enables distributed security auditing via **Google Firebase Firestore** and an interactive **React web dashboard**.
 
 ---
 
@@ -50,7 +50,7 @@ While foundational tools like *ROPgadget* extract gadgets and frameworks like *A
 4. **Platform-Aware Exploit Chain Synthesis**
    - Automatically discriminates between host and target binary execution environments:
      - **Linux x86_64 ELF**: Synthesizes `sys_execve("/bin/sh", 0, 0)` chains staging `RDI`, `RSI`, `RDX`, `RAX` (syscall 59), and `syscall` with 16-byte stack alignment (`ret` padding) to prevent glibc/SSE `MOVAPS` crashes.
-     - **Windows x86_64 PE**: Implements Win64 calling convention awareness (`RCX`, `RDX`, `R8`, `R9` parameter registers + 32-byte shadow stack space) for staging Windows API primitives (`VirtualProtect`, `WinExec`).
+     - **Windows x86_64 PE**: Implements platform-aware detection that identifies Windows PE binaries, extracts and categorizes gadgets (including shadow stack considerations and register loading primitives), and explicitly reports automated `execve` chain generation as unsupported since POSIX kernel syscalls do not apply to Windows NT; exports structured gadget telemetry for manual Windows chain development.
      - **macOS x86_64 Mach-O**: Incorporates Darwin BSD 64-bit syscall conventions and class masks (`0x2000000`).
    - **Deceptive Payload Suppression**: If a functional ROP chain cannot be assembled, raw payload dumps are safely suppressed and explicitly flagged as `"status": "Payload Generation Incomplete - No ROP Chain Synthesized"`.
 
@@ -188,12 +188,12 @@ Download ready-to-run releases from [`web-react/public/`](web-react/public/) or 
 | Platform | Package | Description | Quick Execution |
 | :--- | :--- | :--- | :--- |
 | **Windows x64** | `ropweaver-windows-x64.exe` | Zero-dependency standalone launcher with embedded runtime | `.\ropweaver-windows-x64.exe target.exe --list-gadgets` |
-| **Windows x64** | `ropweaver-v1.2.3-win64.zip` | Complete portable bundle with runtime DLLs & sample targets | `.\ropweaver.exe target.exe --auto-chain` |
-| **Debian / Ubuntu** | `ropweaver_1.2.3_amd64.deb` | Native `.deb` system installer package | `sudo dpkg -i ropweaver_1.2.3_amd64.deb`<br>`ropweaver target.elf --list-gadgets` |
-| **Linux x86_64** | `ropweaver-v1.2.3-linux-x86_64.tar.gz` | Linux ELF archive with launcher & sample targets | `tar -xzf ropweaver-v1.2.3-linux-x86_64.tar.gz`<br>`./bin/ropweaver target.elf --auto-chain` |
-| **macOS (Apple Silicon)** | `ropweaver-v1.2.3-darwin-arm64.tar.gz` | macOS ARM64 tarball with Homebrew auto-resolution | `tar -xzf ropweaver-v1.2.3-darwin-arm64.tar.gz`<br>`./bin/ropweaver target --auto-chain` |
-| **macOS (Intel)** | `ropweaver-v1.2.3-darwin-x86_64.tar.gz` | macOS x86_64 tarball with Homebrew auto-resolution | `tar -xzf ropweaver-v1.2.3-darwin-x86_64.tar.gz`<br>`./bin/ropweaver target --auto-chain` |
-| **Any Platform** | `tools/universal_launcher/ropweaver_universal.py` | Cross-platform Python launcher (auto-detects OS & engine) | `python tools/universal_launcher/ropweaver_universal.py target --auto-chain` |
+| **Windows x64** | `ropweaver-v1.2.4-win64.zip` | Complete portable bundle with runtime DLLs & sample targets | `.\ropweaver.exe target.exe --list-gadgets` |
+| **Debian / Ubuntu** | `ropweaver_1.2.4_amd64.deb` | Native `.deb` system installer package | `sudo dpkg -i ropweaver_1.2.4_amd64.deb`<br>`ropweaver target.elf --list-gadgets` |
+| **Linux x86_64** | `ropweaver-v1.2.4-linux-x86_64.tar.gz` | Linux ELF archive with launcher & sample targets | `tar -xzf ropweaver-v1.2.4-linux-x86_64.tar.gz`<br>`./bin/ropweaver target.elf --auto-chain` |
+| **macOS (Apple Silicon)** | `ropweaver-v1.2.4-darwin-arm64.tar.gz` | macOS ARM64 tarball with Homebrew auto-resolution | `tar -xzf ropweaver-v1.2.4-darwin-arm64.tar.gz`<br>`./bin/ropweaver target --list-gadgets` |
+| **macOS (Intel)** | `ropweaver-v1.2.4-darwin-x86_64.tar.gz` | macOS x86_64 tarball with Homebrew auto-resolution | `tar -xzf ropweaver-v1.2.4-darwin-x86_64.tar.gz`<br>`./bin/ropweaver target --list-gadgets` |
+| **Any Platform** | `tools/universal_launcher/ropweaver_universal.py` | Cross-platform Python launcher (auto-detects OS & engine) | `python tools/universal_launcher/ropweaver_universal.py target --list-gadgets` |
 
 ---
 
@@ -262,25 +262,31 @@ Open **`http://localhost:5173/`** in your browser to access the Cloud Explorer.
 
 ```bash
 # 1. Disassemble and list gadgets in an ELF or PE binary
-./ropweaver target.elf --list-gadgets --depth 5
+./ropweaver target.elf --list-gadgets
 
-# 2. Search for specific register staging primitives
-./ropweaver target.elf --search "pop rdi ; ret"
-
-# 3. Categorize gadgets and suggest chain candidates
+# 2. Categorize gadgets and suggest chain candidates
 ./ropweaver target.elf --suggest-gadgets
 
-# 4. Automatically synthesize an execve("/bin/sh") ROP chain
-./ropweaver target.elf --auto-chain --target-syscall execve
+# 3. Automatically synthesize an execve("/bin/sh") ROP chain (Linux x86_64)
+./ropweaver target.elf --auto-chain
 
-# 5. Inspect binary hardening mitigations (NX, PIE, Canary, RELRO)
-./ropweaver target.elf --inspect-protections
+# 4. Synthesize ROP chain with manual /bin/sh string address
+./ropweaver target.elf --auto-chain --binsh-addr 0x402000
 
-# 6. Upload telemetry report to Firebase Cloud Datastore
+# 5. Generate raw exploit payload binary and report from synthesized ROP chain
+./ropweaver target.elf --auto-chain --payload-gen
+
+# 6. Upload telemetry report and gadgets to Firebase Cloud Datastore
 ./ropweaver target.elf --auto-chain --upload-report
 
-# 7. Disassemble raw microcontroller firmware with custom base address
-./ropweaver firmware.bin --raw --arch arm --base-addr 0x08000000 --list-gadgets
+# 7. Force overwrite existing report in Firebase
+./ropweaver target.elf --auto-chain --upload-report --force
+
+# 8. Specify architecture explicitly (e.g. x86_64, arm, aarch64, riscv64)
+./ropweaver target.bin --arch x86_64 --list-gadgets
+
+# 9. Display tool version and build identifier
+./ropweaver --version
 ```
 
 ---

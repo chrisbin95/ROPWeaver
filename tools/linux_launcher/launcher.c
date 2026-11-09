@@ -9,8 +9,8 @@
 #include <limits.h>
 #include <errno.h>
 
-#define VERSION "v1.2.3"
-#define APP_DIR_NAME ".local/share/ropweaver/app-v1.2.3"
+#define VERSION "v1.2.4"
+#define APP_DIR_NAME ".local/share/ropweaver/app-v1.2.4"
 
 static int file_exists(const char* path) {
     return (access(path, X_OK) == 0);

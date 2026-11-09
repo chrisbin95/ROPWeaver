@@ -374,6 +374,18 @@ void GadgetFinder::findGadgets() {
     }
 }
 
+static bool contains_reg_token(const std::string& text, const std::string& reg) {
+    size_t pos = 0;
+    while ((pos = text.find(reg, pos)) != std::string::npos) {
+        bool left_ok = (pos == 0) || (!isalnum((unsigned char)text[pos - 1]) && text[pos - 1] != '_');
+        size_t end = pos + reg.length();
+        bool right_ok = (end == text.length()) || (!isalnum((unsigned char)text[end]) && text[end] != '_');
+        if (left_ok && right_ok) return true;
+        pos += reg.length();
+    }
+    return false;
+}
+
 // ---------------------------------------------------------------------------
 // classify_gadget_multidim: populates g.categories, g.registers_read,
 // g.registers_modified, g.stack_delta, g.stack_consumption, g.has_memory_read,
@@ -444,9 +456,15 @@ static void classify_gadget_multidim(Gadget &g, const std::string &arch) {
     std::set<std::string> regs_read_set, regs_mod_set;
 
     static const std::vector<std::string> x86_gp_regs = {
-        "rax","rbx","rcx","rdx","rsi","rdi","rbp","r8","r9","r10","r11","r12","r13","r14","r15",
+        "rax","rbx","rcx","rdx","rsi","rdi","rbp","rsp",
+        "r8","r9","r10","r11","r12","r13","r14","r15",
         "eax","ebx","ecx","edx","esi","edi","ebp","esp",
-        "ax","bx","cx","dx","si","di","bp","sp"
+        "r8d","r9d","r10d","r11d","r12d","r13d","r14d","r15d",
+        "ax","bx","cx","dx","si","di","bp","sp",
+        "r8w","r9w","r10w","r11w","r12w","r13w","r14w","r15w",
+        "al","bl","cl","dl","ah","bh","ch","dh",
+        "sil","dil","bpl","spl",
+        "r8b","r9b","r10b","r11b","r12b","r13b","r14b","r15b"
     };
     static const std::vector<std::string> arm_gp_regs = {
         "r0","r1","r2","r3","r4","r5","r6","r7","r8","r9","r10","r11","r12","sp","lr","pc",
@@ -466,42 +484,41 @@ static void classify_gadget_multidim(Gadget &g, const std::string &arch) {
         // --- Stack delta & consumption tracking ---
         if (is_x86) {
             int ptr_sz = (arch == "x86_64") ? 8 : 4;
+            std::string sp_reg = (arch == "x86_64") ? "rsp" : "esp";
             if (mnem == "push") {
                 g.stack_delta -= ptr_sz;
-                has_mem_write = true;
-                regs_mod_set.insert("rsp");
+                regs_read_set.insert(sp_reg);
+                regs_mod_set.insert(sp_reg);
                 for (const auto &r : gp_regs) {
-                    if (ops.find(r) != std::string::npos) { regs_read_set.insert(r); break; }
+                    if (contains_reg_token(ops, r)) { regs_read_set.insert(r); break; }
                 }
             } else if (mnem == "pop") {
                 g.stack_delta += ptr_sz;
                 g.stack_consumption += ptr_sz;
-                has_mem_read = true;
-                regs_read_set.insert("rsp");
+                regs_read_set.insert(sp_reg);
                 // Check if pop target is rsp (stack pivot) or other register (load)
                 if (ops == "rsp" || ops == "esp") {
                     has_stack_pivot = true;
-                    regs_mod_set.insert("rsp");
+                    regs_mod_set.insert(sp_reg);
                 } else {
                     for (const auto &r : gp_regs) {
-                        if (ops.find(r) != std::string::npos && r != "rsp" && r != "esp") {
+                        if (contains_reg_token(ops, r) && r != "rsp" && r != "esp") {
                             has_register_load = true;
                             regs_mod_set.insert(r);
                             break;
                         }
                     }
-                    regs_mod_set.insert("rsp");
+                    regs_mod_set.insert(sp_reg);
                 }
-            } else if (mnem == "ret" || mnem == "retf") {
+            } else if (mnem == "ret" || mnem == "retf" || mnem == "retfq") {
                 g.stack_delta += ptr_sz;
                 g.stack_consumption += ptr_sz;
-                has_mem_read = true;
-                regs_read_set.insert("rsp");
-                regs_mod_set.insert("rsp");
+                regs_read_set.insert(sp_reg);
+                regs_mod_set.insert(sp_reg);
             } else if (mnem == "add" && (ops.rfind("rsp,", 0) == 0 || ops.rfind("esp,", 0) == 0)) {
                 has_stack_adjust = true;
-                regs_read_set.insert("rsp");
-                regs_mod_set.insert("rsp");
+                regs_read_set.insert(sp_reg);
+                regs_mod_set.insert(sp_reg);
                 size_t comma = ops.find(',');
                 if (comma != std::string::npos) {
                     try {
@@ -514,8 +531,8 @@ static void classify_gadget_multidim(Gadget &g, const std::string &arch) {
                 }
             } else if (mnem == "sub" && (ops.rfind("rsp,", 0) == 0 || ops.rfind("esp,", 0) == 0)) {
                 has_stack_adjust = true;
-                regs_read_set.insert("rsp");
-                regs_mod_set.insert("rsp");
+                regs_read_set.insert(sp_reg);
+                regs_mod_set.insert(sp_reg);
                 size_t comma = ops.find(',');
                 if (comma != std::string::npos) {
                     try {
@@ -529,18 +546,25 @@ static void classify_gadget_multidim(Gadget &g, const std::string &arch) {
                 g.stack_delta += ptr_sz;
                 g.stack_consumption += ptr_sz;
                 has_stack_pivot = true;
-                has_mem_read = true;
                 regs_read_set.insert("rbp");
-                regs_mod_set.insert("rsp");
+                regs_mod_set.insert(sp_reg);
                 regs_mod_set.insert("rbp");
             }
         } else if (is_arm) {
-            if (mnem == "push") { g.stack_delta -= 4; has_mem_write = true; }
-            else if (mnem == "pop")  { g.stack_delta += 4; g.stack_consumption += 4; has_mem_read = true; }
+            if (mnem == "push") { g.stack_delta -= 4; regs_read_set.insert("sp"); regs_mod_set.insert("sp"); }
+            else if (mnem == "pop")  { g.stack_delta += 4; g.stack_consumption += 4; regs_read_set.insert("sp"); regs_mod_set.insert("sp"); }
         }
 
-        // --- Memory access and comparison detection (Requirement 2) ---
+        // --- Memory access and comparison detection ---
         bool has_bracket = (ops.find('[') != std::string::npos || ops.find("ptr") != std::string::npos);
+
+        // ARM load/store instructions
+        if (mnem == "ldr" || mnem == "ldrb" || mnem == "ldrh") {
+            has_mem_read = true;
+            has_register_load = true;
+        } else if (mnem == "str" || mnem == "strb" || mnem == "strh") {
+            has_mem_write = true;
+        }
 
         // COMPARISON INSTRUCTIONS: cmp, test
         // MUST NEVER be classified as memory write!
@@ -551,7 +575,7 @@ static void classify_gadget_multidim(Gadget &g, const std::string &arch) {
             }
             // Add read registers
             for (const auto &r : gp_regs) {
-                if (ops.find(r) != std::string::npos) regs_read_set.insert(r);
+                if (contains_reg_token(ops, r)) regs_read_set.insert(r);
             }
         }
         else if (has_bracket) {
@@ -565,27 +589,45 @@ static void classify_gadget_multidim(Gadget &g, const std::string &arch) {
                 if (mnem == "lea") {
                     // LEA computes effective address without accessing memory
                     has_register_load = true;
-                    regs_mod_set.insert(dst);
+                    for (const auto &r : gp_regs) {
+                        if (contains_reg_token(dst, r)) regs_mod_set.insert(r);
+                        if (contains_reg_token(src, r)) regs_read_set.insert(r);
+                    }
                 } else if (dst.find('[') != std::string::npos) {
                     // Writing to memory operand
                     has_mem_write = true;
                     if (mnem != "mov" && mnem != "movzx" && mnem != "movsx") {
                         has_mem_read = true; // Read-modify-write
                     }
+                    for (const auto &r : gp_regs) {
+                        if (contains_reg_token(dst, r)) regs_read_set.insert(r);
+                        if (contains_reg_token(src, r)) regs_read_set.insert(r);
+                    }
                 } else if (src.find('[') != std::string::npos) {
                     // Reading from memory operand
                     has_mem_read = true;
                     if (mnem == "mov" || mnem == "movzx" || mnem == "movsx" || mnem == "ldr") {
                         has_register_load = true;
-                        regs_mod_set.insert(dst);
+                    }
+                    for (const auto &r : gp_regs) {
+                        if (contains_reg_token(dst, r)) regs_mod_set.insert(r);
+                        if (contains_reg_token(src, r)) regs_read_set.insert(r);
                     }
                 }
-            } else if (!is_term_ins && mnem != "lea") {
-                has_mem_read = true;
+            } else if (mnem != "lea") {
+                if (mnem == "inc" || mnem == "dec" || mnem == "not" || mnem == "neg") {
+                    has_mem_read = true;
+                    has_mem_write = true;
+                } else {
+                    has_mem_read = true;
+                }
+                for (const auto &r : gp_regs) {
+                    if (contains_reg_token(ops, r)) regs_read_set.insert(r);
+                }
             }
         }
 
-        // --- Register exchange / Stack Pivots (Requirement 2) ---
+        // --- Register exchange / Stack Pivots ---
         if (mnem == "xchg") {
             size_t comma = ops.find(',');
             if (comma != std::string::npos) {
@@ -594,10 +636,10 @@ static void classify_gadget_multidim(Gadget &g, const std::string &arch) {
                 op1.erase(std::remove_if(op1.begin(), op1.end(), ::isspace), op1.end());
                 op2.erase(std::remove_if(op2.begin(), op2.end(), ::isspace), op2.end());
 
-                regs_read_set.insert(op1);
-                regs_read_set.insert(op2);
-                regs_mod_set.insert(op1);
-                regs_mod_set.insert(op2);
+                for (const auto &r : gp_regs) {
+                    if (contains_reg_token(op1, r)) { regs_read_set.insert(r); regs_mod_set.insert(r); }
+                    if (contains_reg_token(op2, r)) { regs_read_set.insert(r); regs_mod_set.insert(r); }
+                }
 
                 if (op1 == "rsp" || op2 == "rsp" || op1 == "esp" || op2 == "esp" || op1 == "sp" || op2 == "sp") {
                     has_stack_pivot = true;
@@ -613,13 +655,15 @@ static void classify_gadget_multidim(Gadget &g, const std::string &arch) {
 
                 if ((dst == "rsp" || dst == "esp" || dst == "sp") && src != "rsp" && src != "esp") {
                     has_stack_pivot = true; // mov rsp, rax is a stack pivot
-                    regs_read_set.insert(src);
+                    for (const auto &r : gp_regs) {
+                        if (contains_reg_token(src, r)) regs_read_set.insert(r);
+                    }
                     regs_mod_set.insert(dst);
                 } else if (dst.find('[') == std::string::npos) {
                     has_register_load = true;
-                    regs_mod_set.insert(dst);
                     for (const auto &r : gp_regs) {
-                        if (src.find(r) != std::string::npos) regs_read_set.insert(r);
+                        if (contains_reg_token(dst, r)) regs_mod_set.insert(r);
+                        if (contains_reg_token(src, r)) regs_read_set.insert(r);
                     }
                 }
             }
@@ -627,9 +671,14 @@ static void classify_gadget_multidim(Gadget &g, const std::string &arch) {
             size_t comma = ops.find(',');
             if (comma != std::string::npos) {
                 std::string dst = ops.substr(0, comma);
+                std::string src = ops.substr(comma + 1);
                 dst.erase(std::remove_if(dst.begin(), dst.end(), ::isspace), dst.end());
+                src.erase(std::remove_if(src.begin(), src.end(), ::isspace), src.end());
                 has_register_load = true;
-                regs_mod_set.insert(dst);
+                for (const auto &r : gp_regs) {
+                    if (contains_reg_token(dst, r)) regs_mod_set.insert(r);
+                    if (contains_reg_token(src, r)) regs_read_set.insert(r);
+                }
             }
         } else if (mnem == "add" || mnem == "sub" || mnem == "mul" || mnem == "imul" ||
                    mnem == "div" || mnem == "idiv" || mnem == "inc" || mnem == "dec" ||
@@ -637,20 +686,38 @@ static void classify_gadget_multidim(Gadget &g, const std::string &arch) {
             // If operating on general registers, it's arithmetic
             if (ops.find("rsp") == std::string::npos && ops.find("esp") == std::string::npos) {
                 has_arithmetic = true;
-                for (const auto &r : gp_regs) {
-                    if (ops.find(r) != std::string::npos) {
-                        regs_read_set.insert(r);
-                        regs_mod_set.insert(r);
+                size_t comma = ops.find(',');
+                if (comma != std::string::npos) {
+                    std::string dst = ops.substr(0, comma);
+                    std::string src = ops.substr(comma + 1);
+                    dst.erase(std::remove_if(dst.begin(), dst.end(), ::isspace), dst.end());
+                    src.erase(std::remove_if(src.begin(), src.end(), ::isspace), src.end());
+                    for (const auto &r : gp_regs) {
+                        if (contains_reg_token(dst, r)) { regs_read_set.insert(r); regs_mod_set.insert(r); }
+                        if (contains_reg_token(src, r)) { regs_read_set.insert(r); }
+                    }
+                } else {
+                    for (const auto &r : gp_regs) {
+                        if (contains_reg_token(ops, r)) { regs_read_set.insert(r); regs_mod_set.insert(r); }
                     }
                 }
             }
         } else if (mnem == "xor" || mnem == "and" || mnem == "or" || mnem == "not" ||
                    mnem == "shl" || mnem == "shr" || mnem == "sar" || mnem == "rol" || mnem == "ror") {
             has_logical = true;
-            for (const auto &r : gp_regs) {
-                if (ops.find(r) != std::string::npos) {
-                    regs_read_set.insert(r);
-                    regs_mod_set.insert(r);
+            size_t comma = ops.find(',');
+            if (comma != std::string::npos) {
+                std::string dst = ops.substr(0, comma);
+                std::string src = ops.substr(comma + 1);
+                dst.erase(std::remove_if(dst.begin(), dst.end(), ::isspace), dst.end());
+                src.erase(std::remove_if(src.begin(), src.end(), ::isspace), src.end());
+                for (const auto &r : gp_regs) {
+                    if (contains_reg_token(dst, r)) { regs_read_set.insert(r); regs_mod_set.insert(r); }
+                    if (contains_reg_token(src, r)) { regs_read_set.insert(r); }
+                }
+            } else {
+                for (const auto &r : gp_regs) {
+                    if (contains_reg_token(ops, r)) { regs_read_set.insert(r); regs_mod_set.insert(r); }
                 }
             }
         } else if (mnem == "syscall" || mnem == "sysenter" || mnem == "ecall" || mnem == "svc" || mnem == "swi" ||
@@ -658,6 +725,9 @@ static void classify_gadget_multidim(Gadget &g, const std::string &arch) {
             has_syscall = true;
         } else if (mnem == "jmp" || mnem == "call" || mnem == "b" || mnem == "bl" || mnem == "blx" || mnem == "blr") {
             has_control_xfer = true;
+            for (const auto &r : gp_regs) {
+                if (contains_reg_token(ops, r)) regs_read_set.insert(r);
+            }
         }
     }
 

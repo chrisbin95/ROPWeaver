@@ -245,25 +245,54 @@ sys.stdout.buffer.write(payload)
             </h3>
 
             <div className="protections-detailed-box">
-              {prots ? (
-                <div className="protections-grid-detailed mono text-xs">
-                  <div className={`mitigation-chip ${prots.nx ? 'on' : 'off'}`}>
-                    <span className="mitigation-name">NX / DEP (No-Execute Stack):</span>
-                    <span className="mitigation-state">{prots.nx ? 'ENABLED' : 'DISABLED'}</span>
+              {hasMitigations ? (
+                format === 'PE' || format.includes('PE') || report.file_type === 'PE' ? (
+                  <div className="protections-grid-detailed mono text-xs">
+                    <div className={`mitigation-chip ${(rawProts.NX_COMPAT?.static_indicator === 'COMPATIBLE' || rawProts.NX) ? 'on' : 'off'}`}>
+                      <span className="mitigation-name">NX_COMPAT (DEP Opt-In):</span>
+                      <span className="mitigation-state">{rawProts.NX_COMPAT?.static_indicator || 'COMPATIBLE'}</span>
+                    </div>
+                    <div className={`mitigation-chip ${(rawProts.DYNAMIC_BASE?.static_indicator === 'COMPATIBLE' || rawProts.PIE) ? 'on' : 'off'}`}>
+                      <span className="mitigation-name">DYNAMIC_BASE (ASLR Opt-In):</span>
+                      <span className="mitigation-state">{rawProts.DYNAMIC_BASE?.static_indicator || 'COMPATIBLE'}</span>
+                    </div>
+                    <div className={`mitigation-chip ${rawProts.HIGH_ENTROPY_VA?.static_indicator === 'COMPATIBLE' ? 'on' : 'off'}`}>
+                      <span className="mitigation-name">HIGH_ENTROPY_VA (64-bit ASLR):</span>
+                      <span className="mitigation-state">{rawProts.HIGH_ENTROPY_VA?.static_indicator || 'COMPATIBLE'}</span>
+                    </div>
+                    <div className="mitigation-chip off">
+                      <span className="mitigation-name">CET_COMPAT (Shadow Stack):</span>
+                      <span className="mitigation-state">{rawProts.CET_COMPAT?.static_indicator || 'UNKNOWN'}</span>
+                    </div>
+                    <div className={`mitigation-chip ${rawProts.GS_COOKIE?.static_indicator === 'PRESENT' ? 'on' : 'off'}`}>
+                      <span className="mitigation-name">GS Security Cookie:</span>
+                      <span className="mitigation-state">{rawProts.GS_COOKIE?.static_indicator || 'NOT_DETECTED'}</span>
+                    </div>
+                    <div className="mitigation-chip off">
+                      <span className="mitigation-name">RELRO:</span>
+                      <span className="mitigation-state">N/A (PE format)</span>
+                    </div>
                   </div>
-                  <div className={`mitigation-chip ${prots.pie ? 'on' : 'off'}`}>
-                    <span className="mitigation-name">PIE (Position Independent Executable):</span>
-                    <span className="mitigation-state">{prots.pie ? 'ENABLED' : 'DISABLED'}</span>
+                ) : (
+                  <div className="protections-grid-detailed mono text-xs">
+                    <div className={`mitigation-chip ${prots.nx ? 'on' : 'off'}`}>
+                      <span className="mitigation-name">NX / DEP (No-Execute Stack):</span>
+                      <span className="mitigation-state">{prots.nx ? 'ENABLED' : 'DISABLED'}</span>
+                    </div>
+                    <div className={`mitigation-chip ${prots.pie ? 'on' : 'off'}`}>
+                      <span className="mitigation-name">PIE (Position Independent Executable):</span>
+                      <span className="mitigation-state">{prots.pie ? 'ENABLED' : 'DISABLED'}</span>
+                    </div>
+                    <div className={`mitigation-chip ${prots.canary ? 'on' : 'off'}`}>
+                      <span className="mitigation-name">Stack Canary (SSP Guard):</span>
+                      <span className="mitigation-state">{prots.canary ? 'ENABLED' : 'DISABLED'}</span>
+                    </div>
+                    <div className={`mitigation-chip ${prots.relro !== 'None' ? 'on' : 'off'}`}>
+                      <span className="mitigation-name">RELRO (Relocation Read-Only):</span>
+                      <span className="mitigation-state">{prots.relro}</span>
+                    </div>
                   </div>
-                  <div className={`mitigation-chip ${prots.canary ? 'on' : 'off'}`}>
-                    <span className="mitigation-name">Stack Canary (SSP Guard):</span>
-                    <span className="mitigation-state">{prots.canary ? 'ENABLED' : 'DISABLED'}</span>
-                  </div>
-                  <div className={`mitigation-chip ${prots.relro !== 'None' ? 'on' : 'off'}`}>
-                    <span className="mitigation-name">RELRO (Relocation Read-Only):</span>
-                    <span className="mitigation-state">{prots.relro}</span>
-                  </div>
-                </div>
+                )
               ) : (
                 <div className="mitigation-none-banner mono text-xs">
                   <AlertCircle size={16} className="text-accent-orange" />

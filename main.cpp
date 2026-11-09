@@ -13,6 +13,7 @@
 #include <sstream>
 
 // Core modules
+#include "version.h"
 #include "core/arch_detector.h"
 #include "core/gadget_finder.h"
 #include "core/chain_builder.h"
@@ -69,7 +70,7 @@ int main(int argc, char* argv[]) {
 #if defined(_WIN32)
     SetConsoleOutputCP(CP_UTF8);
 #endif
-    std::cout << "\n==«✪»==" << ANSI_COLOR_ORANGE << "ROPWeaver: ROP Exploit Generator v1.2.4 (Build: ae613b6)" << ANSI_COLOR_RESET << "==«✪»== \n" << std::endl;
+    std::cout << "\n==«✪»==" << ANSI_COLOR_ORANGE << "ROPWeaver: ROP Exploit Generator " << ROPWEAVER_VERSION << " (Build: " << ROPWEAVER_BUILD_ID << ")" << ANSI_COLOR_RESET << "==«✪»== \n" << std::endl;
 
     CLI cli;
     CLIOptions options = cli.parseArguments(argc, argv);

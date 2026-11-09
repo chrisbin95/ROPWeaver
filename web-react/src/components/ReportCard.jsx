@@ -139,20 +139,37 @@ export default function ReportCard({ report, index, onSelectReportId, onOpenDeta
         </span>
         <div className="badges-group">
           {hasMitigations ? (
-            <>
-              <span className={`badge ${rawProts.NX || rawProts.nx_enabled ? 'badge-on' : 'badge-off'}`}>
-                NX: {rawProts.NX || rawProts.nx_enabled ? 'ON' : 'OFF'}
-              </span>
-              <span className={`badge ${rawProts.PIE || rawProts.pie_enabled ? 'badge-on' : 'badge-off'}`}>
-                PIE: {rawProts.PIE || rawProts.pie_enabled ? 'ON' : 'OFF'}
-              </span>
-              <span className={`badge ${rawProts.Canary || rawProts.canary_enabled ? 'badge-on' : 'badge-off'}`}>
-                Canary: {rawProts.Canary || rawProts.canary_enabled ? 'ON' : 'OFF'}
-              </span>
-              <span className="badge badge-warning">
-                RELRO: {rawProts.RELRO || (rawProts.relro_full ? 'Full' : rawProts.relro_partial ? 'Partial' : 'None')}
-              </span>
-            </>
+            format === 'PE' || report.file_type === 'PE' ? (
+              <>
+                <span className={`badge ${(rawProts.NX_COMPAT?.static_indicator === 'COMPATIBLE' || rawProts.NX) ? 'badge-on' : 'badge-off'}`}>
+                  NX_COMPAT: {rawProts.NX_COMPAT?.static_indicator || (rawProts.NX ? 'COMPATIBLE' : 'OFF')}
+                </span>
+                <span className={`badge ${(rawProts.DYNAMIC_BASE?.static_indicator === 'COMPATIBLE' || rawProts.PIE) ? 'badge-on' : 'badge-off'}`}>
+                  DYNAMIC_BASE: {rawProts.DYNAMIC_BASE?.static_indicator || (rawProts.PIE ? 'COMPATIBLE' : 'OFF')}
+                </span>
+                <span className={`badge ${rawProts.GS_COOKIE?.static_indicator === 'PRESENT' ? 'badge-on' : 'badge-off'}`}>
+                  GS-Cookie: {rawProts.GS_COOKIE?.static_indicator || 'NOT_DETECTED'}
+                </span>
+                <span className="badge badge-info">
+                  CET: {rawProts.CET_COMPAT?.static_indicator || 'UNKNOWN'}
+                </span>
+              </>
+            ) : (
+              <>
+                <span className={`badge ${rawProts.NX || rawProts.nx_enabled ? 'badge-on' : 'badge-off'}`}>
+                  NX: {rawProts.NX || rawProts.nx_enabled ? 'ON' : 'OFF'}
+                </span>
+                <span className={`badge ${rawProts.PIE || rawProts.pie_enabled ? 'badge-on' : 'badge-off'}`}>
+                  PIE: {rawProts.PIE || rawProts.pie_enabled ? 'ON' : 'OFF'}
+                </span>
+                <span className={`badge ${rawProts.Canary || rawProts.canary_enabled ? 'badge-on' : 'badge-off'}`}>
+                  Canary: {rawProts.Canary || rawProts.canary_enabled ? 'ON' : 'OFF'}
+                </span>
+                <span className="badge badge-warning">
+                  RELRO: {rawProts.RELRO || (rawProts.relro_full ? 'Full' : rawProts.relro_partial ? 'Partial' : 'None')}
+                </span>
+              </>
+            )
           ) : (
             <span className="badge badge-none mono">
               None (All Protections Disabled / RAW)

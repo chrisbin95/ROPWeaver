@@ -19,3 +19,4 @@ $doc = Invoke-RestMethod -Uri $uri -Method Get
     RawPayloadStatus = $doc.fields.raw_payload.mapValue.fields.status.stringValue
     PaddingOffset  = $doc.fields.raw_payload.mapValue.fields.verified_padding_offset.nullValue
 } | Format-List
+

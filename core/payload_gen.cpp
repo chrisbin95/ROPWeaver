@@ -1,4 +1,5 @@
 #include "payload_gen.h"
+#include "version.h"
 #include <iostream>
 #include <fstream>
 #include <iomanip>
@@ -72,10 +73,10 @@ void PayloadGenerator::generate(const ROPChain& chain, size_t paddingSize, const
         ss << std::put_time(std::gmtime(&now), "%Y-%m-%dT%H:%M:%SZ");
         report["report_date"] = ss.str();
         
-        report["tool_version"] = "ROPWeaver_v1.2.4";
-        report["build_id"] = "ae613b6";
-        report["commit_hash"] = "ae613b6";
-        report["build_date"] = "2026-11-09";
+        report["tool_version"] = ROPWEAVER_VERSION_FULL;
+        report["build_id"] = ROPWEAVER_BUILD_ID;
+        report["commit_hash"] = ROPWEAVER_BUILD_ID;
+        report["build_date"] = ROPWEAVER_BUILD_DATE;
         report["architecture"] = architecture;
         report["file_type"] = fileType;
 

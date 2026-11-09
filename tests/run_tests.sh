@@ -74,6 +74,8 @@ if [[ -f "${OUT_JSON}" ]]; then
     assert_test "PE JSON has file_offset" "grep -q '\"file_offset\"' '${OUT_JSON}'"
     assert_test "PE JSON has rva" "grep -q '\"rva\"' '${OUT_JSON}'"
     assert_test "PE JSON raw_payload is Unsupported" "grep -q '\"status\": \"Unsupported' '${OUT_JSON}'"
+    assert_test "PE JSON add al, ch ; ret has false has_memory_read" "! grep -A 10 'add al, ch ; ret' '${OUT_JSON}' | grep -q '\"has_memory_read\": true'"
+    assert_test "PE JSON add al, ch ; ret has arithmetic category" "grep -B 5 -A 5 '\"instructions\": \"add al, ch ; ret\"' '${OUT_JSON}' | grep -q '\"category\": \"arithmetic\"'"
 fi
 
 # Test 3: Malformed binary error handling
