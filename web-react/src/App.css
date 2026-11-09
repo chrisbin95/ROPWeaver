@@ -629,15 +629,42 @@
   padding-top: 0.85rem;
   border-top: 1px solid var(--border-subtle);
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  width: 100%;
 }
 
 .binary-chips-list {
   display: flex;
   gap: 0.4rem;
   flex-wrap: wrap;
+  width: 100%;
+  max-height: 80px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0;
+  margin: 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 255, 136, 0.3) transparent;
+}
+
+.binary-chips-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.binary-chips-list::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+}
+
+.binary-chips-list::-webkit-scrollbar-thumb {
+  background: #252f44;
+  border-radius: 2px;
+}
+
+.binary-chips-list::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-green);
 }
 
 .binary-chip {
@@ -3741,8 +3768,38 @@
 
   .binary-meta-grid {
     flex-direction: column !important;
-    align-items: flex-start !important;
+    align-items: stretch !important;
     gap: 0.65rem !important;
+    padding: 0.75rem 0.85rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .binary-meta-grid > div,
+  .binary-meta-item {
+    display: flex !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    white-space: normal !important;
+    width: 100% !important;
+    word-break: break-word !important;
+    gap: 0.25rem 0.4rem !important;
+  }
+
+  .binary-meta-hash-col {
+    display: flex !important;
+    align-items: center !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    gap: 0.4rem !important;
+  }
+
+  .binary-meta-hash-col .hash-scroll-wrap {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    overflow-x: auto !important;
   }
 
   /* Search & Filter Rows */
@@ -4492,6 +4549,10 @@
   .howto-card,
   .search-section-card {
     padding: 0.65rem !important;
+  }
+
+  .binary-meta-grid {
+    padding: 0.65rem 0.55rem !important;
   }
 
   .badges-group {

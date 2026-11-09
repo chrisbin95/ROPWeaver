@@ -321,12 +321,12 @@ export default function BinaryDetailPage({
   
   let finalDate = '2026-10-10 20:08:57 UTC';
   if (report?.report_date) {
-    finalDate = report.report_date;
+    finalDate = typeof report.report_date === 'string' ? report.report_date.replace('T', ' ') : report.report_date;
   } else if (report?.timestamp) {
     if (typeof report.timestamp.toDate === 'function') {
       finalDate = report.timestamp.toDate().toLocaleString();
     } else if (typeof report.timestamp === 'string') {
-      finalDate = report.timestamp;
+      finalDate = report.timestamp.replace('T', ' ');
     }
   } else if (report?.uploaded_at) {
     finalDate = new Date(report.uploaded_at).toLocaleString();
@@ -383,10 +383,10 @@ export default function BinaryDetailPage({
                 URL.revokeObjectURL(url);
               }}
               className="btn btn-outline-green btn-xs mono"
-              title="Download gadget database"
+              title="Download gadget database as JSON"
             >
               <Download size={14} />
-              <span>DOWNLOAD GADGETS (.gz)</span>
+              <span>DOWNLOAD GADGETS (.json)</span>
             </button>
           </div>
         </div>

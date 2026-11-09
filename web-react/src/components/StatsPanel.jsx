@@ -105,9 +105,9 @@ export default function StatsPanel({
         <div className="recent-binaries-bar">
           <span className="mono text-muted text-xs">&gt; available_in_cloud:</span>
           <div className="binary-chips-list">
-            {recentBinaries.map((bin) => (
+            {recentBinaries.map((bin, idx) => (
               <button
-                key={bin}
+                key={`${bin}-${idx}`}
                 onClick={() => onSelectBinary(bin)}
                 className="binary-chip mono"
               >
