@@ -88,27 +88,33 @@ size_t Gadget::popInstructionCount() const {
 
 bool Gadget::isStackPivot() const {
     if (instructions.empty()) return false;
-    const auto& last_instr = instructions.back();
-    std::string mnem = last_instr.mnemonic;
-    std::string ops = last_instr.op_str;
 
-    // x86/x86_64
-    if (architecture == "x86" || architecture == "x86_64") {
-        if (mnem == "leave") return true;
-        if (mnem == "mov" && ops.find("rsp") != std::string::npos) return true;
-        if ((mnem == "add" || mnem == "sub") && ops.find("rsp") != std::string::npos) return true;
-    }
+    for (const auto& instr : instructions) {
+        std::string mnem = instr.mnemonic;
+        std::string ops  = instr.op_str;
+        std::transform(mnem.begin(), mnem.end(), mnem.begin(), [](unsigned char c){ return std::tolower(c); });
+        std::transform(ops.begin(), ops.end(), ops.begin(), [](unsigned char c){ return std::tolower(c); });
 
-    // AArch64
-    if ((architecture == "aarch64" || architecture == "arm64")) {
-        if (mnem == "mov" && ops.find("sp") != std::string::npos) return true;
-    }
+        // x86/x86_64
+        if (architecture == "x86" || architecture == "x86_64") {
+            if (mnem == "leave") return true;
+            if (mnem == "xchg" && (ops.find("rsp") != std::string::npos || ops.find("esp") != std::string::npos)) return true;
+            if (mnem == "mov" && (ops.rfind("rsp,", 0) == 0 || ops.rfind("esp,", 0) == 0)) return true;
+            if ((mnem == "add" || mnem == "sub") && (ops.rfind("rsp,", 0) == 0 || ops.rfind("esp,", 0) == 0)) return true;
+        }
 
-    // ARM32/Thumb
-    if (architecture == "arm" || architecture == "thumb") {
-        if (mnem == "mov" && ops.find("sp") != std::string::npos) return true;
-        if ((mnem == "add" || mnem == "sub") && ops.find("sp") != std::string::npos) return true;
-        if ((mnem == "ldr" || mnem == "ldm" || mnem == "pop") && ops.find("sp") != std::string::npos) return true;
+        // AArch64
+        if (architecture == "aarch64" || architecture == "arm64") {
+            if (mnem == "mov" && ops.find("sp,") != std::string::npos) return true;
+            if ((mnem == "add" || mnem == "sub") && ops.find("sp,") != std::string::npos) return true;
+        }
+
+        // ARM32/Thumb
+        if (architecture == "arm" || architecture == "thumb" || architecture == "armv7") {
+            if (mnem == "mov" && ops.find("sp,") != std::string::npos) return true;
+            if ((mnem == "add" || mnem == "sub") && ops.find("sp,") != std::string::npos) return true;
+            if ((mnem == "ldr" || mnem == "ldm" || mnem == "pop") && ops.find("sp") != std::string::npos) return true;
+        }
     }
 
     return false;

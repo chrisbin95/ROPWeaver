@@ -1,6 +1,5 @@
 #include "arch_detector.h"
 
-#include <elf.h>
 #include <fstream>
 #include <iostream>
 #include <vector>
@@ -73,30 +72,26 @@ std::string ArchDetector::detectArchitecture64(std::ifstream& file) const {
 
 // 3. PE Architecture Detection
 std::string ArchDetector::detectPEArchitecture(const std::vector<uint8_t>& data) const {
-    // STRUCT uses ropweaver::
     if (data.size() < sizeof(ropweaver::PE_DOS_HEADER)) return "unknown";
 
-    // STRUCT uses ropweaver::
     const ropweaver::PE_DOS_HEADER* dos_hdr = reinterpret_cast<const ropweaver::PE_DOS_HEADER*>(data.data());
-    
-    // Check for "PE\0\0" signature at the offset specified by e_lfanew
-    if (dos_hdr->e_lfanew + 4 < data.size() && 
-        data[dos_hdr->e_lfanew] == 'P' && data[dos_hdr->e_lfanew+1] == 'E') 
-    {
-        // STRUCT uses ropweaver::
-        const ropweaver::PE_NT_HEADERS32* nt_hdr_32 = reinterpret_cast<const ropweaver::PE_NT_HEADERS32*>(data.data() + dos_hdr->e_lfanew);
-        
-        switch (nt_hdr_32->FileHeader.Machine) {
-            // CONSTANTS use GLOBAL scope
-            case IMAGE_FILE_MACHINE_I386:
-                return "x86";
-            case IMAGE_FILE_MACHINE_AMD64:
-                return "x86_64";
-            default:
-                return "unknown";
-        }
+    if (dos_hdr->e_magic != IMAGE_DOS_SIGNATURE) return "unknown";
+
+    if (dos_hdr->e_lfanew <= 0 || static_cast<size_t>(dos_hdr->e_lfanew) + sizeof(ropweaver::PE_NT_HEADERS32) > data.size()) {
+        return "unknown";
     }
-    return "unknown";
+
+    size_t nt_offset = static_cast<size_t>(dos_hdr->e_lfanew);
+    const ropweaver::PE_NT_HEADERS32* nt_hdr_32 = reinterpret_cast<const ropweaver::PE_NT_HEADERS32*>(data.data() + nt_offset);
+    if (nt_hdr_32->Signature != IMAGE_NT_SIGNATURE) return "unknown";
+
+    switch (nt_hdr_32->FileHeader.Machine) {
+        case IMAGE_FILE_MACHINE_I386:   return "x86";
+        case IMAGE_FILE_MACHINE_AMD64:  return "x86_64";
+        case IMAGE_FILE_MACHINE_ARM:    return "armv7";
+        case IMAGE_FILE_MACHINE_ARM64:  return "aarch64";
+        default:                        return "unknown";
+    }
 }
 
 // 4. Mach-O Architecture Detection

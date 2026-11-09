@@ -1,6 +1,5 @@
 #include "riscv64_parser.h"
-#include "elf_defs.h"    // ropweaver::Elf64_Ehdr, Elf64_Shdr
-#include <elf.h>
+#include "elf_defs.h"
 #include <fstream>
 #include <iostream>
 #include <cstring>

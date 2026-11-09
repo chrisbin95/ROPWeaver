@@ -1,6 +1,5 @@
 #include "riscv32_parser.h"
 #include "elf_defs.h"
-#include <elf.h>
 #include <fstream>
 #include <iostream>
 #include <cstring>

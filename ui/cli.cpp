@@ -28,7 +28,7 @@ CLIOptions CLI::parseArguments(int argc, char** argv) {
             return opts;
         } 
         else if (arg == "--version" || arg == "-v") {
-            std::cout << ANSI_COLOR_GREEN << "ROPWeaver v1.2.3" << ANSI_COLOR_RESET << " (Academic Research Edition)\n"
+            std::cout << ANSI_COLOR_GREEN << "ROPWeaver v1.3.0" << ANSI_COLOR_RESET << " (Academic Research Edition)\n"
                       << "Disassembly Engine: Capstone v5.0+ | Transport: libcurl\n"
                       << "Supported Targets: x86_64, i386, ARM, AArch64, RISC-V | Formats: PE, ELF, Mach-O, RAW\n"
                       << "Oxford Brookes University Master of Science Research Tool\n";

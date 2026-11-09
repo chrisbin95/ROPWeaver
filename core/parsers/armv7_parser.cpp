@@ -1,6 +1,5 @@
 #include "armv7_parser.h"
-#include "elf_defs.h"    // Custom ropweaver::Elf32_Ehdr, Elf32_Shdr
-#include <elf.h>         // System ELF constants: EI_NIDENT, ELFMAG0, SHT_PROGBITS, etc.
+#include "elf_defs.h"
 #include <fstream>
 #include <iostream>
 #include <cstring>

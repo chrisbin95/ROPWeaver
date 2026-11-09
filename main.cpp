@@ -20,6 +20,8 @@
 #include "core/gadget.h"
 #include "core/rop_chain.h"
 #include "core/parsers/file_parser.h"
+#include "core/parsers/pe_parser.h"
+#include "core/parsers/elf_parser.h"
 #include "core/payload_gen.h"
 
 // UI and Firebase
@@ -98,17 +100,49 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     std::cout << "[" << ANSI_COLOR_ORANGE << "*" << ANSI_COLOR_RESET << "] Detected architecture: " << arch_to_use << std::endl;
-    nlohmann::json protections = {
-        {"NX", parser ? parser->isNxEnabled() : false},
-        {"PIE", parser ? parser->isPieEnabled() : false},
-        {"Canary", parser ? parser->isCanaryEnabled() : false},
-        {"RELRO", parser ? parser->getRelro() : "None"}
-    };
-    std::cout << "[" << ANSI_COLOR_ORANGE << "*" << ANSI_COLOR_RESET << "] Mitigations: NX="
-              << (protections.value("NX", false) ? "ON" : "OFF")
-              << ", PIE/ASLR=" << (protections.value("PIE", false) ? "ON" : "OFF")
-              << ", Canary=" << (protections.value("Canary", false) ? "ON" : "OFF")
-              << ", RELRO=" << protections.value("RELRO", "None") << std::endl;
+
+    // Build protections JSON — differentiate PE vs ELF terminology
+    std::string binaryType = parser ? parser->getBinaryType() : "ELF";
+    nlohmann::json protections = nlohmann::json::object();
+
+    // Cast to concrete parser types to access extended fields
+    ropweaver::PEParser*  pe_parser  = dynamic_cast<ropweaver::PEParser*>(parser.get());
+    ropweaver::ELFParser* elf_parser = dynamic_cast<ropweaver::ELFParser*>(parser.get());
+
+    if (binaryType == "PE") {
+        // PE-specific mitigation fields — never use RELRO for PE files
+        protections["DEP_NX"]          = parser->isNxEnabled();
+        protections["ASLR_PIE"]        = parser->isPieEnabled();
+        protections["GS_Canary"]       = parser->isCanaryEnabled();
+        protections["HighEntropyVA"]   = pe_parser ? pe_parser->isHighEntropyVAEnabled() : false;
+        protections["CFG"]             = pe_parser ? pe_parser->isCFGEnabled() : false;
+        protections["SafeSEH_NoSEH"]   = pe_parser ? pe_parser->isSafeSEHDisabled() : false;
+        // NX/PIE/Canary aliases for backward compat in payload_gen
+        protections["NX"]              = parser->isNxEnabled();
+        protections["PIE"]             = parser->isPieEnabled();
+        protections["Canary"]          = parser->isCanaryEnabled();
+
+        std::cout << "[" << ANSI_COLOR_ORANGE << "*" << ANSI_COLOR_RESET << "] Mitigations:"
+                  << " DEP/NX=" << (parser->isNxEnabled() ? "ON" : "OFF")
+                  << ", ASLR=" << (parser->isPieEnabled() ? "ON" : "OFF")
+                  << ", GS-Cookie=" << (parser->isCanaryEnabled() ? "ON" : "OFF")
+                  << ", HighEntropyVA=" << (pe_parser && pe_parser->isHighEntropyVAEnabled() ? "ON" : "OFF")
+                  << ", CFG=" << (pe_parser && pe_parser->isCFGEnabled() ? "ON" : "OFF")
+                  << ", NoSEH=" << (pe_parser && pe_parser->isSafeSEHDisabled() ? "ON" : "OFF")
+                  << std::endl;
+    } else {
+        // ELF / Mach-O — keep existing terminology
+        protections["NX"]     = parser->isNxEnabled();
+        protections["PIE"]    = parser->isPieEnabled();
+        protections["Canary"] = parser->isCanaryEnabled();
+        protections["RELRO"]  = parser->getRelro();
+
+        std::cout << "[" << ANSI_COLOR_ORANGE << "*" << ANSI_COLOR_RESET << "] Mitigations: NX="
+                  << (parser->isNxEnabled() ? "ON" : "OFF")
+                  << ", PIE/ASLR=" << (parser->isPieEnabled() ? "ON" : "OFF")
+                  << ", Canary=" << (parser->isCanaryEnabled() ? "ON" : "OFF")
+                  << ", RELRO=" << parser->getRelro() << std::endl;
+    }
 
     const std::vector<uint8_t>& binaryCode = parser->getTextSection();
     uint64_t baseAddress = parser->getTextSectionBaseAddress();
@@ -126,7 +160,7 @@ int main(int argc, char* argv[]) {
     // --- Find /bin/sh address for auto-chain (ELF targets only) ---
     uint64_t binsh_addr = 0;
     ROPChain ropChain; // remains empty if building fails
-    std::string binaryType = parser ? parser->getBinaryType() : "ELF";
+    // binaryType already set above in the protections block
 
     if (options.autoChain) {
         if (binaryType == "PE") {
@@ -284,7 +318,6 @@ int main(int argc, char* argv[]) {
         const size_t paddingSize = 104;
         std::cout << ANSI_COLOR_CYAN << "\n--- Generating Exploit Payload / Report ---" << ANSI_COLOR_RESET << std::endl;
 
-        std::string binaryType = parser ? parser->getBinaryType() : "ELF";
         payloadGen.generate(ropChain, paddingSize, options.filename, gadgets, arch_to_use, binaryType, protections, reportId, fileHash);
 
         if (options.generatePayload && ropChain.isSuccessful()) {

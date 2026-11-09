@@ -51,53 +51,78 @@ bool PEParser::parse(const std::string& filepath) {
 
     const PE_FILE_HEADER* fileHdr = reinterpret_cast<const PE_FILE_HEADER*>(&buffer[ntHdrOffset + 4]);
     switch (fileHdr->Machine) {
-        case IMAGE_FILE_MACHINE_AMD64:
-            arch_ = "x86_64";
-            is64Bit_ = true;
-            break;
-        case IMAGE_FILE_MACHINE_I386:
-            arch_ = "x86";
-            is64Bit_ = false;
-            break;
-        case IMAGE_FILE_MACHINE_ARM:
-            arch_ = "armv7";
-            is64Bit_ = false;
-            break;
-        case IMAGE_FILE_MACHINE_ARM64:
-            arch_ = "aarch64";
-            is64Bit_ = true;
-            break;
-        default:
-            arch_ = "unknown";
-            is64Bit_ = false;
-            break;
+        case IMAGE_FILE_MACHINE_AMD64: arch_ = "x86_64"; is64Bit_ = true;  break;
+        case IMAGE_FILE_MACHINE_I386:  arch_ = "x86";    is64Bit_ = false; break;
+        case IMAGE_FILE_MACHINE_ARM:   arch_ = "armv7";  is64Bit_ = false; break;
+        case IMAGE_FILE_MACHINE_ARM64: arch_ = "aarch64";is64Bit_ = true;  break;
+        default:                       arch_ = "unknown"; is64Bit_ = false; break;
     }
 
+    // IMAGE_FILE_NO_SEH: file header Characteristics bit 0x0400
+    noSEH_ = (fileHdr->Characteristics & IMAGE_FILE_NO_SEH) != 0;
+
     size_t optHdrOffset = ntHdrOffset + 4 + sizeof(PE_FILE_HEADER);
-    uint64_t imageBase = 0x400000; // default fallback
+    imageBase_ = 0x400000; // safe default
 
     if (fileHdr->SizeOfOptionalHeader >= 2 && optHdrOffset + fileHdr->SizeOfOptionalHeader <= fileSize) {
         uint16_t optMagic = *reinterpret_cast<const uint16_t*>(&buffer[optHdrOffset]);
+
+        // ----------------------------------------------------------------
+        // Optional Header field offsets (from start of optional header):
+        //
+        //  Field                  PE32 (0x010b)   PE32+ (0x020b)
+        //  Magic                   0               0
+        //  AddressOfEntryPoint     16              16
+        //  ImageBase               28 (uint32)     24 (uint64)
+        //  DllCharacteristics      94              70
+        // ----------------------------------------------------------------
+        size_t dllCharOffset = 0;
+
         if (optMagic == 0x020b) { // PE32+ (64-bit)
             is64Bit_ = true;
-            if (fileHdr->SizeOfOptionalHeader >= 32) {
-                imageBase = *reinterpret_cast<const uint64_t*>(&buffer[optHdrOffset + 24]);
+            // ImageBase at offset 24 (uint64)
+            if (fileHdr->SizeOfOptionalHeader >= 32 && optHdrOffset + 32 <= fileSize) {
+                imageBase_ = *reinterpret_cast<const uint64_t*>(&buffer[optHdrOffset + 24]);
             }
+            // AddressOfEntryPoint at offset 16 (uint32 RVA)
+            if (fileHdr->SizeOfOptionalHeader >= 20 && optHdrOffset + 20 <= fileSize) {
+                uint32_t epRVA = *reinterpret_cast<const uint32_t*>(&buffer[optHdrOffset + 16]);
+                entryPoint_ = imageBase_ + epRVA;
+            }
+            // DllCharacteristics at offset 70 for PE32+
+            dllCharOffset = optHdrOffset + 70;
+
         } else if (optMagic == 0x010b) { // PE32 (32-bit)
             is64Bit_ = false;
-            if (fileHdr->SizeOfOptionalHeader >= 32) {
-                imageBase = *reinterpret_cast<const uint32_t*>(&buffer[optHdrOffset + 28]);
+            // ImageBase at offset 28 (uint32)
+            if (fileHdr->SizeOfOptionalHeader >= 32 && optHdrOffset + 32 <= fileSize) {
+                imageBase_ = *reinterpret_cast<const uint32_t*>(&buffer[optHdrOffset + 28]);
             }
+            // AddressOfEntryPoint at offset 16 (uint32 RVA)
+            if (fileHdr->SizeOfOptionalHeader >= 20 && optHdrOffset + 20 <= fileSize) {
+                uint32_t epRVA = *reinterpret_cast<const uint32_t*>(&buffer[optHdrOffset + 16]);
+                entryPoint_ = imageBase_ + epRVA;
+            }
+            // DllCharacteristics at offset 94 for PE32
+            dllCharOffset = optHdrOffset + 94;
         }
 
-        // Parse DllCharacteristics (at offset 70 in both PE32 and PE32+ Optional Header)
-        if (fileHdr->SizeOfOptionalHeader >= 72 && optHdrOffset + 72 <= fileSize) {
-            uint16_t dllCharacteristics = *reinterpret_cast<const uint16_t*>(&buffer[optHdrOffset + 70]);
-            nxEnabled_ = (dllCharacteristics & IMAGE_DLLCHARACTERISTICS_NX_COMPAT) != 0;
-            pieEnabled_ = (dllCharacteristics & IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE) != 0;
+        // Parse DllCharacteristics with correct architecture-specific offset
+        if (dllCharOffset > 0 && dllCharOffset + 2 <= fileSize) {
+            uint16_t dllChar = *reinterpret_cast<const uint16_t*>(&buffer[dllCharOffset]);
+            nxEnabled_      = (dllChar & IMAGE_DLLCHARACTERISTICS_NX_COMPAT)      != 0;
+            pieEnabled_     = (dllChar & IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE)   != 0;
+            highEntropyVA_  = (dllChar & IMAGE_DLLCHARACTERISTICS_HIGH_ENTROPY_VA) != 0;
+            cfgEnabled_     = (dllChar & IMAGE_DLLCHARACTERISTICS_GUARD_CF)       != 0;
         }
     }
 
+    // ----------------------------------------------------------------
+    // Section parsing: collect ALL executable sections.
+    // Primary text section = first .text or first executable section.
+    // Concatenate all executable sections into textSection_ for gadget
+    // discovery (preserving contiguous VA ordering).
+    // ----------------------------------------------------------------
     size_t sectionHdrOffset = optHdrOffset + fileHdr->SizeOfOptionalHeader;
     size_t totalSectionHdrsSize = static_cast<size_t>(fileHdr->NumberOfSections) * sizeof(PE_SECTION_HEADER);
     if (sectionHdrOffset + totalSectionHdrsSize > fileSize) {
@@ -106,51 +131,77 @@ bool PEParser::parse(const std::string& filepath) {
     }
 
     const PE_SECTION_HEADER* sections = reinterpret_cast<const PE_SECTION_HEADER*>(&buffer[sectionHdrOffset]);
-    const PE_SECTION_HEADER* targetSection = nullptr;
 
-    // First search for .text section explicitly
+    // Collect executable sections in VA order
+    struct ExecSection {
+        uint64_t va;
+        size_t   rawOffset;
+        size_t   rawSize;
+        std::string name;
+    };
+    std::vector<ExecSection> execSections;
+
     for (uint16_t i = 0; i < fileHdr->NumberOfSections; ++i) {
         char name[9] = {0};
         std::memcpy(name, sections[i].Name, 8);
-        if (std::strcmp(name, ".text") == 0 || std::strncmp(name, ".text", 5) == 0) {
-            targetSection = &sections[i];
-            break;
+
+        bool isExec = (sections[i].Characteristics & IMAGE_SCN_MEM_EXECUTE) ||
+                      (sections[i].Characteristics & IMAGE_SCN_CNT_CODE);
+        if (!isExec) continue;
+
+        size_t rawOffset = sections[i].PointerToRawData;
+        size_t rawSize   = sections[i].SizeOfRawData;
+        if (sections[i].VirtualSize > 0 && sections[i].VirtualSize < rawSize) {
+            rawSize = sections[i].VirtualSize;
         }
+        if (rawOffset >= fileSize) continue;
+        if (rawOffset + rawSize > fileSize) {
+            rawSize = fileSize - rawOffset;
+        }
+        if (rawSize == 0) continue;
+
+        execSections.push_back({ imageBase_ + sections[i].VirtualAddress, rawOffset, rawSize, name });
     }
 
-    // Fallback: search for any section with executable characteristics
-    if (!targetSection) {
-        for (uint16_t i = 0; i < fileHdr->NumberOfSections; ++i) {
-            if ((sections[i].Characteristics & IMAGE_SCN_MEM_EXECUTE) ||
-                (sections[i].Characteristics & IMAGE_SCN_CNT_CODE)) {
-                targetSection = &sections[i];
-                break;
-            }
-        }
-    }
-
-    if (!targetSection) {
-        std::cerr << "[!] PEParser: No .text or executable section found.\n";
+    if (execSections.empty()) {
+        std::cerr << "[!] PEParser: No executable sections found.\n";
         return false;
     }
 
-    size_t rawOffset = targetSection->PointerToRawData;
-    size_t rawSize = targetSection->SizeOfRawData;
-    if (targetSection->VirtualSize > 0 && targetSection->VirtualSize < rawSize) {
-        rawSize = targetSection->VirtualSize;
-    }
+    // Sort by VA to process in address order
+    std::sort(execSections.begin(), execSections.end(),
+              [](const ExecSection& a, const ExecSection& b){ return a.va < b.va; });
 
-    if (rawOffset + rawSize > fileSize) {
-        if (rawOffset < fileSize) {
-            rawSize = fileSize - rawOffset;
-        } else {
-            std::cerr << "[!] PEParser: Section raw data pointer out of file bounds.\n";
-            return false;
+    // Use the first executable section as the base address for GadgetFinder
+    textBaseAddr_ = execSections[0].va;
+
+    // Concatenate all executable section bytes into one flat buffer.
+    // GadgetFinder will see one contiguous byte stream; gadget addresses
+    // remain correct because m_baseAddress is set to textBaseAddr_ and
+    // Capstone uses that as the starting address.
+    // Note: gaps between non-contiguous sections are filled with 0xCC (int3)
+    // so the disassembler stops cleanly at section boundaries.
+    textSection_.clear();
+    uint64_t prevEnd = textBaseAddr_;
+    for (const auto& sec : execSections) {
+        if (sec.va > prevEnd) {
+            // Fill gap with INT3 (0xCC) to prevent cross-section gadgets
+            size_t gap = static_cast<size_t>(sec.va - prevEnd);
+            // Limit gap fill to avoid huge allocations for sparse maps
+            if (gap <= 0x10000) {
+                textSection_.insert(textSection_.end(), gap, 0xCC);
+            } else {
+                // Large gap: use a minimal 4-byte fence
+                textSection_.push_back(0xCC);
+                textSection_.push_back(0xCC);
+                textSection_.push_back(0xCC);
+                textSection_.push_back(0xCC);
+            }
         }
+        const uint8_t* ptr = buffer.data() + sec.rawOffset;
+        textSection_.insert(textSection_.end(), ptr, ptr + sec.rawSize);
+        prevEnd = sec.va + sec.rawSize;
     }
-
-    textBaseAddr_ = imageBase + targetSection->VirtualAddress;
-    textSection_.assign(buffer.begin() + rawOffset, buffer.begin() + rawOffset + rawSize);
 
     // Check imports/symbols for __security_cookie or __security_check_cookie
     canaryEnabled_ = checkCanaryProtection(buffer);

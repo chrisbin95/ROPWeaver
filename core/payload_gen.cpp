@@ -68,19 +68,38 @@ void PayloadGenerator::generate(const ROPChain& chain, size_t paddingSize, const
         ss << std::put_time(std::gmtime(&now), "%Y-%m-%dT%H:%M:%SZ");
         report["report_date"] = ss.str();
         
-        report["tool_version"] = "ROPWeaver_v1.2.3";
+        report["tool_version"] = "ROPWeaver_v1.3.0";
         report["architecture"] = architecture;
         report["file_type"] = fileType;
 
         if (protections.empty()) {
-            report["protections"] = {
-                {"NX", false},
-                {"PIE", false},
-                {"Canary", false},
-                {"RELRO", "None"}
-            };
+            // Build a default protections block
+            if (fileType == "PE") {
+                report["protections"] = {
+                    {"DEP_NX",        false},
+                    {"ASLR_PIE",      false},
+                    {"GS_Canary",     false},
+                    {"HighEntropyVA", false},
+                    {"CFG",           false},
+                    {"SafeSEH_NoSEH", false}
+                };
+            } else {
+                report["protections"] = {
+                    {"NX",     false},
+                    {"PIE",    false},
+                    {"Canary", false},
+                    {"RELRO",  "None"}
+                };
+            }
         } else {
-            report["protections"] = protections;
+            // For PE binaries, strip out RELRO if inadvertently included
+            if (fileType == "PE") {
+                json pe_prots = protections;
+                pe_prots.erase("RELRO"); // RELRO is ELF-only; never output for PE
+                report["protections"] = pe_prots;
+            } else {
+                report["protections"] = protections;
+            }
         }
 
         report["target_binary"] = {
@@ -98,7 +117,7 @@ void PayloadGenerator::generate(const ROPChain& chain, size_t paddingSize, const
         
         report["rop_chain_details"] = chain.toJson(); 
         
-        // Discovered Gadgets
+        // Discovered Gadgets with multi-dimensional classification
         json gadgetsArr = json::array();
         for (const auto& g : gadgets) {
             std::stringstream addrSs;
@@ -111,12 +130,35 @@ void PayloadGenerator::generate(const ROPChain& chain, size_t paddingSize, const
                 if (i + 1 < g.instructions.size()) instrStr += " ; ";
             }
 
-            gadgetsArr.push_back({
-                {"address", addrSs.str()},
-                {"gadget", instrStr},
-                {"instructions", instrStr},
-                {"category", g.category.empty() ? "others" : g.category}
-            });
+            json gadgetEntry = {
+                {"address",       addrSs.str()},
+                {"gadget",        instrStr},
+                {"instructions",  instrStr},
+                // Backward-compat single category
+                {"category",      g.category.empty() ? "others" : g.category},
+            };
+
+            // Multi-dimensional categories (new field)
+            if (!g.categories.empty()) {
+                gadgetEntry["categories"] = g.categories;
+            } else {
+                gadgetEntry["categories"] = json::array({g.category.empty() ? "others" : g.category});
+            }
+
+            // Register effect metadata
+            if (!g.registers_read.empty())     gadgetEntry["registers_read"]     = g.registers_read;
+            if (!g.registers_modified.empty()) gadgetEntry["registers_modified"] = g.registers_modified;
+
+            // Stack and control-flow metadata
+            gadgetEntry["stack_delta"]              = g.stack_delta;
+            gadgetEntry["has_memory_read"]          = g.has_memory_read;
+            gadgetEntry["has_memory_write"]         = g.has_memory_write;
+            gadgetEntry["terminator_type"]          = g.terminator_type.empty() ? "UNKNOWN" : g.terminator_type;
+            gadgetEntry["instruction_count"]        = g.instruction_count;
+            gadgetEntry["classification_confidence"]= g.classification_confidence;
+            gadgetEntry["byte_verified"]            = g.byte_verified;
+
+            gadgetsArr.push_back(gadgetEntry);
         }
         report["gadgets"] = gadgetsArr;
 

@@ -4,1006 +4,3437 @@
     "gadgets": [
         {
             "address": "0x0000000140001000",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400010ed",
-            "category": "pop r12",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 60,
             "gadget": "pop r12 ; pop r13 ; pop r14 ; pop r15 ; ret",
-            "instructions": "pop r12 ; pop r13 ; pop r14 ; pop r15 ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 5,
+            "instructions": "pop r12 ; pop r13 ; pop r14 ; pop r15 ; ret",
+            "registers_modified": [
+                "r12",
+                "r13",
+                "r14",
+                "r15"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 40,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400010ef",
-            "category": "pop r13",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 60,
             "gadget": "pop r13 ; pop r14 ; pop r15 ; ret",
-            "instructions": "pop r13 ; pop r14 ; pop r15 ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 4,
+            "instructions": "pop r13 ; pop r14 ; pop r15 ; ret",
+            "registers_modified": [
+                "r13",
+                "r14",
+                "r15"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 32,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400010f1",
-            "category": "pop r14",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 75,
             "gadget": "pop r14 ; pop r15 ; ret",
-            "instructions": "pop r14 ; pop r15 ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 3,
+            "instructions": "pop r14 ; pop r15 ; ret",
+            "registers_modified": [
+                "r14",
+                "r15"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 24,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400010f3",
-            "category": "pop r15",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 85,
             "gadget": "pop r15 ; ret",
-            "instructions": "pop r15 ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "pop r15 ; ret",
+            "registers_modified": [
+                "r15"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 16,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400010f5",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400013f8",
-            "category": "arithmetic/logic",
+            "byte_verified": true,
+            "categories": [
+                "stack_adjustment"
+            ],
+            "category": "stack_adjustment",
+            "classification_confidence": 85,
             "gadget": "add rsp, 0x28 ; ret",
-            "instructions": "add rsp, 0x28 ; ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "add rsp, 0x28 ; ret",
+            "registers_modified": [
+                "rsp"
+            ],
+            "stack_delta": 48,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400013fc",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001418",
-            "category": "arithmetic/logic",
+            "byte_verified": true,
+            "categories": [
+                "stack_adjustment"
+            ],
+            "category": "stack_adjustment",
+            "classification_confidence": 85,
             "gadget": "add rsp, 0x28 ; ret",
-            "instructions": "add rsp, 0x28 ; ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "add rsp, 0x28 ; ret",
+            "registers_modified": [
+                "rsp"
+            ],
+            "stack_delta": 48,
+            "terminator_type": "RET"
         },
         {
             "address": "0x000000014000141c",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001440",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001450",
-            "category": "pop rdi",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_write",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 60,
             "gadget": "push rbp ; mov rbp, rsp ; pop rdi ; ret",
-            "instructions": "push rbp ; mov rbp, rsp ; pop rdi ; ret"
+            "has_memory_read": true,
+            "has_memory_write": true,
+            "instruction_count": 4,
+            "instructions": "push rbp ; mov rbp, rsp ; pop rdi ; ret",
+            "registers_modified": [
+                "di",
+                "rbp",
+                "rdi",
+                "rsp"
+            ],
+            "registers_read": [
+                "rbp",
+                "rsp"
+            ],
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001451",
-            "category": "pop rdi",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 75,
             "gadget": "mov rbp, rsp ; pop rdi ; ret",
-            "instructions": "mov rbp, rsp ; pop rdi ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 3,
+            "instructions": "mov rbp, rsp ; pop rdi ; ret",
+            "registers_modified": [
+                "di",
+                "rbp",
+                "rdi"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 16,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001454",
-            "category": "pop rdi",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 85,
             "gadget": "pop rdi ; ret",
-            "instructions": "pop rdi ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "pop rdi ; ret",
+            "registers_modified": [
+                "di",
+                "rdi"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 16,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001455",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001456",
-            "category": "pop rsi",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 85,
             "gadget": "pop rsi ; ret",
-            "instructions": "pop rsi ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "pop rsi ; ret",
+            "registers_modified": [
+                "rsi",
+                "si"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 16,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001457",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001458",
-            "category": "pop rdx",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 85,
             "gadget": "pop rdx ; ret",
-            "instructions": "pop rdx ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "pop rdx ; ret",
+            "registers_modified": [
+                "dx",
+                "rdx"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 16,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001459",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x000000014000145a",
-            "category": "pop rax",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 85,
             "gadget": "pop rax ; ret",
-            "instructions": "pop rax ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "pop rax ; ret",
+            "registers_modified": [
+                "ax",
+                "rax"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 16,
+            "terminator_type": "RET"
         },
         {
             "address": "0x000000014000145b",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x000000014000145c",
+            "byte_verified": true,
+            "categories": [
+                "syscall"
+            ],
             "category": "syscall",
+            "classification_confidence": 95,
             "gadget": "syscall",
-            "instructions": "syscall"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "syscall",
+            "stack_delta": 0,
+            "terminator_type": "SYSCALL"
         },
         {
             "address": "0x000000014000145e",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001460",
-            "category": "pop rbp",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 85,
             "gadget": "pop rbp ; ret",
-            "instructions": "pop rbp ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "pop rbp ; ret",
+            "registers_modified": [
+                "bp",
+                "rbp"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 16,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001461",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001486",
-            "category": "pop rbp",
+            "byte_verified": true,
+            "categories": [
+                "stack_adjustment",
+                "register_load",
+                "memory_read"
+            ],
+            "category": "stack_adjustment",
+            "classification_confidence": 75,
             "gadget": "add rsp, 0x60 ; pop rbp ; ret",
-            "instructions": "add rsp, 0x60 ; pop rbp ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 3,
+            "instructions": "add rsp, 0x60 ; pop rbp ; ret",
+            "registers_modified": [
+                "bp",
+                "rbp",
+                "rsp"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 112,
+            "terminator_type": "RET"
         },
         {
             "address": "0x000000014000148a",
-            "category": "pop rbp",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 85,
             "gadget": "pop rbp ; ret",
-            "instructions": "pop rbp ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "pop rbp ; ret",
+            "registers_modified": [
+                "bp",
+                "rbp"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 16,
+            "terminator_type": "RET"
         },
         {
             "address": "0x000000014000148b",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400014ea",
-            "category": "pop rbp",
+            "byte_verified": true,
+            "categories": [
+                "stack_adjustment",
+                "register_load",
+                "memory_read"
+            ],
+            "category": "stack_adjustment",
+            "classification_confidence": 60,
             "gadget": "mov eax, 0 ; add rsp, 0x20 ; pop rbp ; ret",
-            "instructions": "mov eax, 0 ; add rsp, 0x20 ; pop rbp ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 4,
+            "instructions": "mov eax, 0 ; add rsp, 0x20 ; pop rbp ; ret",
+            "registers_modified": [
+                "bp",
+                "eax",
+                "rbp",
+                "rsp"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 48,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400014ef",
-            "category": "pop rbp",
+            "byte_verified": true,
+            "categories": [
+                "stack_adjustment",
+                "register_load",
+                "memory_read"
+            ],
+            "category": "stack_adjustment",
+            "classification_confidence": 75,
             "gadget": "add rsp, 0x20 ; pop rbp ; ret",
-            "instructions": "add rsp, 0x20 ; pop rbp ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 3,
+            "instructions": "add rsp, 0x20 ; pop rbp ; ret",
+            "registers_modified": [
+                "bp",
+                "rbp",
+                "rsp"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 48,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400014f3",
-            "category": "pop rbp",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 85,
             "gadget": "pop rbp ; ret",
-            "instructions": "pop rbp ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "pop rbp ; ret",
+            "registers_modified": [
+                "bp",
+                "rbp"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 16,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400014f4",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x000000014000153d",
-            "category": "arithmetic/logic",
+            "byte_verified": true,
+            "categories": [
+                "stack_adjustment"
+            ],
+            "category": "stack_adjustment",
+            "classification_confidence": 85,
             "gadget": "add rsp, 0x28 ; ret",
-            "instructions": "add rsp, 0x28 ; ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "add rsp, 0x28 ; ret",
+            "registers_modified": [
+                "rsp"
+            ],
+            "stack_delta": 48,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001541",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400015da",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400015f0",
-            "category": "arithmetic/logic",
+            "byte_verified": true,
+            "categories": [
+                "logical"
+            ],
+            "category": "logical",
+            "classification_confidence": 85,
             "gadget": "xor eax, eax ; ret",
-            "instructions": "xor eax, eax ; ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "xor eax, eax ; ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400015f2",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001609",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001642",
-            "category": "pop rbx",
+            "byte_verified": true,
+            "categories": [
+                "stack_adjustment",
+                "register_load",
+                "memory_read"
+            ],
+            "category": "stack_adjustment",
+            "classification_confidence": 60,
             "gadget": "add rsp, 0x28 ; pop rbx ; pop rsi ; ret",
-            "instructions": "add rsp, 0x28 ; pop rbx ; pop rsi ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 4,
+            "instructions": "add rsp, 0x28 ; pop rbx ; pop rsi ; ret",
+            "registers_modified": [
+                "bx",
+                "rbx",
+                "rsi",
+                "rsp",
+                "si"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 64,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001646",
-            "category": "pop rbx",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 75,
             "gadget": "pop rbx ; pop rsi ; ret",
-            "instructions": "pop rbx ; pop rsi ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 3,
+            "instructions": "pop rbx ; pop rsi ; ret",
+            "registers_modified": [
+                "bx",
+                "rbx",
+                "rsi",
+                "si"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 24,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001647",
-            "category": "pop rsi",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 85,
             "gadget": "pop rsi ; ret",
-            "instructions": "pop rsi ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "pop rsi ; ret",
+            "registers_modified": [
+                "rsi",
+                "si"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 16,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001648",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001683",
-            "category": "pop rbx",
+            "byte_verified": true,
+            "categories": [
+                "stack_adjustment",
+                "register_load",
+                "memory_read"
+            ],
+            "category": "stack_adjustment",
+            "classification_confidence": 60,
             "gadget": "add rsp, 0x28 ; pop rbx ; pop rsi ; ret",
-            "instructions": "add rsp, 0x28 ; pop rbx ; pop rsi ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 4,
+            "instructions": "add rsp, 0x28 ; pop rbx ; pop rsi ; ret",
+            "registers_modified": [
+                "bx",
+                "rbx",
+                "rsi",
+                "rsp",
+                "si"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 64,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001687",
-            "category": "pop rbx",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 75,
             "gadget": "pop rbx ; pop rsi ; ret",
-            "instructions": "pop rbx ; pop rsi ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 3,
+            "instructions": "pop rbx ; pop rsi ; ret",
+            "registers_modified": [
+                "bx",
+                "rbx",
+                "rsi",
+                "si"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 24,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001688",
-            "category": "pop rsi",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 85,
             "gadget": "pop rsi ; ret",
-            "instructions": "pop rsi ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "pop rsi ; ret",
+            "registers_modified": [
+                "rsi",
+                "si"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 16,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001689",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400016a0",
-            "category": "arithmetic/logic",
+            "byte_verified": true,
+            "categories": [
+                "logical"
+            ],
+            "category": "logical",
+            "classification_confidence": 85,
             "gadget": "xor eax, eax ; ret",
-            "instructions": "xor eax, eax ; ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "xor eax, eax ; ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400016a2",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001742",
-            "category": "pop rbx",
+            "byte_verified": true,
+            "categories": [
+                "stack_adjustment",
+                "register_load",
+                "memory_read"
+            ],
+            "category": "stack_adjustment",
+            "classification_confidence": 60,
             "gadget": "movups xmm8, xmmword ptr [rsp + 0x60] ; add rsp, 0x78 ; pop rbx ; pop rsi ; ret",
-            "instructions": "movups xmm8, xmmword ptr [rsp + 0x60] ; add rsp, 0x78 ; pop rbx ; pop rsi ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 5,
+            "instructions": "movups xmm8, xmmword ptr [rsp + 0x60] ; add rsp, 0x78 ; pop rbx ; pop rsi ; ret",
+            "registers_modified": [
+                "bx",
+                "rbx",
+                "rsi",
+                "rsp",
+                "si"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 144,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001748",
-            "category": "pop rbx",
+            "byte_verified": true,
+            "categories": [
+                "stack_adjustment",
+                "register_load",
+                "memory_read"
+            ],
+            "category": "stack_adjustment",
+            "classification_confidence": 60,
             "gadget": "add rsp, 0x78 ; pop rbx ; pop rsi ; ret",
-            "instructions": "add rsp, 0x78 ; pop rbx ; pop rsi ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 4,
+            "instructions": "add rsp, 0x78 ; pop rbx ; pop rsi ; ret",
+            "registers_modified": [
+                "bx",
+                "rbx",
+                "rsi",
+                "rsp",
+                "si"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 144,
+            "terminator_type": "RET"
         },
         {
             "address": "0x000000014000174c",
-            "category": "pop rbx",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 75,
             "gadget": "pop rbx ; pop rsi ; ret",
-            "instructions": "pop rbx ; pop rsi ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 3,
+            "instructions": "pop rbx ; pop rsi ; ret",
+            "registers_modified": [
+                "bx",
+                "rbx",
+                "rsi",
+                "si"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 24,
+            "terminator_type": "RET"
         },
         {
             "address": "0x000000014000174d",
-            "category": "pop rsi",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 85,
             "gadget": "pop rsi ; ret",
-            "instructions": "pop rsi ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "pop rsi ; ret",
+            "registers_modified": [
+                "rsi",
+                "si"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 16,
+            "terminator_type": "RET"
         },
         {
             "address": "0x000000014000174e",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400018e5",
-            "category": "pop rbx",
+            "byte_verified": true,
+            "categories": [
+                "stack_adjustment",
+                "register_load",
+                "memory_read"
+            ],
+            "category": "stack_adjustment",
+            "classification_confidence": 60,
             "gadget": "add rsp, 0x50 ; pop rbx ; pop rsi ; pop rdi ; ret",
-            "instructions": "add rsp, 0x50 ; pop rbx ; pop rsi ; pop rdi ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 5,
+            "instructions": "add rsp, 0x50 ; pop rbx ; pop rsi ; pop rdi ; ret",
+            "registers_modified": [
+                "bx",
+                "di",
+                "rbx",
+                "rdi",
+                "rsi",
+                "rsp",
+                "si"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 112,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400018e9",
-            "category": "pop rbx",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 60,
             "gadget": "pop rbx ; pop rsi ; pop rdi ; ret",
-            "instructions": "pop rbx ; pop rsi ; pop rdi ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 4,
+            "instructions": "pop rbx ; pop rsi ; pop rdi ; ret",
+            "registers_modified": [
+                "bx",
+                "di",
+                "rbx",
+                "rdi",
+                "rsi",
+                "si"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 32,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400018ea",
-            "category": "pop rsi",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 75,
             "gadget": "pop rsi ; pop rdi ; ret",
-            "instructions": "pop rsi ; pop rdi ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 3,
+            "instructions": "pop rsi ; pop rdi ; ret",
+            "registers_modified": [
+                "di",
+                "rdi",
+                "rsi",
+                "si"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 24,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400018eb",
-            "category": "pop rdi",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 85,
             "gadget": "pop rdi ; ret",
-            "instructions": "pop rdi ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "pop rdi ; ret",
+            "registers_modified": [
+                "di",
+                "rdi"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 16,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400018ec",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400019a8",
-            "category": "pop r13",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 60,
             "gadget": "pop r13 ; pop r14 ; pop r15 ; pop rbp ; ret",
-            "instructions": "pop r13 ; pop r14 ; pop r15 ; pop rbp ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 5,
+            "instructions": "pop r13 ; pop r14 ; pop r15 ; pop rbp ; ret",
+            "registers_modified": [
+                "bp",
+                "r13",
+                "r14",
+                "r15",
+                "rbp"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 40,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400019aa",
-            "category": "pop r14",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 60,
             "gadget": "pop r14 ; pop r15 ; pop rbp ; ret",
-            "instructions": "pop r14 ; pop r15 ; pop rbp ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 4,
+            "instructions": "pop r14 ; pop r15 ; pop rbp ; ret",
+            "registers_modified": [
+                "bp",
+                "r14",
+                "r15",
+                "rbp"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 32,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400019ac",
-            "category": "pop r15",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 75,
             "gadget": "pop r15 ; pop rbp ; ret",
-            "instructions": "pop r15 ; pop rbp ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 3,
+            "instructions": "pop r15 ; pop rbp ; ret",
+            "registers_modified": [
+                "bp",
+                "r15",
+                "rbp"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 24,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400019ae",
-            "category": "pop rbp",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 85,
             "gadget": "pop rbp ; ret",
-            "instructions": "pop rbp ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "pop rbp ; ret",
+            "registers_modified": [
+                "bp",
+                "rbp"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 16,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400019af",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001d49",
-            "category": "arithmetic/logic",
+            "byte_verified": true,
+            "categories": [
+                "stack_adjustment"
+            ],
+            "category": "stack_adjustment",
+            "classification_confidence": 85,
             "gadget": "add rsp, 0x58 ; ret",
-            "instructions": "add rsp, 0x58 ; ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "add rsp, 0x58 ; ret",
+            "registers_modified": [
+                "rsp"
+            ],
+            "stack_delta": 96,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001d4d",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001e04",
-            "category": "pop rbx",
+            "byte_verified": true,
+            "categories": [
+                "stack_adjustment",
+                "register_load",
+                "memory_read"
+            ],
+            "category": "stack_adjustment",
+            "classification_confidence": 60,
             "gadget": "mov eax, 0xffffffff ; add rsp, 0x20 ; pop rbx ; ret",
-            "instructions": "mov eax, 0xffffffff ; add rsp, 0x20 ; pop rbx ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 4,
+            "instructions": "mov eax, 0xffffffff ; add rsp, 0x20 ; pop rbx ; ret",
+            "registers_modified": [
+                "bx",
+                "eax",
+                "rbx",
+                "rsp"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 48,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001e09",
-            "category": "pop rbx",
+            "byte_verified": true,
+            "categories": [
+                "stack_adjustment",
+                "register_load",
+                "memory_read"
+            ],
+            "category": "stack_adjustment",
+            "classification_confidence": 75,
             "gadget": "add rsp, 0x20 ; pop rbx ; ret",
-            "instructions": "add rsp, 0x20 ; pop rbx ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 3,
+            "instructions": "add rsp, 0x20 ; pop rbx ; ret",
+            "registers_modified": [
+                "bx",
+                "rbx",
+                "rsp"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 48,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001e0d",
-            "category": "pop rbx",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 85,
             "gadget": "pop rbx ; ret",
-            "instructions": "pop rbx ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "pop rbx ; ret",
+            "registers_modified": [
+                "bx",
+                "rbx"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 16,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001e0e",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001e20",
-            "category": "pop rbx",
+            "byte_verified": true,
+            "categories": [
+                "stack_adjustment",
+                "register_load",
+                "memory_read",
+                "logical"
+            ],
+            "category": "stack_adjustment",
+            "classification_confidence": 60,
             "gadget": "xor eax, eax ; add rsp, 0x20 ; pop rbx ; ret",
-            "instructions": "xor eax, eax ; add rsp, 0x20 ; pop rbx ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 4,
+            "instructions": "xor eax, eax ; add rsp, 0x20 ; pop rbx ; ret",
+            "registers_modified": [
+                "bx",
+                "rbx",
+                "rsp"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 48,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001e22",
-            "category": "pop rbx",
+            "byte_verified": true,
+            "categories": [
+                "stack_adjustment",
+                "register_load",
+                "memory_read"
+            ],
+            "category": "stack_adjustment",
+            "classification_confidence": 75,
             "gadget": "add rsp, 0x20 ; pop rbx ; ret",
-            "instructions": "add rsp, 0x20 ; pop rbx ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 3,
+            "instructions": "add rsp, 0x20 ; pop rbx ; ret",
+            "registers_modified": [
+                "bx",
+                "rbx",
+                "rsp"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 48,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001e26",
-            "category": "pop rbx",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 85,
             "gadget": "pop rbx ; ret",
-            "instructions": "pop rbx ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "pop rbx ; ret",
+            "registers_modified": [
+                "bx",
+                "rbx"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 16,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001e27",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001fa1",
-            "category": "arithmetic/logic",
+            "byte_verified": true,
+            "categories": [
+                "stack_adjustment",
+                "logical"
+            ],
+            "category": "stack_adjustment",
+            "classification_confidence": 75,
             "gadget": "xor eax, eax ; add rsp, 0x38 ; ret",
-            "instructions": "xor eax, eax ; add rsp, 0x38 ; ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 3,
+            "instructions": "xor eax, eax ; add rsp, 0x38 ; ret",
+            "registers_modified": [
+                "rsp"
+            ],
+            "stack_delta": 64,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001fa3",
-            "category": "arithmetic/logic",
+            "byte_verified": true,
+            "categories": [
+                "stack_adjustment"
+            ],
+            "category": "stack_adjustment",
+            "classification_confidence": 85,
             "gadget": "add rsp, 0x38 ; ret",
-            "instructions": "add rsp, 0x38 ; ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "add rsp, 0x38 ; ret",
+            "registers_modified": [
+                "rsp"
+            ],
+            "stack_delta": 64,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140001fa7",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x000000014000202e",
-            "category": "arithmetic/logic",
+            "byte_verified": true,
+            "categories": [
+                "stack_adjustment",
+                "logical"
+            ],
+            "category": "stack_adjustment",
+            "classification_confidence": 75,
             "gadget": "xor eax, eax ; add rsp, 0x28 ; ret",
-            "instructions": "xor eax, eax ; add rsp, 0x28 ; ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 3,
+            "instructions": "xor eax, eax ; add rsp, 0x28 ; ret",
+            "registers_modified": [
+                "rsp"
+            ],
+            "stack_delta": 48,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140002030",
-            "category": "arithmetic/logic",
+            "byte_verified": true,
+            "categories": [
+                "stack_adjustment"
+            ],
+            "category": "stack_adjustment",
+            "classification_confidence": 85,
             "gadget": "add rsp, 0x28 ; ret",
-            "instructions": "add rsp, 0x28 ; ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "add rsp, 0x28 ; ret",
+            "registers_modified": [
+                "rsp"
+            ],
+            "stack_delta": 48,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140002034",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140002090",
-            "category": "arithmetic/logic",
+            "byte_verified": true,
+            "categories": [
+                "stack_adjustment",
+                "logical"
+            ],
+            "category": "stack_adjustment",
+            "classification_confidence": 75,
             "gadget": "xor eax, eax ; add rsp, 0x28 ; ret",
-            "instructions": "xor eax, eax ; add rsp, 0x28 ; ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 3,
+            "instructions": "xor eax, eax ; add rsp, 0x28 ; ret",
+            "registers_modified": [
+                "rsp"
+            ],
+            "stack_delta": 48,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140002092",
-            "category": "arithmetic/logic",
+            "byte_verified": true,
+            "categories": [
+                "stack_adjustment"
+            ],
+            "category": "stack_adjustment",
+            "classification_confidence": 85,
             "gadget": "add rsp, 0x28 ; ret",
-            "instructions": "add rsp, 0x28 ; ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "add rsp, 0x28 ; ret",
+            "registers_modified": [
+                "rsp"
+            ],
+            "stack_delta": 48,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140002096",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400020d1",
-            "category": "arithmetic/logic",
+            "byte_verified": true,
+            "categories": [
+                "stack_adjustment",
+                "register_load",
+                "memory_write"
+            ],
+            "category": "stack_adjustment",
+            "classification_confidence": 60,
             "gadget": "mov dword ptr [rip + 0x500d], 1 ; mov eax, 1 ; add rsp, 0x38 ; ret",
-            "instructions": "mov dword ptr [rip + 0x500d], 1 ; mov eax, 1 ; add rsp, 0x38 ; ret"
+            "has_memory_read": false,
+            "has_memory_write": true,
+            "instruction_count": 4,
+            "instructions": "mov dword ptr [rip + 0x500d], 1 ; mov eax, 1 ; add rsp, 0x38 ; ret",
+            "registers_modified": [
+                "eax",
+                "rsp"
+            ],
+            "stack_delta": 64,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400020db",
-            "category": "arithmetic/logic",
+            "byte_verified": true,
+            "categories": [
+                "stack_adjustment",
+                "register_load"
+            ],
+            "category": "stack_adjustment",
+            "classification_confidence": 75,
             "gadget": "mov eax, 1 ; add rsp, 0x38 ; ret",
-            "instructions": "mov eax, 1 ; add rsp, 0x38 ; ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 3,
+            "instructions": "mov eax, 1 ; add rsp, 0x38 ; ret",
+            "registers_modified": [
+                "eax",
+                "rsp"
+            ],
+            "stack_delta": 64,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400020e0",
-            "category": "arithmetic/logic",
+            "byte_verified": true,
+            "categories": [
+                "stack_adjustment"
+            ],
+            "category": "stack_adjustment",
+            "classification_confidence": 85,
             "gadget": "add rsp, 0x38 ; ret",
-            "instructions": "add rsp, 0x38 ; ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "add rsp, 0x38 ; ret",
+            "registers_modified": [
+                "rsp"
+            ],
+            "stack_delta": 64,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400020e4",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x000000014000217d",
-            "category": "arithmetic/logic",
+            "byte_verified": true,
+            "categories": [
+                "stack_adjustment",
+                "register_load"
+            ],
+            "category": "stack_adjustment",
+            "classification_confidence": 75,
             "gadget": "mov eax, 1 ; add rsp, 0x38 ; ret",
-            "instructions": "mov eax, 1 ; add rsp, 0x38 ; ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 3,
+            "instructions": "mov eax, 1 ; add rsp, 0x38 ; ret",
+            "registers_modified": [
+                "eax",
+                "rsp"
+            ],
+            "stack_delta": 64,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140002182",
-            "category": "arithmetic/logic",
+            "byte_verified": true,
+            "categories": [
+                "stack_adjustment"
+            ],
+            "category": "stack_adjustment",
+            "classification_confidence": 85,
             "gadget": "add rsp, 0x38 ; ret",
-            "instructions": "add rsp, 0x38 ; ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "add rsp, 0x38 ; ret",
+            "registers_modified": [
+                "rsp"
+            ],
+            "stack_delta": 64,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140002186",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400021c0",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 85,
             "gadget": "fninit ; ret",
-            "instructions": "fninit ; ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "fninit ; ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400021c2",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400021e8",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400021f0",
-            "category": "arithmetic/logic",
+            "byte_verified": true,
+            "categories": [
+                "memory_read",
+                "logical"
+            ],
+            "category": "memory_read",
+            "classification_confidence": 60,
             "gadget": "xor eax, eax ; cmp word ptr [rcx + 0x18], 0x20b ; sete al ; ret",
-            "instructions": "xor eax, eax ; cmp word ptr [rcx + 0x18], 0x20b ; sete al ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 4,
+            "instructions": "xor eax, eax ; cmp word ptr [rcx + 0x18], 0x20b ; sete al ; ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400021f2",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "memory_read",
+                "logical"
+            ],
+            "category": "memory_read",
+            "classification_confidence": 75,
             "gadget": "cmp word ptr [rcx + 0x18], 0x20b ; sete al ; ret",
-            "instructions": "cmp word ptr [rcx + 0x18], 0x20b ; sete al ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 3,
+            "instructions": "cmp word ptr [rcx + 0x18], 0x20b ; sete al ; ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400021f8",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 85,
             "gadget": "sete al ; ret",
-            "instructions": "sete al ; ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "sete al ; ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400021fb",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x000000014000224d",
-            "category": "arithmetic/logic",
+            "byte_verified": true,
+            "categories": [
+                "logical"
+            ],
+            "category": "logical",
+            "classification_confidence": 85,
             "gadget": "xor eax, eax ; ret",
-            "instructions": "xor eax, eax ; ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "xor eax, eax ; ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x000000014000224f",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x000000014000227d",
-            "category": "pop rbx",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 60,
             "gadget": "pop rbx ; pop rsi ; pop rdi ; pop rbp ; ret",
-            "instructions": "pop rbx ; pop rsi ; pop rdi ; pop rbp ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 5,
+            "instructions": "pop rbx ; pop rsi ; pop rdi ; pop rbp ; ret",
+            "registers_modified": [
+                "bp",
+                "bx",
+                "di",
+                "rbp",
+                "rbx",
+                "rdi",
+                "rsi",
+                "si"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 40,
+            "terminator_type": "RET"
         },
         {
             "address": "0x000000014000227e",
-            "category": "pop rsi",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 60,
             "gadget": "pop rsi ; pop rdi ; pop rbp ; ret",
-            "instructions": "pop rsi ; pop rdi ; pop rbp ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 4,
+            "instructions": "pop rsi ; pop rdi ; pop rbp ; ret",
+            "registers_modified": [
+                "bp",
+                "di",
+                "rbp",
+                "rdi",
+                "rsi",
+                "si"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 32,
+            "terminator_type": "RET"
         },
         {
             "address": "0x000000014000227f",
-            "category": "pop rdi",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 75,
             "gadget": "pop rdi ; pop rbp ; ret",
-            "instructions": "pop rdi ; pop rbp ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 3,
+            "instructions": "pop rdi ; pop rbp ; ret",
+            "registers_modified": [
+                "bp",
+                "di",
+                "rbp",
+                "rdi"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 24,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140002280",
-            "category": "pop rbp",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 85,
             "gadget": "pop rbp ; ret",
-            "instructions": "pop rbp ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "pop rbp ; ret",
+            "registers_modified": [
+                "bp",
+                "rbp"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 16,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140002281",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140002310",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x000000014000236d",
-            "category": "arithmetic/logic",
+            "byte_verified": true,
+            "categories": [
+                "logical"
+            ],
+            "category": "logical",
+            "classification_confidence": 85,
             "gadget": "xor eax, eax ; ret",
-            "instructions": "xor eax, eax ; ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "xor eax, eax ; ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x000000014000236f",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x000000014000238f",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "register_load"
+            ],
+            "category": "register_load",
+            "classification_confidence": 85,
             "gadget": "mov eax, ecx ; ret",
-            "instructions": "mov eax, ecx ; ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "mov eax, ecx ; ret",
+            "registers_modified": [
+                "eax"
+            ],
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140002391",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400023a0",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 75,
             "gadget": "movzx ecx, word ptr [rax + 6] ; mov eax, ecx ; ret",
-            "instructions": "movzx ecx, word ptr [rax + 6] ; mov eax, ecx ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 3,
+            "instructions": "movzx ecx, word ptr [rax + 6] ; mov eax, ecx ; ret",
+            "registers_modified": [
+                "eax",
+                "ecx"
+            ],
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400023a4",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "register_load"
+            ],
+            "category": "register_load",
+            "classification_confidence": 85,
             "gadget": "mov eax, ecx ; ret",
-            "instructions": "mov eax, ecx ; ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "mov eax, ecx ; ret",
+            "registers_modified": [
+                "eax"
+            ],
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400023a6",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400023d0",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140002428",
-            "category": "arithmetic/logic",
+            "byte_verified": true,
+            "categories": [
+                "logical"
+            ],
+            "category": "logical",
+            "classification_confidence": 85,
             "gadget": "xor eax, eax ; ret",
-            "instructions": "xor eax, eax ; ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "xor eax, eax ; ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x000000014000242a",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x000000014000244f",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "register_load"
+            ],
+            "category": "register_load",
+            "classification_confidence": 85,
             "gadget": "mov rax, rdx ; ret",
-            "instructions": "mov rax, rdx ; ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "mov rax, rdx ; ret",
+            "registers_modified": [
+                "rax"
+            ],
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140002452",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140002458",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read",
+                "logical"
+            ],
+            "category": "register_load",
+            "classification_confidence": 60,
             "gadget": "cmp word ptr [rcx + 0x18], 0x20b ; cmove rdx, rax ; mov rax, rdx ; ret",
-            "instructions": "cmp word ptr [rcx + 0x18], 0x20b ; cmove rdx, rax ; mov rax, rdx ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 4,
+            "instructions": "cmp word ptr [rcx + 0x18], 0x20b ; cmove rdx, rax ; mov rax, rdx ; ret",
+            "registers_modified": [
+                "rax"
+            ],
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x000000014000245e",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "register_load"
+            ],
+            "category": "register_load",
+            "classification_confidence": 75,
             "gadget": "cmove rdx, rax ; mov rax, rdx ; ret",
-            "instructions": "cmove rdx, rax ; mov rax, rdx ; ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 3,
+            "instructions": "cmove rdx, rax ; mov rax, rdx ; ret",
+            "registers_modified": [
+                "rax"
+            ],
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140002462",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "register_load"
+            ],
+            "category": "register_load",
+            "classification_confidence": 85,
             "gadget": "mov rax, rdx ; ret",
-            "instructions": "mov rax, rdx ; ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "mov rax, rdx ; ret",
+            "registers_modified": [
+                "rax"
+            ],
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140002465",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140002490",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400024ed",
-            "category": "arithmetic/logic",
+            "byte_verified": true,
+            "categories": [
+                "logical"
+            ],
+            "category": "logical",
+            "classification_confidence": 85,
             "gadget": "xor eax, eax ; ret",
-            "instructions": "xor eax, eax ; ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "xor eax, eax ; ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400024ef",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400024f0",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read",
+                "logical"
+            ],
+            "category": "register_load",
+            "classification_confidence": 60,
             "gadget": "mov eax, dword ptr [rax + 0x24] ; not eax ; shr eax, 0x1f ; ret",
-            "instructions": "mov eax, dword ptr [rax + 0x24] ; not eax ; shr eax, 0x1f ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 4,
+            "instructions": "mov eax, dword ptr [rax + 0x24] ; not eax ; shr eax, 0x1f ; ret",
+            "registers_modified": [
+                "eax"
+            ],
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400024f3",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "logical"
+            ],
+            "category": "logical",
+            "classification_confidence": 75,
             "gadget": "not eax ; shr eax, 0x1f ; ret",
-            "instructions": "not eax ; shr eax, 0x1f ; ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 3,
+            "instructions": "not eax ; shr eax, 0x1f ; ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400024f5",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "logical"
+            ],
+            "category": "logical",
+            "classification_confidence": 85,
             "gadget": "shr eax, 0x1f ; ret",
-            "instructions": "shr eax, 0x1f ; ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "shr eax, 0x1f ; ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400024f8",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140002521",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "register_load"
+            ],
+            "category": "register_load",
+            "classification_confidence": 85,
             "gadget": "mov rax, r8 ; ret",
-            "instructions": "mov rax, r8 ; ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "mov rax, r8 ; ret",
+            "registers_modified": [
+                "rax"
+            ],
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140002524",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x000000014000257e",
-            "category": "arithmetic/logic",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "logical"
+            ],
+            "category": "register_load",
+            "classification_confidence": 75,
             "gadget": "xor r8d, r8d ; mov rax, r8 ; ret",
-            "instructions": "xor r8d, r8d ; mov rax, r8 ; ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 3,
+            "instructions": "xor r8d, r8d ; mov rax, r8 ; ret",
+            "registers_modified": [
+                "rax"
+            ],
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140002581",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "register_load"
+            ],
+            "category": "register_load",
+            "classification_confidence": 85,
             "gadget": "mov rax, r8 ; ret",
-            "instructions": "mov rax, r8 ; ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "mov rax, r8 ; ret",
+            "registers_modified": [
+                "rax"
+            ],
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140002584",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400025ab",
-            "category": "arithmetic/logic",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read",
+                "arithmetic"
+            ],
+            "category": "register_load",
+            "classification_confidence": 60,
             "gadget": "mov r8d, dword ptr [rax + 0xc] ; add r8, r11 ; mov rax, r8 ; ret",
-            "instructions": "mov r8d, dword ptr [rax + 0xc] ; add r8, r11 ; mov rax, r8 ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 4,
+            "instructions": "mov r8d, dword ptr [rax + 0xc] ; add r8, r11 ; mov rax, r8 ; ret",
+            "registers_modified": [
+                "r8d",
+                "rax"
+            ],
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400025af",
-            "category": "arithmetic/logic",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "arithmetic"
+            ],
+            "category": "register_load",
+            "classification_confidence": 75,
             "gadget": "add r8, r11 ; mov rax, r8 ; ret",
-            "instructions": "add r8, r11 ; mov rax, r8 ; ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 3,
+            "instructions": "add r8, r11 ; mov rax, r8 ; ret",
+            "registers_modified": [
+                "rax"
+            ],
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400025b2",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "register_load"
+            ],
+            "category": "register_load",
+            "classification_confidence": 85,
             "gadget": "mov rax, r8 ; ret",
-            "instructions": "mov rax, r8 ; ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "mov rax, r8 ; ret",
+            "registers_modified": [
+                "rax"
+            ],
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400025b5",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400025e8",
-            "category": "pop rax",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read",
+                "arithmetic",
+                "logical"
+            ],
+            "category": "register_load",
+            "classification_confidence": 60,
             "gadget": "sub rcx, rax ; or qword ptr [rcx], 0 ; pop rax ; pop rcx ; ret",
-            "instructions": "sub rcx, rax ; or qword ptr [rcx], 0 ; pop rax ; pop rcx ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 5,
+            "instructions": "sub rcx, rax ; or qword ptr [rcx], 0 ; pop rax ; pop rcx ; ret",
+            "registers_modified": [
+                "ax",
+                "cx",
+                "rax",
+                "rcx"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 24,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400025eb",
-            "category": "pop rax",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read",
+                "logical"
+            ],
+            "category": "register_load",
+            "classification_confidence": 60,
             "gadget": "or qword ptr [rcx], 0 ; pop rax ; pop rcx ; ret",
-            "instructions": "or qword ptr [rcx], 0 ; pop rax ; pop rcx ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 4,
+            "instructions": "or qword ptr [rcx], 0 ; pop rax ; pop rcx ; ret",
+            "registers_modified": [
+                "ax",
+                "cx",
+                "rax",
+                "rcx"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 24,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400025ef",
-            "category": "pop rax",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 75,
             "gadget": "pop rax ; pop rcx ; ret",
-            "instructions": "pop rax ; pop rcx ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 3,
+            "instructions": "pop rax ; pop rcx ; ret",
+            "registers_modified": [
+                "ax",
+                "cx",
+                "rax",
+                "rcx"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 24,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400025f0",
-            "category": "pop rcx",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 85,
             "gadget": "pop rcx ; ret",
-            "instructions": "pop rcx ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "pop rcx ; ret",
+            "registers_modified": [
+                "cx",
+                "rcx"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 16,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400025f1",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x000000014000262b",
-            "category": "pop rbx",
+            "byte_verified": true,
+            "categories": [
+                "stack_adjustment",
+                "register_load",
+                "memory_read"
+            ],
+            "category": "stack_adjustment",
+            "classification_confidence": 60,
             "gadget": "add rsp, 0x30 ; pop rbx ; pop rsi ; pop rdi ; ret",
-            "instructions": "add rsp, 0x30 ; pop rbx ; pop rsi ; pop rdi ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 5,
+            "instructions": "add rsp, 0x30 ; pop rbx ; pop rsi ; pop rdi ; ret",
+            "registers_modified": [
+                "bx",
+                "di",
+                "rbx",
+                "rdi",
+                "rsi",
+                "rsp",
+                "si"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 80,
+            "terminator_type": "RET"
         },
         {
             "address": "0x000000014000262f",
-            "category": "pop rbx",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 60,
             "gadget": "pop rbx ; pop rsi ; pop rdi ; ret",
-            "instructions": "pop rbx ; pop rsi ; pop rdi ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 4,
+            "instructions": "pop rbx ; pop rsi ; pop rdi ; ret",
+            "registers_modified": [
+                "bx",
+                "di",
+                "rbx",
+                "rdi",
+                "rsi",
+                "si"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 32,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140002630",
-            "category": "pop rsi",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 75,
             "gadget": "pop rsi ; pop rdi ; ret",
-            "instructions": "pop rsi ; pop rdi ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 3,
+            "instructions": "pop rsi ; pop rdi ; ret",
+            "registers_modified": [
+                "di",
+                "rdi",
+                "rsi",
+                "si"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 24,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140002631",
-            "category": "pop rdi",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 85,
             "gadget": "pop rdi ; ret",
-            "instructions": "pop rdi ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "pop rdi ; ret",
+            "registers_modified": [
+                "di",
+                "rdi"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 16,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140002632",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x000000014000268b",
-            "category": "pop rbx",
+            "byte_verified": true,
+            "categories": [
+                "stack_adjustment",
+                "register_load",
+                "memory_read"
+            ],
+            "category": "stack_adjustment",
+            "classification_confidence": 60,
             "gadget": "add rsp, 0x40 ; pop rbx ; pop rsi ; pop rdi ; ret",
-            "instructions": "add rsp, 0x40 ; pop rbx ; pop rsi ; pop rdi ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 5,
+            "instructions": "add rsp, 0x40 ; pop rbx ; pop rsi ; pop rdi ; ret",
+            "registers_modified": [
+                "bx",
+                "di",
+                "rbx",
+                "rdi",
+                "rsi",
+                "rsp",
+                "si"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 96,
+            "terminator_type": "RET"
         },
         {
             "address": "0x000000014000268f",
-            "category": "pop rbx",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 60,
             "gadget": "pop rbx ; pop rsi ; pop rdi ; ret",
-            "instructions": "pop rbx ; pop rsi ; pop rdi ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 4,
+            "instructions": "pop rbx ; pop rsi ; pop rdi ; ret",
+            "registers_modified": [
+                "bx",
+                "di",
+                "rbx",
+                "rdi",
+                "rsi",
+                "si"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 32,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140002690",
-            "category": "pop rsi",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 75,
             "gadget": "pop rsi ; pop rdi ; ret",
-            "instructions": "pop rsi ; pop rdi ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 3,
+            "instructions": "pop rsi ; pop rdi ; ret",
+            "registers_modified": [
+                "di",
+                "rdi",
+                "rsi",
+                "si"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 24,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140002691",
-            "category": "pop rdi",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 85,
             "gadget": "pop rdi ; ret",
-            "instructions": "pop rdi ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "pop rdi ; ret",
+            "registers_modified": [
+                "di",
+                "rdi"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 16,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140002692",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400026dc",
-            "category": "pop rbx",
+            "byte_verified": true,
+            "categories": [
+                "stack_adjustment",
+                "register_load",
+                "memory_read"
+            ],
+            "category": "stack_adjustment",
+            "classification_confidence": 60,
             "gadget": "add rsp, 0x40 ; pop rbx ; pop rsi ; pop rdi ; ret",
-            "instructions": "add rsp, 0x40 ; pop rbx ; pop rsi ; pop rdi ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 5,
+            "instructions": "add rsp, 0x40 ; pop rbx ; pop rsi ; pop rdi ; ret",
+            "registers_modified": [
+                "bx",
+                "di",
+                "rbx",
+                "rdi",
+                "rsi",
+                "rsp",
+                "si"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 96,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400026e0",
-            "category": "pop rbx",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 60,
             "gadget": "pop rbx ; pop rsi ; pop rdi ; ret",
-            "instructions": "pop rbx ; pop rsi ; pop rdi ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 4,
+            "instructions": "pop rbx ; pop rsi ; pop rdi ; ret",
+            "registers_modified": [
+                "bx",
+                "di",
+                "rbx",
+                "rdi",
+                "rsi",
+                "si"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 32,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400026e1",
-            "category": "pop rsi",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 75,
             "gadget": "pop rsi ; pop rdi ; ret",
-            "instructions": "pop rsi ; pop rdi ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 3,
+            "instructions": "pop rsi ; pop rdi ; ret",
+            "registers_modified": [
+                "di",
+                "rdi",
+                "rsi",
+                "si"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 24,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400026e2",
-            "category": "pop rdi",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 85,
             "gadget": "pop rdi ; ret",
-            "instructions": "pop rdi ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "pop rdi ; ret",
+            "registers_modified": [
+                "di",
+                "rdi"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 16,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400026e3",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400026f0",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "register_load"
+            ],
+            "category": "register_load",
+            "classification_confidence": 85,
             "gadget": "lea rax, [rip + 0x969] ; ret",
-            "instructions": "lea rax, [rip + 0x969] ; ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "lea rax, [rip + 0x969] ; ret",
+            "registers_modified": [
+                "rax"
+            ],
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x00000001400026f7",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140002700",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 75,
             "gadget": "mov rax, qword ptr [rip + 0x1d49] ; mov rax, qword ptr [rax] ; ret",
-            "instructions": "mov rax, qword ptr [rip + 0x1d49] ; mov rax, qword ptr [rax] ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 3,
+            "instructions": "mov rax, qword ptr [rip + 0x1d49] ; mov rax, qword ptr [rax] ; ret",
+            "registers_modified": [
+                "rax"
+            ],
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x0000000140002707",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 85,
             "gadget": "mov rax, qword ptr [rax] ; ret",
-            "instructions": "mov rax, qword ptr [rax] ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "mov rax, qword ptr [rax] ; ret",
+            "registers_modified": [
+                "rax"
+            ],
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x000000014000270a",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         },
         {
             "address": "0x000000014000279a",
-            "category": "pop rbx",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 60,
             "gadget": "pop rbx ; pop rsi ; pop rdi ; pop rbp ; ret",
-            "instructions": "pop rbx ; pop rsi ; pop rdi ; pop rbp ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 5,
+            "instructions": "pop rbx ; pop rsi ; pop rdi ; pop rbp ; ret",
+            "registers_modified": [
+                "bp",
+                "bx",
+                "di",
+                "rbp",
+                "rbx",
+                "rdi",
+                "rsi",
+                "si"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 40,
+            "terminator_type": "RET"
         },
         {
             "address": "0x000000014000279b",
-            "category": "pop rsi",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 60,
             "gadget": "pop rsi ; pop rdi ; pop rbp ; ret",
-            "instructions": "pop rsi ; pop rdi ; pop rbp ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 4,
+            "instructions": "pop rsi ; pop rdi ; pop rbp ; ret",
+            "registers_modified": [
+                "bp",
+                "di",
+                "rbp",
+                "rdi",
+                "rsi",
+                "si"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 32,
+            "terminator_type": "RET"
         },
         {
             "address": "0x000000014000279c",
-            "category": "pop rdi",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 75,
             "gadget": "pop rdi ; pop rbp ; ret",
-            "instructions": "pop rdi ; pop rbp ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 3,
+            "instructions": "pop rdi ; pop rbp ; ret",
+            "registers_modified": [
+                "bp",
+                "di",
+                "rbp",
+                "rdi"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 24,
+            "terminator_type": "RET"
         },
         {
             "address": "0x000000014000279d",
-            "category": "pop rbp",
+            "byte_verified": true,
+            "categories": [
+                "register_load",
+                "memory_read"
+            ],
+            "category": "register_load",
+            "classification_confidence": 85,
             "gadget": "pop rbp ; ret",
-            "instructions": "pop rbp ; ret"
+            "has_memory_read": true,
+            "has_memory_write": false,
+            "instruction_count": 2,
+            "instructions": "pop rbp ; ret",
+            "registers_modified": [
+                "bp",
+                "rbp"
+            ],
+            "registers_read": [
+                "rsp"
+            ],
+            "stack_delta": 16,
+            "terminator_type": "RET"
         },
         {
             "address": "0x000000014000279e",
-            "category": "others",
+            "byte_verified": true,
+            "categories": [
+                "misc"
+            ],
+            "category": "misc",
+            "classification_confidence": 95,
             "gadget": "ret",
-            "instructions": "ret"
+            "has_memory_read": false,
+            "has_memory_write": false,
+            "instruction_count": 1,
+            "instructions": "ret",
+            "stack_delta": 8,
+            "terminator_type": "RET"
         }
     ],
     "protections": {
+        "ASLR_PIE": true,
+        "CFG": false,
         "Canary": false,
+        "DEP_NX": true,
+        "GS_Canary": false,
+        "HighEntropyVA": true,
         "NX": true,
         "PIE": true,
-        "RELRO": "N/A (PE format)"
+        "SafeSEH_NoSEH": false
     },
     "raw_payload": {
         "data": "",
@@ -1011,7 +3442,7 @@
         "padding_size": 104,
         "status": "Payload Generation Incomplete - No ROP Chain Synthesized"
     },
-    "report_date": "2026-10-31T20:45:18Z",
+    "report_date": "2026-11-09T14:52:36Z",
     "report_id": "ROPW-classic_bof_c5140d3fe9ac",
     "rop_chain_details": [],
     "rop_chain_generation": {
@@ -1020,9 +3451,9 @@
         "target_syscall": "execve"
     },
     "target_binary": {
-        "filename": "test_binaries\\classic_bof.exe",
+        "filename": "C:\\Users\\Chrisbin Thomas\\Desktop\\ROPWeaver\\test_binaries\\classic_bof.exe",
         "hash": "c5140d3fe9acfbce8b8cf1678e168e7402b8eb59f8d5148b848969cb8297d31f",
         "sha256": "c5140d3fe9acfbce8b8cf1678e168e7402b8eb59f8d5148b848969cb8297d31f"
     },
-    "tool_version": "ROPWeaver_v1.2.3"
+    "tool_version": "ROPWeaver_v1.3.0"
 }
