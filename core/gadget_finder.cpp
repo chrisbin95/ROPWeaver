@@ -32,8 +32,9 @@ GadgetFinder::GadgetFinder(const std::vector<unsigned char>& code,
                            uint64_t base,
                            const std::string& arch,
                            const std::string& binary_path,
-                           size_t maxSize)
-    : GadgetFinder(code, base, arch, binary_path, {}, maxSize)
+                           size_t maxSize,
+                           Endianness instruction_endianness)
+    : GadgetFinder(code, base, arch, binary_path, {}, maxSize, instruction_endianness)
 {
 }
 
@@ -42,9 +43,27 @@ GadgetFinder::GadgetFinder(const std::vector<unsigned char>& code,
                            const std::string& arch,
                            const std::string& binary_path,
                            const std::vector<ExecBufferMapping>& mappings,
-                           size_t maxSize)
-    : m_code(code), m_baseAddress(base), m_arch(arch), m_binaryPath(binary_path), m_maxSize(maxSize), m_mappings(mappings)
+                           size_t maxSize,
+                           Endianness instruction_endianness)
+    : m_code(code),
+      m_baseAddress(base),
+      m_arch(arch),
+      m_binaryPath(binary_path),
+      m_maxSize(maxSize),
+      m_mappings(mappings),
+      m_instruction_endianness(instruction_endianness),
+      handle(0),
+      arch_id(CS_ARCH_X86),
+      mode(CS_MODE_32)
 {
+    // Reject Unknown and Unsupported instruction endianness before Capstone initialization
+    if (m_instruction_endianness == Endianness::Unknown) {
+        throw std::runtime_error("Unknown instruction endianness for architecture: " + arch + " in binary: " + binary_path);
+    }
+    if (m_instruction_endianness == Endianness::Unsupported) {
+        throw std::runtime_error("Unsupported instruction endianness for architecture: " + arch + " in binary: " + binary_path);
+    }
+
     // If no explicit mappings provided, synthesize a single mapping for the entire buffer
     if (m_mappings.empty() && !m_code.empty()) {
         ExecBufferMapping defMap;
@@ -55,6 +74,11 @@ GadgetFinder::GadgetFinder(const std::vector<unsigned char>& code,
         defMap.section_name    = ".text";
         m_mappings.push_back(defMap);
     }
+    // Validate architecture instruction endianness: CS_MODE_BIG_ENDIAN is only supported for 32-bit ARM
+    if (m_instruction_endianness == Endianness::Big && arch != "armv7" && arch != "arm") {
+        throw std::runtime_error("Big-endian instruction decoding is not supported for architecture: " + arch);
+    }
+
     // Choose Capstone arch/mode
     if (arch == "x86") {
         arch_id = CS_ARCH_X86;
@@ -68,6 +92,9 @@ GadgetFinder::GadgetFinder(const std::vector<unsigned char>& code,
     } else if (arch == "armv7" || arch == "arm") {
         arch_id = CS_ARCH_ARM;
         mode = CS_MODE_ARM;
+        if (m_instruction_endianness == Endianness::Big) {
+            mode = static_cast<cs_mode>(mode | CS_MODE_BIG_ENDIAN);
+        }
     } else if (arch == "riscv32") {
         arch_id = CS_ARCH_RISCV;
         mode = get_riscv_mode_from_binary(binary_path);
@@ -87,7 +114,10 @@ GadgetFinder::GadgetFinder(const std::vector<unsigned char>& code,
 }
 
 GadgetFinder::~GadgetFinder() {
-    cs_close(&handle);
+    if (handle != 0) {
+        cs_close(&handle);
+        handle = 0;
+    }
 }
 
 static bool is_terminator_instruction(const cs_insn& insn, const std::string& arch) {
@@ -193,6 +223,10 @@ static void classify_gadget_multidim(Gadget &g, const std::string &arch);
 
 void GadgetFinder::findGadgets() {
     m_gadgets.clear();
+
+    if (m_instruction_endianness != Endianness::Little && m_instruction_endianness != Endianness::Big) {
+        throw std::runtime_error("Unsupported instruction endianness for architecture: " + m_arch);
+    }
 
     if (m_code.empty()) {
         return;

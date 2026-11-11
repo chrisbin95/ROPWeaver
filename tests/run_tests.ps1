@@ -437,6 +437,70 @@ if (Test-Path $TestClassBin) {
     Assert-Test -Name "Endian Classification test binary built" -Condition ($false)
 }
 
+# -------------------------------------------------------------
+# Test 10: GadgetFinder Endianness Integration & Rejection
+# -------------------------------------------------------------
+Write-Host "`n[*] Test 10: GadgetFinder Endianness Integration & Rejection..." -ForegroundColor Yellow
+$TestGfSrc = "$ProjectRoot\tests\test_gadget_finder_endianness.cpp"
+$TestGfBin = "$ProjectRoot\build-win\test_gadget_finder_endianness.exe"
+
+if (-not (Test-Path $TestGfBin) -or ((Get-Item $TestGfSrc).LastWriteTime -gt (Get-Item $TestGfBin).LastWriteTime)) {
+    & C:\msys64\mingw64\bin\g++.exe -std=c++17 -I"$ProjectRoot" $TestGfSrc $CoreLib -lcapstone -o $TestGfBin
+}
+
+if (Test-Path $TestGfBin) {
+    $rawGfOut = & $TestGfBin 2>&1
+    $gfCode = $LASTEXITCODE
+    $gfOutStr = $rawGfOut -join "`n"
+
+    Assert-Test -Name "GadgetFinder Endianness test suite exits with code 0" -Condition ($gfCode -eq 0)
+    Assert-Test -Name "GadgetFinder rejects Endianness::Unknown" -Condition ($gfOutStr -match "PASS.*rejects Endianness::Unknown")
+    Assert-Test -Name "GadgetFinder Unknown error message identifies arch and condition" -Condition ($gfOutStr -match "PASS.*Unknown error message")
+    Assert-Test -Name "GadgetFinder rejects Endianness::Unsupported" -Condition ($gfOutStr -match "PASS.*rejects Endianness::Unsupported")
+    Assert-Test -Name "GadgetFinder Unsupported error message identifies arch and condition" -Condition ($gfOutStr -match "PASS.*Unsupported error message")
+    Assert-Test -Name "GadgetFinder default parameter is Endianness::Little" -Condition ($gfOutStr -match "PASS.*default parameter is Endianness::Little")
+    Assert-Test -Name "GadgetFinder default parameter findGadgets() succeeds" -Condition ($gfOutStr -match "PASS.*default parameter findGadgets\(\) succeeds")
+    Assert-Test -Name "GadgetFinder explicit Endianness::Little succeeds" -Condition ($gfOutStr -match "PASS.*explicit Little findGadgets\(\) succeeds")
+    Assert-Test -Name "Big Endian rejected for x86" -Condition ($gfOutStr -match "PASS.*Big Endian rejected for x86\b")
+    Assert-Test -Name "Big Endian rejected for x86_64" -Condition ($gfOutStr -match "PASS.*Big Endian rejected for x86_64")
+    Assert-Test -Name "Big Endian rejected for aarch64" -Condition ($gfOutStr -match "PASS.*Big Endian rejected for aarch64")
+    Assert-Test -Name "Big Endian rejected for arm64" -Condition ($gfOutStr -match "PASS.*Big Endian rejected for arm64")
+    Assert-Test -Name "Big Endian rejected for riscv32" -Condition ($gfOutStr -match "PASS.*Big Endian rejected for riscv32")
+    Assert-Test -Name "Big Endian rejected for riscv64" -Condition ($gfOutStr -match "PASS.*Big Endian rejected for riscv64")
+    Assert-Test -Name "ARM Big Endian (armv7) constructor succeeds" -Condition ($gfOutStr -match "PASS.*ARM Big Endian \(armv7\) constructor succeeds")
+    Assert-Test -Name "ARM Big Endian getInstructionEndianness() == Big" -Condition ($gfOutStr -match "PASS.*ARM Big Endian getInstructionEndianness\(\) == Big")
+    Assert-Test -Name "ARM Big Endian finds gadget for E1 2F FF 1E" -Condition ($gfOutStr -match "PASS.*ARM Big Endian finds gadget for E1 2F FF 1E")
+    Assert-Test -Name "ARM Big Endian decoded as 'bx lr'" -Condition ($gfOutStr -match "PASS.*ARM Big Endian decoded as 'bx lr'")
+    Assert-Test -Name "ARM Big Endian gadget byte_verified == true" -Condition ($gfOutStr -match "PASS.*ARM Big Endian gadget byte_verified == true")
+    Assert-Test -Name "ARM Big Endian ('arm' alias) decoded as 'bx lr'" -Condition ($gfOutStr -match "PASS.*ARM Big Endian \('arm' alias\) decoded as 'bx lr'")
+    Assert-Test -Name "ARM Little Endian (armv7) constructor succeeds" -Condition ($gfOutStr -match "PASS.*ARM Little Endian \(armv7\) constructor succeeds")
+    Assert-Test -Name "ARM Little Endian decoded as 'bx lr'" -Condition ($gfOutStr -match "PASS.*ARM Little Endian decoded as 'bx lr'")
+    Assert-Test -Name "ARM Little Endian gadget byte_verified == true" -Condition ($gfOutStr -match "PASS.*ARM Little Endian gadget byte_verified == true")
+    Assert-Test -Name "Big-endian ARM mode does NOT decode little-endian bytes as 'bx lr'" -Condition ($gfOutStr -match "PASS.*Big-endian ARM mode does NOT decode little-endian bytes as 'bx lr'")
+    Assert-Test -Name "Little-endian ARM mode does NOT decode big-endian bytes as 'bx lr'" -Condition ($gfOutStr -match "PASS.*Little-endian ARM mode does NOT decode big-endian bytes as 'bx lr'")
+} else {
+    Assert-Test -Name "GadgetFinder Endianness test binary built" -Condition ($false)
+}
+
+# CLI Rejection of Unsupported Instruction Endianness
+$rawAmb = & $Ropweaver "$ProjectRoot\test_binaries\elf32_arm_be_ambiguous" 2>&1
+$ambCode = $LASTEXITCODE
+$ambStr = $rawAmb -join "`n"
+Assert-Test -Name "CLI rejects elf32_arm_be_ambiguous with exit code 1" -Condition ($ambCode -ne 0)
+Assert-Test -Name "CLI identifies unsupported instruction endianness for armv7" -Condition ($ambStr -match "Unsupported instruction endianness for architecture: armv7")
+
+$rawRiscv32Be = & $Ropweaver "$ProjectRoot\test_binaries\elf32_riscv_be" 2>&1
+$r32Code = $LASTEXITCODE
+$r32Str = $rawRiscv32Be -join "`n"
+Assert-Test -Name "CLI rejects elf32_riscv_be with exit code 1" -Condition ($r32Code -ne 0)
+Assert-Test -Name "CLI identifies unsupported instruction endianness for riscv32" -Condition ($r32Str -match "Unsupported instruction endianness for architecture: riscv32")
+
+$rawRiscv64Be = & $Ropweaver "$ProjectRoot\test_binaries\elf64_riscv_be" 2>&1
+$r64Code = $LASTEXITCODE
+$r64Str = $rawRiscv64Be -join "`n"
+Assert-Test -Name "CLI rejects elf64_riscv_be with exit code 1" -Condition ($r64Code -ne 0)
+Assert-Test -Name "CLI identifies unsupported instruction endianness for riscv64" -Condition ($r64Str -match "Unsupported instruction endianness for architecture: riscv64")
+
 Write-Host "`n============================================================" -ForegroundColor Cyan
 Write-Host "Test Results: $Passed Passed, $Failed Failed" -ForegroundColor $(if ($Failed -eq 0) { "Green" } else { "Red" })
 Write-Host "============================================================" -ForegroundColor Cyan
