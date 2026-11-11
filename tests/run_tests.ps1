@@ -311,6 +311,98 @@ if (Test-Path $MultiSecBin) {
     Assert-Test -Name "Multi-Section ELF fixture exists" -Condition ($false)
 }
 
+# -------------------------------------------------------------
+# Test 7: Big-Endian ELF Metadata & Architecture Handling
+# -------------------------------------------------------------
+Write-Host "`n[*] Test 7: Big-Endian ELF Metadata & Architecture Handling..." -ForegroundColor Yellow
+
+# 7a: ARMv7 BE-8
+$ArmBe8Bin = "$ProjectRoot\test_binaries\elf32_arm_be8"
+if (Test-Path $ArmBe8Bin) {
+    if (Test-Path $OutJson) { Remove-Item $OutJson -Force }
+    $outBe = & $Ropweaver $ArmBe8Bin -p 2>&1
+    $codeBe = $LASTEXITCODE
+    $outStrBe = $outBe -join "`n"
+
+    Assert-Test -Name "elf32_arm_be8: Analyzed successfully (exit code 0)" -Condition ($codeBe -eq 0)
+    Assert-Test -Name "elf32_arm_be8: Architecture detected as armv7" -Condition ($outStrBe -match "Detected architecture:\s*armv7")
+    if (Test-Path $OutJson) {
+        $jsonBe = Get-Content $OutJson -Raw | ConvertFrom-Json
+        Assert-Test -Name "elf32_arm_be8: JSON file_type is ELF" -Condition ($jsonBe.file_type -eq "ELF")
+        Assert-Test -Name "elf32_arm_be8: JSON architecture is armv7" -Condition ($jsonBe.architecture -eq "armv7")
+        Assert-Test -Name "elf32_arm_be8: Mitigation NX detected as ON" -Condition ($jsonBe.protections.NX -eq $true)
+        Assert-Test -Name "elf32_arm_be8: Discovered gadgets >= 1" -Condition ($jsonBe.gadgets.Count -ge 1)
+        Assert-Test -Name "elf32_arm_be8: Gadgets byte verified" -Condition ($jsonBe.gadgets[0].byte_verified -eq $true)
+    }
+} else {
+    Assert-Test -Name "elf32_arm_be8: Fixture available" -Condition ($false)
+}
+
+# 7b: AArch64 Big-Endian
+$Aarch64BeBin = "$ProjectRoot\test_binaries\elf64_aarch64_be"
+if (Test-Path $Aarch64BeBin) {
+    if (Test-Path $OutJson) { Remove-Item $OutJson -Force }
+    $outAaBe = & $Ropweaver $Aarch64BeBin -p 2>&1
+    $codeAaBe = $LASTEXITCODE
+    $outStrAaBe = $outAaBe -join "`n"
+
+    Assert-Test -Name "elf64_aarch64_be: Analyzed successfully (exit code 0)" -Condition ($codeAaBe -eq 0)
+    Assert-Test -Name "elf64_aarch64_be: Architecture detected as aarch64" -Condition ($outStrAaBe -match "Detected architecture:\s*aarch64")
+    if (Test-Path $OutJson) {
+        $jsonAaBe = Get-Content $OutJson -Raw | ConvertFrom-Json
+        Assert-Test -Name "elf64_aarch64_be: JSON file_type is ELF" -Condition ($jsonAaBe.file_type -eq "ELF")
+        Assert-Test -Name "elf64_aarch64_be: JSON architecture is aarch64" -Condition ($jsonAaBe.architecture -eq "aarch64")
+        Assert-Test -Name "elf64_aarch64_be: Mitigation NX detected as ON" -Condition ($jsonAaBe.protections.NX -eq $true)
+        Assert-Test -Name "elf64_aarch64_be: Discovered gadgets >= 1" -Condition ($jsonAaBe.gadgets.Count -ge 1)
+        Assert-Test -Name "elf64_aarch64_be: Gadgets byte verified" -Condition ($jsonAaBe.gadgets[0].byte_verified -eq $true)
+    }
+} else {
+    Assert-Test -Name "elf64_aarch64_be: Fixture available" -Condition ($false)
+}
+
+# 7c: Invalid Endianness Rejection
+$InvEndBin = "$ProjectRoot\test_binaries\elf_invalid_endian"
+if (Test-Path $InvEndBin) {
+    $outInv = & $Ropweaver $InvEndBin 2>&1
+    $codeInv = $LASTEXITCODE
+    $outStrInv = $outInv -join "`n"
+
+    Assert-Test -Name "elf_invalid_endian: Rejected with non-zero exit code" -Condition ($codeInv -ne 0)
+    Assert-Test -Name "elf_invalid_endian: Error message identifies invalid data encoding" -Condition ($outStrInv -match "invalid or unsupported data encoding")
+} else {
+    Assert-Test -Name "elf_invalid_endian: Fixture available" -Condition ($false)
+}
+
+# -------------------------------------------------------------
+# Test 8: Portable Signed Two's-Complement Endian Readers
+# -------------------------------------------------------------
+Write-Host "`n[*] Test 8: Portable Signed Two's-Complement Endian Readers..." -ForegroundColor Yellow
+$TestEndianSrc = "$ProjectRoot\tests\test_endian_readers.cpp"
+$TestEndianBin = "$ProjectRoot\build-win\test_endian_readers.exe"
+
+if (-not (Test-Path $TestEndianBin) -or ((Get-Item $TestEndianSrc).LastWriteTime -gt (Get-Item $TestEndianBin).LastWriteTime)) {
+    & C:\msys64\mingw64\bin\g++.exe -std=c++17 $TestEndianSrc -o $TestEndianBin
+}
+
+if (Test-Path $TestEndianBin) {
+    $rawEndianOut = & $TestEndianBin 2>&1
+    $endianCode = $LASTEXITCODE
+    $endianOutStr = $rawEndianOut -join "`n"
+
+    Assert-Test -Name "Signed Endian Readers test suite exits with code 0" -Condition ($endianCode -eq 0)
+    Assert-Test -Name "read_i32: Zero (LE & BE) correct" -Condition ($endianOutStr -match "PASS \[32-bit\]: Zero LE = 0" -and $endianOutStr -match "PASS \[32-bit\]: Zero BE = 0")
+    Assert-Test -Name "read_i64: Zero (LE & BE) correct" -Condition ($endianOutStr -match "PASS \[64-bit\]: Zero LE = 0" -and $endianOutStr -match "PASS \[64-bit\]: Zero BE = 0")
+    Assert-Test -Name "read_i32: Positive values (LE & BE) correct" -Condition ($endianOutStr -match "PASS \[32-bit\]: Positive.*LE" -and $endianOutStr -match "PASS \[32-bit\]: Positive.*BE")
+    Assert-Test -Name "read_i64: Positive values (LE & BE) correct" -Condition ($endianOutStr -match "PASS \[64-bit\]: Positive.*LE" -and $endianOutStr -match "PASS \[64-bit\]: Positive.*BE")
+    Assert-Test -Name "read_i32: -1 (LE & BE) correct" -Condition ($endianOutStr -match "PASS \[32-bit\]: -1 LE = -1" -and $endianOutStr -match "PASS \[32-bit\]: -1 BE = -1")
+    Assert-Test -Name "read_i64: -1 (LE & BE) correct" -Condition ($endianOutStr -match "PASS \[64-bit\]: -1 LE = -1" -and $endianOutStr -match "PASS \[64-bit\]: -1 BE = -1")
+    Assert-Test -Name "read_i32: INT32_MIN & INT32_MAX (LE & BE) correct" -Condition ($endianOutStr -match "PASS \[32-bit\]: INT32_MIN" -and $endianOutStr -match "PASS \[32-bit\]: INT32_MAX")
+    Assert-Test -Name "read_i64: INT64_MIN & INT64_MAX (LE & BE) correct" -Condition ($endianOutStr -match "PASS \[64-bit\]: INT64_MIN" -and $endianOutStr -match "PASS \[64-bit\]: INT64_MAX")
+    Assert-Test -Name "read_i64: Dynamic tag DT_FLAGS_1 (LE & BE) correct" -Condition ($endianOutStr -match "PASS \[64-bit\]: DT_FLAGS_1")
+} else {
+    Assert-Test -Name "Signed Endian Readers test binary built" -Condition ($false)
+}
+
 Write-Host "`n============================================================" -ForegroundColor Cyan
 Write-Host "Test Results: $Passed Passed, $Failed Failed" -ForegroundColor $(if ($Failed -eq 0) { "Green" } else { "Red" })
 Write-Host "============================================================" -ForegroundColor Cyan

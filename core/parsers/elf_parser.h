@@ -32,6 +32,11 @@ public:
     const std::vector<SectionInfo>& getSections() const override { return m_sections; }
     const std::vector<ExecBufferMapping>& getExecBufferMappings() const override { return m_exec_mappings; }
 
+    // Endianness and ELF metadata
+    bool isBigEndian() const { return m_is_big_endian; }
+    bool isArmBe8() const { return m_arm_be8; }
+    uint32_t getElfFlags() const { return m_elf_flags; }
+
     // Security mitigations (override FileParser defaults)
     bool isNxEnabled() const override { return m_nx_enabled; }
     bool isPieEnabled() const override { return m_pie_enabled; }
@@ -42,6 +47,11 @@ private:
     Elf32_Ehdr hdr32{};
     Elf64_Ehdr hdr64{};
     std::vector<uint8_t> m_file_data;
+
+    // Endianness and flags
+    bool m_is_big_endian  = false;
+    bool m_arm_be8        = false;
+    uint32_t m_elf_flags  = 0;
 
     // Members needed to satisfy FileParser getters
     std::vector<uint8_t> m_text_section;

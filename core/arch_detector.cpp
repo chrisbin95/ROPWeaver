@@ -35,7 +35,14 @@ std::string ArchDetector::detectArchitecture32(std::ifstream& file) const {
     file.seekg(0, std::ios::beg);
     Elf32_Ehdr ehdr; 
     if (file.read(reinterpret_cast<char*>(&ehdr), sizeof(ehdr))) {
-        switch (ehdr.e_machine) {
+        uint8_t data_encoding = ehdr.e_ident[EI_DATA];
+        if (data_encoding != ELFDATA2LSB && data_encoding != ELFDATA2MSB) {
+            std::cerr << "[!] Invalid or unsupported 32-bit ELF data encoding: " << static_cast<int>(data_encoding) << std::endl;
+            return "unknown";
+        }
+        bool is_be = (data_encoding == ELFDATA2MSB);
+        uint16_t machine = read_u16(reinterpret_cast<const uint8_t*>(&ehdr.e_machine), is_be);
+        switch (machine) {
             case EM_386:
                 return "x86";
             case EM_ARM:
@@ -43,7 +50,7 @@ std::string ArchDetector::detectArchitecture32(std::ifstream& file) const {
             case EM_RISCV:
                 return "riscv32";
             default:
-                std::cerr << "[!] Unknown 32-bit ELF machine type: 0x" << std::hex << ehdr.e_machine << std::endl;
+                std::cerr << "[!] Unknown 32-bit ELF machine type: 0x" << std::hex << machine << std::endl;
                 return "unknown";
         }
     }
@@ -55,7 +62,14 @@ std::string ArchDetector::detectArchitecture64(std::ifstream& file) const {
     file.seekg(0, std::ios::beg);
     Elf64_Ehdr ehdr; 
     if (file.read(reinterpret_cast<char*>(&ehdr), sizeof(ehdr))) {
-        switch (ehdr.e_machine) {
+        uint8_t data_encoding = ehdr.e_ident[EI_DATA];
+        if (data_encoding != ELFDATA2LSB && data_encoding != ELFDATA2MSB) {
+            std::cerr << "[!] Invalid or unsupported 64-bit ELF data encoding: " << static_cast<int>(data_encoding) << std::endl;
+            return "unknown";
+        }
+        bool is_be = (data_encoding == ELFDATA2MSB);
+        uint16_t machine = read_u16(reinterpret_cast<const uint8_t*>(&ehdr.e_machine), is_be);
+        switch (machine) {
             case EM_X86_64:
                 return "x86_64";
             case EM_AARCH64:
@@ -63,7 +77,7 @@ std::string ArchDetector::detectArchitecture64(std::ifstream& file) const {
             case EM_RISCV:
                 return "riscv64";
             default:
-                std::cerr << "[!] Unknown 64-bit ELF machine type: 0x" << std::hex << ehdr.e_machine << std::endl;
+                std::cerr << "[!] Unknown 64-bit ELF machine type: 0x" << std::hex << machine << std::endl;
                 return "unknown";
         }
     }
@@ -138,8 +152,8 @@ std::unique_ptr<FileParser> ArchDetector::createFileParser(const std::string& fi
         return nullptr;
     }
 
-    // Read bytes to check ELF class (EI_CLASS is at offset 4)
-    std::vector<uint8_t> buffer(5, 0); 
+    // Read ELF identification bytes (EI_NIDENT = 16)
+    std::vector<uint8_t> buffer(EI_NIDENT, 0); 
     if (!file.read(reinterpret_cast<char*>(buffer.data()), buffer.size())) {
         std::cerr << "[!] File too small or read error: " << filepath << std::endl;
         return nullptr;
@@ -147,11 +161,23 @@ std::unique_ptr<FileParser> ArchDetector::createFileParser(const std::string& fi
     file.seekg(0, std::ios::beg); // Rewind file for parsers
 
     // ELF detection
-    if (buffer[0] == ELFMAG0 && buffer[1] == ELFMAG1 &&
-        buffer[2] == ELFMAG2 && buffer[3] == ELFMAG3) {
+    if (buffer[EI_MAG0] == ELFMAG0 && buffer[EI_MAG1] == ELFMAG1 &&
+        buffer[EI_MAG2] == ELFMAG2 && buffer[EI_MAG3] == ELFMAG3) {
 
-        // Use buffer[4] to check ELF class
-        std::string arch = (buffer[4] == ELFCLASS32) ?
+        uint8_t elf_class = buffer[EI_CLASS];
+        uint8_t elf_data = buffer[EI_DATA];
+
+        if (elf_class != ELFCLASS32 && elf_class != ELFCLASS64) {
+            std::cerr << "[!] ELF file has invalid class: " << static_cast<int>(elf_class) << "\n";
+            return nullptr;
+        }
+
+        if (elf_data != ELFDATA2LSB && elf_data != ELFDATA2MSB) {
+            std::cerr << "[!] ELF file has invalid or unsupported data encoding: " << static_cast<int>(elf_data) << "\n";
+            return nullptr;
+        }
+
+        std::string arch = (elf_class == ELFCLASS32) ?
              detectArchitecture32(file) :
              detectArchitecture64(file);
 

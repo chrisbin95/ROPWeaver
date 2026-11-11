@@ -244,6 +244,191 @@ def main():
     create_elf64_multisection(os.path.join(target_dir, "elf64_multisection"))
     print("[+] Generated elf64_multisection")
 
+    # 7. ARMv7 32-bit Big-Endian (BE-8 with EF_ARM_BE8 = 0x00800000)
+    create_elf32_be(os.path.join(target_dir, "elf32_arm_be8"), 40, b"\x00\x00\xa0\xe1\x1e\xff\x2f\xe1", base_va=0x00010000, flags=0x00800000)
+    print("[+] Generated elf32_arm_be8")
+
+    # 8. AArch64 64-bit Big-Endian (EI_DATA = 2, LE instructions)
+    create_elf64_be(os.path.join(target_dir, "elf64_aarch64_be"), 183, b"\x1f\x20\x03\xd5\xc0\x03\x5f\xd6", base_va=0x400000)
+    print("[+] Generated elf64_aarch64_be")
+
+    # 9. Invalid Endianness ELF (EI_DATA = 0)
+    create_elf_invalid_endian(os.path.join(target_dir, "elf_invalid_endian"))
+    print("[+] Generated elf_invalid_endian")
+
+def create_elf32_be(filename, machine, code_bytes, base_va=0x00010000, flags=0, has_gnu_stack=True, nx=True):
+    e_ident = b"\x7fELF\x01\x02\x01\x00\x00" + b"\x00" * 7
+    e_type = 2 # ET_EXEC
+    e_machine = machine
+    e_version = 1
+    
+    ehdr_size = 52
+    phdr_size = 32
+    shdr_size = 40
+    
+    num_phdrs = 2 if has_gnu_stack else 1
+    phoff = ehdr_size
+    
+    code_off = phoff + (num_phdrs * phdr_size)
+    if code_off % 16 != 0:
+        code_off += (16 - (code_off % 16))
+    
+    code_va = base_va + (code_off % 0x1000)
+    e_entry = code_va
+    code_size = len(code_bytes)
+    
+    shstrtab_off = code_off + code_size
+    if shstrtab_off % 4 != 0:
+        shstrtab_off += (4 - (shstrtab_off % 4))
+    
+    shstrtab = b"\x00.text\x00.shstrtab\x00"
+    shstrtab_size = len(shstrtab)
+    
+    shoff = shstrtab_off + shstrtab_size
+    if shoff % 4 != 0:
+        shoff += (4 - (shoff % 4))
+    num_shdrs = 3
+    shstrndx = 2
+    
+    ehdr = struct.pack(
+        ">16sHHIIIIIHHHHHH",
+        e_ident, e_type, e_machine, e_version, e_entry,
+        phoff, shoff, flags, ehdr_size, phdr_size, num_phdrs,
+        shdr_size, num_shdrs, shstrndx
+    )
+    
+    pt_load_filesz = (code_off + code_size)
+    pt_load_memsz = pt_load_filesz
+    phdr_load = struct.pack(
+        ">IIIIIIII",
+        1, 0, base_va, base_va, pt_load_filesz, pt_load_memsz, 7, 0x1000
+    )
+    
+    phdrs = phdr_load
+    if has_gnu_stack:
+        stk_flags = 6 if nx else 7
+        phdr_stack = struct.pack(
+            ">IIIIIIII",
+            0x6474e551, 0, 0, 0, 0, 0, stk_flags, 0x10
+        )
+        phdrs += phdr_stack
+        
+    file_bytes = bytearray(ehdr)
+    file_bytes += phdrs
+    if len(file_bytes) < code_off:
+        file_bytes += b"\x00" * (code_off - len(file_bytes))
+    file_bytes += code_bytes
+    
+    if len(file_bytes) < shstrtab_off:
+        file_bytes += b"\x00" * (shstrtab_off - len(file_bytes))
+    file_bytes += shstrtab
+    
+    if len(file_bytes) < shoff:
+        file_bytes += b"\x00" * (shoff - len(file_bytes))
+        
+    sh0 = b"\x00" * shdr_size
+    sh1 = struct.pack(
+        ">IIIIIIIIII",
+        1, 1, 6, code_va, code_off, code_size, 0, 0, 16, 0
+    )
+    sh2 = struct.pack(
+        ">IIIIIIIIII",
+        7, 3, 0, 0, shstrtab_off, shstrtab_size, 0, 0, 1, 0
+    )
+    file_bytes += sh0 + sh1 + sh2
+    
+    with open(filename, "wb") as f:
+        f.write(file_bytes)
+
+def create_elf64_be(filename, machine, code_bytes, base_va=0x400000, flags=0, has_gnu_stack=True, nx=True):
+    e_ident = b"\x7fELF\x02\x02\x01\x00\x00" + b"\x00" * 7
+    e_type = 2 # ET_EXEC
+    e_machine = machine
+    e_version = 1
+    
+    ehdr_size = 64
+    phdr_size = 56
+    shdr_size = 64
+    
+    num_phdrs = 2 if has_gnu_stack else 1
+    phoff = ehdr_size
+    
+    code_off = phoff + (num_phdrs * phdr_size)
+    if code_off % 16 != 0:
+        code_off += (16 - (code_off % 16))
+    
+    code_va = base_va + (code_off % 0x1000)
+    e_entry = code_va
+    code_size = len(code_bytes)
+    
+    shstrtab_off = code_off + code_size
+    if shstrtab_off % 4 != 0:
+        shstrtab_off += (4 - (shstrtab_off % 4))
+    
+    shstrtab = b"\x00.text\x00.shstrtab\x00"
+    shstrtab_size = len(shstrtab)
+    
+    shoff = shstrtab_off + shstrtab_size
+    if shoff % 8 != 0:
+        shoff += (8 - (shoff % 8))
+    num_shdrs = 3
+    shstrndx = 2
+    
+    ehdr = struct.pack(
+        ">16sHHIQQQIHHHHHH",
+        e_ident, e_type, e_machine, e_version, e_entry,
+        phoff, shoff, flags, ehdr_size, phdr_size, num_phdrs,
+        shdr_size, num_shdrs, shstrndx
+    )
+    
+    pt_load_filesz = (code_off + code_size)
+    pt_load_memsz = pt_load_filesz
+    phdr_load = struct.pack(
+        ">IIQQQQQQ",
+        1, 7, 0, base_va, base_va, pt_load_filesz, pt_load_memsz, 0x1000
+    )
+    
+    phdrs = phdr_load
+    if has_gnu_stack:
+        stk_flags = 6 if nx else 7
+        phdr_stack = struct.pack(
+            ">IIQQQQQQ",
+            0x6474e551, stk_flags, 0, 0, 0, 0, 0, 0x10
+        )
+        phdrs += phdr_stack
+        
+    file_bytes = bytearray(ehdr)
+    file_bytes += phdrs
+    if len(file_bytes) < code_off:
+        file_bytes += b"\x00" * (code_off - len(file_bytes))
+    file_bytes += code_bytes
+    
+    if len(file_bytes) < shstrtab_off:
+        file_bytes += b"\x00" * (shstrtab_off - len(file_bytes))
+    file_bytes += shstrtab
+    
+    if len(file_bytes) < shoff:
+        file_bytes += b"\x00" * (shoff - len(file_bytes))
+        
+    sh0 = b"\x00" * shdr_size
+    sh1 = struct.pack(
+        ">IIQQQQIIQQ",
+        1, 1, 6, code_va, code_off, code_size, 0, 0, 16, 0
+    )
+    sh2 = struct.pack(
+        ">IIQQQQIIQQ",
+        7, 3, 0, 0, shstrtab_off, shstrtab_size, 0, 0, 1, 0
+    )
+    file_bytes += sh0 + sh1 + sh2
+    
+    with open(filename, "wb") as f:
+        f.write(file_bytes)
+
+def create_elf_invalid_endian(filename):
+    e_ident = b"\x7fELF\x01\x00\x01\x00\x00" + b"\x00" * 7
+    with open(filename, "wb") as f:
+        f.write(e_ident + b"\x00" * 48)
+
 def create_elf64_multisection(filename):
     # Two executable sections separated by a 4096-byte gap:
     # .init: VA 0x401000, file offset 0x1000, size 16 bytes: nop; nop; ret
