@@ -403,6 +403,40 @@ if (Test-Path $TestEndianBin) {
     Assert-Test -Name "Signed Endian Readers test binary built" -Condition ($false)
 }
 
+# -------------------------------------------------------------
+# Test 9: Endianness & Instruction Byte Order Classification
+# -------------------------------------------------------------
+Write-Host "`n[*] Test 9: Endianness & Instruction Byte Order Classification..." -ForegroundColor Yellow
+$TestClassSrc = "$ProjectRoot\tests\test_endian_classification.cpp"
+$TestClassBin = "$ProjectRoot\build-win\test_endian_classification.exe"
+$CoreLib = "$ProjectRoot\build-win\libropweaver_core.a"
+
+if (-not (Test-Path $TestClassBin) -or ((Get-Item $TestClassSrc).LastWriteTime -gt (Get-Item $TestClassBin).LastWriteTime)) {
+    & C:\msys64\mingw64\bin\g++.exe -std=c++17 -I"$ProjectRoot" $TestClassSrc $CoreLib -o $TestClassBin
+}
+
+if (Test-Path $TestClassBin) {
+    $rawClassOut = & $TestClassBin 2>&1
+    $classCode = $LASTEXITCODE
+    $classOutStr = $rawClassOut -join "`n"
+
+    Assert-Test -Name "Endian Classification test suite exits with code 0" -Condition ($classCode -eq 0)
+    Assert-Test -Name "FileParser default unestablished: Meta=Unknown, Inst=Unknown" -Condition ($classOutStr -match "FileParser default unestablished")
+    Assert-Test -Name "PE64: Meta=Little, Inst=Little" -Condition ($classOutStr -match "PE64.*Meta=Little, Inst=Little")
+    Assert-Test -Name "ELF32 x86: Meta=Little, Inst=Little" -Condition ($classOutStr -match "ELF32 x86: Meta=Little, Inst=Little")
+    Assert-Test -Name "ELF32 ARMv7 LE: Meta=Little, Inst=Little" -Condition ($classOutStr -match "ELF32 ARMv7 LE: Meta=Little, Inst=Little")
+    Assert-Test -Name "ELF32 ARMv7 BE-8: Meta=Big, Inst=Little" -Condition ($classOutStr -match "ELF32 ARMv7 BE-8: Meta=Big, Inst=Little")
+    Assert-Test -Name "ELF32 ARMv7 BE Ambiguous: Meta=Big, Inst=Unsupported" -Condition ($classOutStr -match "ELF32 ARMv7 BE Ambiguous.*Meta=Big, Inst=Unsupported")
+    Assert-Test -Name "ELF64 AArch64 LE: Meta=Little, Inst=Little" -Condition ($classOutStr -match "ELF64 AArch64 LE: Meta=Little, Inst=Little")
+    Assert-Test -Name "ELF64 AArch64 BE: Meta=Big, Inst=Little" -Condition ($classOutStr -match "ELF64 AArch64 BE.*Meta=Big, Inst=Little")
+    Assert-Test -Name "ELF32 RISC-V LE: Meta=Little, Inst=Little" -Condition ($classOutStr -match "ELF32 RISC-V LE: Meta=Little, Inst=Little")
+    Assert-Test -Name "ELF64 RISC-V LE: Meta=Little, Inst=Little" -Condition ($classOutStr -match "ELF64 RISC-V LE: Meta=Little, Inst=Little")
+    Assert-Test -Name "ELF32 RISC-V BE: Meta=Big, Inst=Unsupported" -Condition ($classOutStr -match "ELF32 RISC-V BE: Meta=Big, Inst=Unsupported")
+    Assert-Test -Name "ELF64 RISC-V BE: Meta=Big, Inst=Unsupported" -Condition ($classOutStr -match "ELF64 RISC-V BE: Meta=Big, Inst=Unsupported")
+} else {
+    Assert-Test -Name "Endian Classification test binary built" -Condition ($false)
+}
+
 Write-Host "`n============================================================" -ForegroundColor Cyan
 Write-Host "Test Results: $Passed Passed, $Failed Failed" -ForegroundColor $(if ($Failed -eq 0) { "Green" } else { "Red" })
 Write-Host "============================================================" -ForegroundColor Cyan

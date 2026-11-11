@@ -22,6 +22,14 @@ struct ExecBufferMapping {
   std::string section_name;
 };
 
+// Endianness classification for container metadata and instruction byte order
+enum class Endianness {
+  Little,
+  Big,
+  Unknown,
+  Unsupported
+};
+
 class FileParser {
 public:
   explicit FileParser(const std::string &path) : m_filepath(path) {}
@@ -36,6 +44,10 @@ public:
   virtual bool is64Bit() const = 0;
   virtual std::string getBinaryType() const = 0; // ELF, PE, Mach-O
   virtual std::string getFilePath() const = 0;
+
+  // Endianness classification (defaults to Unknown for unestablished formats)
+  virtual Endianness getMetadataEndianness() const { return Endianness::Unknown; }
+  virtual Endianness getInstructionEndianness() const { return Endianness::Unknown; }
 
   // Security mitigations (defaults)
   virtual bool isNxEnabled() const { return false; }

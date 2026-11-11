@@ -33,7 +33,9 @@ public:
     const std::vector<ExecBufferMapping>& getExecBufferMappings() const override { return m_exec_mappings; }
 
     // Endianness and ELF metadata
-    bool isBigEndian() const { return m_is_big_endian; }
+    Endianness getMetadataEndianness() const override { return m_metadata_endianness; }
+    Endianness getInstructionEndianness() const override { return m_instruction_endianness; }
+    bool isBigEndian() const { return m_metadata_endianness == Endianness::Big; }
     bool isArmBe8() const { return m_arm_be8; }
     uint32_t getElfFlags() const { return m_elf_flags; }
 
@@ -49,9 +51,11 @@ private:
     std::vector<uint8_t> m_file_data;
 
     // Endianness and flags
-    bool m_is_big_endian  = false;
-    bool m_arm_be8        = false;
-    uint32_t m_elf_flags  = 0;
+    Endianness m_metadata_endianness    = Endianness::Unknown;
+    Endianness m_instruction_endianness = Endianness::Unknown;
+    bool m_is_big_endian                = false;
+    bool m_arm_be8                      = false;
+    uint32_t m_elf_flags                = 0;
 
     // Members needed to satisfy FileParser getters
     std::vector<uint8_t> m_text_section;

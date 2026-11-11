@@ -256,6 +256,18 @@ def main():
     create_elf_invalid_endian(os.path.join(target_dir, "elf_invalid_endian"))
     print("[+] Generated elf_invalid_endian")
 
+    # 10. ARMv7 32-bit Big-Endian Ambiguous (EF_ARM_BE8 = 0, unverified instruction endianness)
+    create_elf32_be(os.path.join(target_dir, "elf32_arm_be_ambiguous"), 40, b"\xe1\xa0\x00\x00\xe1\x2f\xff\x1e", base_va=0x00010000, flags=0)
+    print("[+] Generated elf32_arm_be_ambiguous")
+
+    # 11. RISC-V 32-bit Big-Endian (EI_DATA = 2)
+    create_elf32_be(os.path.join(target_dir, "elf32_riscv_be"), 243, b"\x13\x00\x00\x00\x67\x80\x00\x00", base_va=0x00010000, flags=0)
+    print("[+] Generated elf32_riscv_be")
+
+    # 12. RISC-V 64-bit Big-Endian (EI_DATA = 2)
+    create_elf64_be(os.path.join(target_dir, "elf64_riscv_be"), 243, b"\x13\x00\x00\x00\x67\x80\x00\x00", base_va=0x400000, flags=0)
+    print("[+] Generated elf64_riscv_be")
+
 def create_elf32_be(filename, machine, code_bytes, base_va=0x00010000, flags=0, has_gnu_stack=True, nx=True):
     e_ident = b"\x7fELF\x01\x02\x01\x00\x00" + b"\x00" * 7
     e_type = 2 # ET_EXEC

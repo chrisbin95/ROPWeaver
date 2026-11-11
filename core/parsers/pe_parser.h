@@ -44,6 +44,10 @@ public:
     std::string getBinaryType() const override { return "PE"; }
     std::string getFilePath() const override { return m_filepath; } 
 
+    // Endianness classification (PE binaries and Windows targets are strictly Little-Endian)
+    Endianness getMetadataEndianness() const override { return Endianness::Little; }
+    Endianness getInstructionEndianness() const override { return Endianness::Little; }
+
     // Legacy FileParser interface
     bool isNxEnabled() const override { return mitigations_.nx_compat; }
     bool isPieEnabled() const override { return mitigations_.dynamic_base; }

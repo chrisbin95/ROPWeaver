@@ -442,11 +442,18 @@ bool ELFParser::parse(const std::string& filepath) {
 
     // Data encoding validation
     uint8_t data_encoding = data[EI_DATA];
-    if (data_encoding != ELFDATA2LSB && data_encoding != ELFDATA2MSB) {
+    if (data_encoding == ELFDATA2LSB) {
+        m_metadata_endianness = Endianness::Little;
+        m_is_big_endian = false;
+    } else if (data_encoding == ELFDATA2MSB) {
+        m_metadata_endianness = Endianness::Big;
+        m_is_big_endian = true;
+    } else {
         std::cerr << "[!] ELFParser: Invalid or unsupported data encoding: " << static_cast<int>(data_encoding) << std::endl;
+        m_metadata_endianness = Endianness::Unsupported;
+        m_instruction_endianness = Endianness::Unsupported;
         return false;
     }
-    m_is_big_endian = (data_encoding == ELFDATA2MSB);
     m_arm_be8 = false;
 
     if (data[EI_CLASS] == ELFCLASS32) {
@@ -521,6 +528,34 @@ bool ELFParser::parse(const std::string& filepath) {
     // RISC-V: differentiate 32 vs 64 from ELF class
     if (m_arch == "riscv") {
         m_arch = (data[EI_CLASS] == ELFCLASS32) ? "riscv32" : "riscv64";
+    }
+
+    // Determine instruction endianness
+    if (m_arch == "x86" || m_arch == "x86_64") {
+        m_instruction_endianness = Endianness::Little;
+    } else if (m_arch == "aarch64") {
+        // AAELF64 §5.1 mandates little-endian instruction encoding even when data is big-endian
+        m_instruction_endianness = Endianness::Little;
+    } else if (m_arch == "armv7") {
+        if (!m_is_big_endian) {
+            m_instruction_endianness = Endianness::Little;
+        } else if (m_arm_be8) {
+            // ARMv7 BE-8: big-endian metadata/data, but little-endian instructions
+            m_instruction_endianness = Endianness::Little;
+        } else {
+            // Ambiguous/unverified big-endian ARM (legacy BE-32 or unspecified).
+            // Do not infer BE-32 merely because EF_ARM_BE8 is absent.
+            m_instruction_endianness = Endianness::Unsupported;
+        }
+    } else if (m_arch == "riscv32" || m_arch == "riscv64") {
+        if (!m_is_big_endian) {
+            m_instruction_endianness = Endianness::Little;
+        } else {
+            // Big-endian RISC-V is not supported by Capstone 5.0
+            m_instruction_endianness = Endianness::Unsupported;
+        }
+    } else {
+        m_instruction_endianness = Endianness::Unknown;
     }
 
     return true;
