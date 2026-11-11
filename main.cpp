@@ -157,7 +157,7 @@ int main(int argc, char* argv[]) {
     }
 
     std::cout << "[" << ANSI_COLOR_ORANGE << "*" << ANSI_COLOR_RESET << "] Searching for ROP gadgets..." << std::endl;
-    GadgetFinder gadget_finder(binaryCode, baseAddress, arch_to_use, options.filename, 10);
+    GadgetFinder gadget_finder(binaryCode, baseAddress, arch_to_use, options.filename, parser->getExecBufferMappings(), 10);
     gadget_finder.findGadgets();
     std::vector<Gadget>& gadgets = gadget_finder.getGadgets();
     std::cout << "[" << ANSI_COLOR_ORANGE << "*" << ANSI_COLOR_RESET << "] Found " << gadgets.size() << " gadgets." << std::endl;

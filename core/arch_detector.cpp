@@ -155,11 +155,12 @@ std::unique_ptr<FileParser> ArchDetector::createFileParser(const std::string& fi
              detectArchitecture32(file) :
              detectArchitecture64(file);
 
-        if (arch == "x86" || arch == "x86_64") return std::make_unique<ropweaver::ELFParser>(filepath);
-        if (arch == "armv7") return std::make_unique<ropweaver::ARMv7Parser>(filepath);
-        if (arch == "aarch64") return std::make_unique<ropweaver::AArch64Parser>(filepath);
-        if (arch == "riscv32") return std::make_unique<ropweaver::RISCV32Parser>(filepath);
-        if (arch == "riscv64") return std::make_unique<ropweaver::RISCV64Parser>(filepath);
+        // All supported ELF architectures are unified under ropweaver::ELFParser
+        if (arch == "x86" || arch == "x86_64" ||
+            arch == "armv7" || arch == "aarch64" ||
+            arch == "riscv32" || arch == "riscv64") {
+            return std::make_unique<ropweaver::ELFParser>(filepath);
+        }
 
         std::cerr << "[!] ELF file detected, but architecture " << arch << " not supported.\n";
         return nullptr;

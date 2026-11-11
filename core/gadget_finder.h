@@ -6,6 +6,7 @@
 #include <string>
 #include <map>
 #include "gadget.h"
+#include "parsers/file_parser.h"
 
 class GadgetFinder {
 public:
@@ -13,6 +14,13 @@ public:
                  uint64_t base,
                  const std::string& arch,
                  const std::string& binary_path,
+                 size_t maxSize = 10);
+
+    GadgetFinder(const std::vector<unsigned char>& code,
+                 uint64_t base,
+                 const std::string& arch,
+                 const std::string& binary_path,
+                 const std::vector<ExecBufferMapping>& mappings,
                  size_t maxSize = 10);
 
     ~GadgetFinder();
@@ -32,6 +40,7 @@ private:
     // FIX: Add m_binaryPath to the private members
     std::string m_binaryPath; 
     size_t m_maxSize;
+    std::vector<ExecBufferMapping> m_mappings;
 
     csh handle;
     cs_arch arch_id;

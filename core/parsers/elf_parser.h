@@ -30,6 +30,7 @@ public:
     uint64_t getEntryPoint() const override { return m_entry_point; }
     uint64_t getImageBase() const override { return m_image_base; }
     const std::vector<SectionInfo>& getSections() const override { return m_sections; }
+    const std::vector<ExecBufferMapping>& getExecBufferMappings() const override { return m_exec_mappings; }
 
     // Security mitigations (override FileParser defaults)
     bool isNxEnabled() const override { return m_nx_enabled; }
@@ -49,6 +50,7 @@ private:
     uint64_t m_image_base = 0;
     std::string m_arch = "unknown";
     std::vector<SectionInfo> m_sections;
+    std::vector<ExecBufferMapping> m_exec_mappings;
 
     // Mitigation detection results
     bool m_nx_enabled     = false;

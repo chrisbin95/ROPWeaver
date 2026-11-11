@@ -231,6 +231,86 @@ Assert-Test -Name "Appropriate error displayed" -Condition ($outputStr -match "E
 
 if (Test-Path $TextFile) { Remove-Item $TextFile -Force }
 
+# -------------------------------------------------------------
+# Test 5: Unified ELF Parser Multi-Architecture Routing
+# -------------------------------------------------------------
+Write-Host "`n[*] Test 5: Unified ELF Parser Multi-Architecture Routing..." -ForegroundColor Yellow
+
+# Ensure test fixtures exist
+$GenScript = "$ProjectRoot\tests\generate_test_elfs.py"
+if (Test-Path $GenScript) {
+    & python $GenScript | Out-Null
+}
+
+$ArchFixtures = @(
+    @{ File = "elf32_x86";       ExpectedArch = "x86";     MinGadgets = 2; Class = 32 },
+    @{ File = "elf32_arm";       ExpectedArch = "armv7";   MinGadgets = 1; Class = 32 },
+    @{ File = "elf64_aarch64";   ExpectedArch = "aarch64"; MinGadgets = 1; Class = 64 },
+    @{ File = "elf32_riscv";     ExpectedArch = "riscv32"; MinGadgets = 1; Class = 32 },
+    @{ File = "elf64_riscv";     ExpectedArch = "riscv64"; MinGadgets = 1; Class = 64 }
+)
+
+foreach ($fix in $ArchFixtures) {
+    $fixPath = "$ProjectRoot\test_binaries\$($fix.File)"
+    if (Test-Path $fixPath) {
+        if (Test-Path $OutJson) { Remove-Item $OutJson -Force }
+        $out = & $Ropweaver $fixPath -p 2>&1
+        $outStr = $out -join "`n"
+        $code = $LASTEXITCODE
+
+        Assert-Test -Name "$($fix.File): Analyzed successfully (exit code 0)" -Condition ($code -eq 0)
+        Assert-Test -Name "$($fix.File): Architecture detected as $($fix.ExpectedArch)" -Condition ($outStr -match "Detected architecture:\s*$($fix.ExpectedArch)")
+        
+        if (Test-Path $OutJson) {
+            $jsonFix = Get-Content $OutJson -Raw | ConvertFrom-Json
+            Assert-Test -Name "$($fix.File): JSON architecture is $($fix.ExpectedArch)" -Condition ($jsonFix.architecture -eq $fix.ExpectedArch)
+            Assert-Test -Name "$($fix.File): JSON file_type is ELF" -Condition ($jsonFix.file_type -eq "ELF")
+            Assert-Test -Name "$($fix.File): Discovered gadgets >= $($fix.MinGadgets)" -Condition ($jsonFix.gadgets.Count -ge $fix.MinGadgets)
+            Assert-Test -Name "$($fix.File): Gadgets byte verified" -Condition ($jsonFix.gadgets[0].byte_verified -eq $true)
+            Assert-Test -Name "$($fix.File): Mitigation NX detected as ON" -Condition ($jsonFix.protections.NX -eq $true)
+        }
+    } else {
+        Assert-Test -Name "$($fix.File): Binary available for testing" -Condition ($false) -Details "Fixture not found at $fixPath"
+    }
+}
+
+# -------------------------------------------------------------
+# Test 6: Multi-Section Executable Boundary & Address Mapping
+# -------------------------------------------------------------
+Write-Host "`n[*] Test 6: Multi-Section Executable Boundary & Address Mapping..." -ForegroundColor Yellow
+$MultiSecBin = "$ProjectRoot\test_binaries\elf64_multisection"
+if (Test-Path $MultiSecBin) {
+    if (Test-Path $OutJson) { Remove-Item $OutJson -Force }
+    $out = & $Ropweaver $MultiSecBin -p 2>&1
+    $code = $LASTEXITCODE
+
+    Assert-Test -Name "Multi-Section ELF returns code 0" -Condition ($code -eq 0)
+    if (Test-Path $OutJson) {
+        $jsonMulti = Get-Content $OutJson -Raw | ConvertFrom-Json
+        Assert-Test -Name "Multi-Section ELF found gadgets in multiple sections" -Condition ($jsonMulti.gadgets.Count -ge 2)
+
+        # Check section 1 gadget (.init at 0x401000)
+        $gInit = $jsonMulti.gadgets | Where-Object { $_.preferred_va -like "*401002*" } | Select-Object -First 1
+        Assert-Test -Name "Gadget in .init located at exact VA 0x401002" -Condition ($gInit -ne $null)
+        if ($gInit) {
+            Assert-Test -Name "Gadget in .init has exact file_offset 0x00001002" -Condition ($gInit.file_offset -eq "0x00001002")
+            Assert-Test -Name "Gadget in .init has exact RVA 0x00001002" -Condition ($gInit.rva -eq "0x00001002")
+            Assert-Test -Name "Gadget in .init is byte verified" -Condition ($gInit.byte_verified -eq $true)
+        }
+
+        # Check section 2 gadget (.text at 0x402000, 4096 bytes away)
+        $gText = $jsonMulti.gadgets | Where-Object { $_.preferred_va -like "*402000*" } | Select-Object -First 1
+        Assert-Test -Name "Gadget in .text located at exact VA 0x402000" -Condition ($gText -ne $null)
+        if ($gText) {
+            Assert-Test -Name "Gadget in .text has exact file_offset 0x00002000" -Condition ($gText.file_offset -eq "0x00002000")
+            Assert-Test -Name "Gadget in .text has exact RVA 0x00002000" -Condition ($gText.rva -eq "0x00002000")
+            Assert-Test -Name "Gadget in .text is byte verified" -Condition ($gText.byte_verified -eq $true)
+        }
+    }
+} else {
+    Assert-Test -Name "Multi-Section ELF fixture exists" -Condition ($false)
+}
+
 Write-Host "`n============================================================" -ForegroundColor Cyan
 Write-Host "Test Results: $Passed Passed, $Failed Failed" -ForegroundColor $(if ($Failed -eq 0) { "Green" } else { "Red" })
 Write-Host "============================================================" -ForegroundColor Cyan

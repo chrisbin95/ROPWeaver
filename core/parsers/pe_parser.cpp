@@ -238,22 +238,26 @@ bool PEParser::parse(const std::string& filepath) {
     textBaseAddr_ = execSections[0].va;
 
     textSection_.clear();
-    uint64_t prevEnd = textBaseAddr_;
-    for (const auto& sec : execSections) {
-        if (sec.va > prevEnd) {
-            size_t gap = static_cast<size_t>(sec.va - prevEnd);
-            if (gap <= 0x10000) {
-                textSection_.insert(textSection_.end(), gap, 0xCC);
-            } else {
-                textSection_.push_back(0xCC);
-                textSection_.push_back(0xCC);
-                textSection_.push_back(0xCC);
-                textSection_.push_back(0xCC);
-            }
+    execMappings_.clear();
+    for (size_t i = 0; i < execSections.size(); ++i) {
+        const auto& sec = execSections[i];
+        if (i > 0) {
+            textSection_.push_back(0xCC);
+            textSection_.push_back(0xCC);
+            textSection_.push_back(0xCC);
+            textSection_.push_back(0xCC);
         }
+
+        ExecBufferMapping mapping;
+        mapping.virtual_address = sec.va;
+        mapping.buffer_offset   = textSection_.size();
+        mapping.size            = sec.rawSize;
+        mapping.raw_offset      = sec.rawOffset;
+        mapping.section_name    = sec.name;
+        execMappings_.push_back(mapping);
+
         const uint8_t* ptr = buffer.data() + sec.rawOffset;
         textSection_.insert(textSection_.end(), ptr, ptr + sec.rawSize);
-        prevEnd = sec.va + sec.rawSize;
     }
 
     return !textSection_.empty();

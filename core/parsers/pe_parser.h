@@ -60,6 +60,7 @@ public:
     uint64_t getImageBase() const override { return imageBase_; }
     uint64_t getEntryPoint() const override { return entryPoint_; }
     const std::vector<SectionInfo>& getSections() const override { return sections_; }
+    const std::vector<ExecBufferMapping>& getExecBufferMappings() const override { return execMappings_; }
 
 private:
     bool checkCanaryProtection(const std::vector<uint8_t>& buffer);
@@ -74,6 +75,7 @@ private:
 
     PEMitigations mitigations_;
     std::vector<SectionInfo> sections_;
+    std::vector<ExecBufferMapping> execMappings_;
 };
 
 } // namespace ropweaver

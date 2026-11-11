@@ -33,8 +33,28 @@ GadgetFinder::GadgetFinder(const std::vector<unsigned char>& code,
                            const std::string& arch,
                            const std::string& binary_path,
                            size_t maxSize)
-    : m_code(code), m_baseAddress(base), m_arch(arch), m_binaryPath(binary_path), m_maxSize(maxSize) 
+    : GadgetFinder(code, base, arch, binary_path, {}, maxSize)
 {
+}
+
+GadgetFinder::GadgetFinder(const std::vector<unsigned char>& code,
+                           uint64_t base,
+                           const std::string& arch,
+                           const std::string& binary_path,
+                           const std::vector<ExecBufferMapping>& mappings,
+                           size_t maxSize)
+    : m_code(code), m_baseAddress(base), m_arch(arch), m_binaryPath(binary_path), m_maxSize(maxSize), m_mappings(mappings)
+{
+    // If no explicit mappings provided, synthesize a single mapping for the entire buffer
+    if (m_mappings.empty() && !m_code.empty()) {
+        ExecBufferMapping defMap;
+        defMap.virtual_address = m_baseAddress;
+        defMap.buffer_offset   = 0;
+        defMap.size            = m_code.size();
+        defMap.raw_offset      = 0;
+        defMap.section_name    = ".text";
+        m_mappings.push_back(defMap);
+    }
     // Choose Capstone arch/mode
     if (arch == "x86") {
         arch_id = CS_ARCH_X86;
@@ -184,180 +204,191 @@ void GadgetFinder::findGadgets() {
 
     std::set<std::pair<uint64_t, std::string>> seen_gadgets;
 
-    // --- Pass 1: Linear Disassembly ---
-    cs_insn *all_insns = nullptr;
-    size_t count = cs_disasm(handle, m_code.data(), m_code.size(), m_baseAddress, 0, &all_insns);
+    // Disassemble each mapped executable section individually using its true virtual address
+    for (const auto& sec_map : m_mappings) {
+        if (sec_map.buffer_offset >= m_code.size() || sec_map.size == 0) continue;
+        size_t sec_len = std::min(sec_map.size, m_code.size() - sec_map.buffer_offset);
+        const uint8_t* sec_data = m_code.data() + sec_map.buffer_offset;
+        uint64_t sec_va = sec_map.virtual_address;
 
-    if (count > 0) {
-        for (size_t i = 0; i < count; ++i) {
-            if (!is_terminator_instruction(all_insns[i], m_arch)) {
-                continue;
-            }
+        // --- Pass 1: Linear Disassembly for this section ---
+        cs_insn *all_insns = nullptr;
+        size_t count = cs_disasm(handle, sec_data, sec_len, sec_va, 0, &all_insns);
 
-            for (size_t len = 1; len <= max_depth && (i + 1) >= len; ++len) {
-                size_t start_idx = i - (len - 1);
-
-                if (len > 1 && is_padding_or_prefix(all_insns[start_idx])) {
+        if (count > 0) {
+            for (size_t i = 0; i < count; ++i) {
+                if (!is_terminator_instruction(all_insns[i], m_arch)) {
                     continue;
                 }
 
-                bool valid = true;
-                for (size_t k = start_idx; k < i; ++k) {
-                    if (all_insns[k].address + all_insns[k].size != all_insns[k + 1].address) {
-                        valid = false;
-                        break;
+                for (size_t len = 1; len <= max_depth && (i + 1) >= len; ++len) {
+                    size_t start_idx = i - (len - 1);
+
+                    if (len > 1 && is_padding_or_prefix(all_insns[start_idx])) {
+                        continue;
                     }
-                    if (is_invalid_or_branch_instruction(all_insns[k], m_arch)) {
-                        valid = false;
-                        break;
-                    }
-                }
-                if (!valid) continue;
 
-                std::string term_mnem = all_insns[i].mnemonic ? all_insns[i].mnemonic : "";
-                std::transform(term_mnem.begin(), term_mnem.end(), term_mnem.begin(), [](unsigned char c){ return std::tolower(c); });
-                if (term_mnem == "hlt" || term_mnem == "ud2" || term_mnem == "int3") {
-                    continue;
-                }
-
-                Gadget g;
-                g.architecture = m_arch;
-                g.address = all_insns[start_idx].address;
-                g.preferred_va = g.address;
-
-                std::string asm_str;
-                for (size_t k = start_idx; k <= i; ++k) {
-                    std::string mnem = all_insns[k].mnemonic ? all_insns[k].mnemonic : "";
-                    std::string ops  = all_insns[k].op_str ? all_insns[k].op_str : "";
-                    g.instructions.push_back({ mnem, ops });
-
-                    if (!asm_str.empty()) asm_str += " ; ";
-                    asm_str += mnem;
-                    if (!ops.empty()) asm_str += " " + ops;
-                }
-                g.assembly = asm_str;
-
-                if (g.instructions.size() == 2 && g.instructions[0].mnemonic == "pop") {
-                    g.target_register = g.instructions[0].op_str;
-                }
-
-                // Validate gadget bytes against m_code
-                if (g.address >= m_baseAddress) {
-                    size_t code_offset = static_cast<size_t>(g.address - m_baseAddress);
-                    size_t total_bytes = static_cast<size_t>((all_insns[i].address + all_insns[i].size) - all_insns[start_idx].address);
-                    if (code_offset + total_bytes <= m_code.size()) {
-                        bool b_ok = true;
-                        size_t cur = code_offset;
-                        for (size_t k = start_idx; k <= i; ++k) {
-                            if (std::memcmp(m_code.data() + cur, all_insns[k].bytes, all_insns[k].size) != 0) {
-                                b_ok = false;
-                                break;
-                            }
-                            cur += all_insns[k].size;
-                        }
-                        g.byte_verified = b_ok;
-                    }
-                }
-
-                if (seen_gadgets.insert({ g.address, g.assembly }).second) {
-                    m_gadgets.push_back(g);
-                }
-            }
-        }
-        cs_free(all_insns, count);
-    }
-
-    // --- Pass 2: Overlapping instruction sequences for x86/x86_64 (Requirement 5) ---
-    if (m_arch == "x86" || m_arch == "x86_64") {
-        for (size_t term_idx = 0; term_idx < m_code.size(); ++term_idx) {
-            uint8_t b = m_code[term_idx];
-            bool is_term = (b == 0xC3 || b == 0xCB || b == 0xC2 || b == 0xCA);
-            if (!is_term && term_idx + 1 < m_code.size()) {
-                if (b == 0x0F && (m_code[term_idx + 1] == 0x05 || m_code[term_idx + 1] == 0x34)) is_term = true;
-                if (b == 0xCD && m_code[term_idx + 1] == 0x80) is_term = true;
-            }
-            if (!is_term) continue;
-
-            size_t max_back = std::min<size_t>(term_idx, 15);
-            for (size_t back = 1; back <= max_back; ++back) {
-                size_t start_idx = term_idx - back;
-
-                cs_insn *sub_insns = nullptr;
-                size_t sub_count = cs_disasm(handle, m_code.data() + start_idx, back + 4,
-                                             m_baseAddress + start_idx, max_depth, &sub_insns);
-                if (sub_count == 0) continue;
-
-                bool match = false;
-                size_t end_insn_idx = 0;
-                for (size_t k = 0; k < sub_count; ++k) {
-                    if (sub_insns[k].address == m_baseAddress + term_idx) {
-                        if (is_terminator_instruction(sub_insns[k], m_arch)) {
-                            match = true;
-                            end_insn_idx = k;
-                            break;
-                        }
-                    }
-                }
-
-                if (match && end_insn_idx < max_depth) {
                     bool valid = true;
-                    for (size_t k = 0; k < end_insn_idx; ++k) {
-                        if (sub_insns[k].address + sub_insns[k].size != sub_insns[k + 1].address) {
+                    for (size_t k = start_idx; k < i; ++k) {
+                        if (all_insns[k].address + all_insns[k].size != all_insns[k + 1].address) {
                             valid = false;
                             break;
                         }
-                        if (is_invalid_or_branch_instruction(sub_insns[k], m_arch)) {
+                        if (is_invalid_or_branch_instruction(all_insns[k], m_arch)) {
                             valid = false;
                             break;
                         }
                     }
-                    if (end_insn_idx > 0 && is_padding_or_prefix(sub_insns[0])) {
-                        valid = false;
+                    if (!valid) continue;
+
+                    std::string term_mnem = all_insns[i].mnemonic ? all_insns[i].mnemonic : "";
+                    std::transform(term_mnem.begin(), term_mnem.end(), term_mnem.begin(), [](unsigned char c){ return std::tolower(c); });
+                    if (term_mnem == "hlt" || term_mnem == "ud2" || term_mnem == "int3") {
+                        continue;
                     }
 
-                    if (valid) {
-                        Gadget g;
-                        g.architecture = m_arch;
-                        g.address = sub_insns[0].address;
-                        g.preferred_va = g.address;
+                    Gadget g;
+                    g.architecture = m_arch;
+                    g.address = all_insns[start_idx].address;
+                    g.preferred_va = g.address;
 
-                        std::string asm_str;
-                        for (size_t k = 0; k <= end_insn_idx; ++k) {
-                            std::string mnem = sub_insns[k].mnemonic ? sub_insns[k].mnemonic : "";
-                            std::string ops  = sub_insns[k].op_str ? sub_insns[k].op_str : "";
-                            g.instructions.push_back({ mnem, ops });
-                            if (!asm_str.empty()) asm_str += " ; ";
-                            asm_str += mnem;
-                            if (!ops.empty()) asm_str += " " + ops;
-                        }
-                        g.assembly = asm_str;
+                    std::string asm_str;
+                    for (size_t k = start_idx; k <= i; ++k) {
+                        std::string mnem = all_insns[k].mnemonic ? all_insns[k].mnemonic : "";
+                        std::string ops  = all_insns[k].op_str ? all_insns[k].op_str : "";
+                        g.instructions.push_back({ mnem, ops });
 
-                        if (g.instructions.size() == 2 && g.instructions[0].mnemonic == "pop") {
-                            g.target_register = g.instructions[0].op_str;
-                        }
+                        if (!asm_str.empty()) asm_str += " ; ";
+                        asm_str += mnem;
+                        if (!ops.empty()) asm_str += " " + ops;
+                    }
+                    g.assembly = asm_str;
 
-                        // Validate bytes
-                        size_t total_bytes = static_cast<size_t>(
-                            (sub_insns[end_insn_idx].address + sub_insns[end_insn_idx].size) - sub_insns[0].address);
-                        if (start_idx + total_bytes <= m_code.size()) {
+                    if (g.instructions.size() == 2 && g.instructions[0].mnemonic == "pop") {
+                        g.target_register = g.instructions[0].op_str;
+                    }
+
+                    // Validate gadget bytes against m_code within this section
+                    if (g.address >= sec_va) {
+                        size_t rel_offset = static_cast<size_t>(g.address - sec_va);
+                        size_t total_bytes = static_cast<size_t>((all_insns[i].address + all_insns[i].size) - all_insns[start_idx].address);
+                        if (rel_offset + total_bytes <= sec_len) {
                             bool b_ok = true;
-                            size_t cur = start_idx;
-                            for (size_t k = 0; k <= end_insn_idx; ++k) {
-                                if (std::memcmp(m_code.data() + cur, sub_insns[k].bytes, sub_insns[k].size) != 0) {
+                            size_t cur = sec_map.buffer_offset + rel_offset;
+                            for (size_t k = start_idx; k <= i; ++k) {
+                                if (std::memcmp(m_code.data() + cur, all_insns[k].bytes, all_insns[k].size) != 0) {
                                     b_ok = false;
                                     break;
                                 }
-                                cur += sub_insns[k].size;
+                                cur += all_insns[k].size;
                             }
                             g.byte_verified = b_ok;
                         }
+                    }
 
-                        if (seen_gadgets.insert({ g.address, g.assembly }).second) {
-                            m_gadgets.push_back(g);
-                        }
+                    if (seen_gadgets.insert({ g.address, g.assembly }).second) {
+                        m_gadgets.push_back(g);
                     }
                 }
-                cs_free(sub_insns, sub_count);
+            }
+            cs_free(all_insns, count);
+        }
+
+        // --- Pass 2: Overlapping instruction sequences for x86/x86_64 within this section ---
+        if (m_arch == "x86" || m_arch == "x86_64") {
+            for (size_t term_rel = 0; term_rel < sec_len; ++term_rel) {
+                uint8_t b = sec_data[term_rel];
+                bool is_term = (b == 0xC3 || b == 0xCB || b == 0xC2 || b == 0xCA);
+                if (!is_term && term_rel + 1 < sec_len) {
+                    if (b == 0x0F && (sec_data[term_rel + 1] == 0x05 || sec_data[term_rel + 1] == 0x34)) is_term = true;
+                    if (b == 0xCD && sec_data[term_rel + 1] == 0x80) is_term = true;
+                }
+                if (!is_term) continue;
+
+                size_t max_back = std::min<size_t>(term_rel, 15);
+                for (size_t back = 1; back <= max_back; ++back) {
+                    size_t start_rel = term_rel - back;
+                    size_t buf_start_idx = sec_map.buffer_offset + start_rel;
+                    size_t remaining_in_sec = sec_len - start_rel;
+                    size_t read_len = std::min<size_t>(back + 4, remaining_in_sec);
+
+                    cs_insn *sub_insns = nullptr;
+                    size_t sub_count = cs_disasm(handle, m_code.data() + buf_start_idx, read_len,
+                                                 sec_va + start_rel, max_depth, &sub_insns);
+                    if (sub_count == 0) continue;
+
+                    bool match = false;
+                    size_t end_insn_idx = 0;
+                    for (size_t k = 0; k < sub_count; ++k) {
+                        if (sub_insns[k].address == sec_va + term_rel) {
+                            if (is_terminator_instruction(sub_insns[k], m_arch)) {
+                                match = true;
+                                end_insn_idx = k;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (match && end_insn_idx < max_depth) {
+                        bool valid = true;
+                        for (size_t k = 0; k < end_insn_idx; ++k) {
+                            if (sub_insns[k].address + sub_insns[k].size != sub_insns[k + 1].address) {
+                                valid = false;
+                                break;
+                            }
+                            if (is_invalid_or_branch_instruction(sub_insns[k], m_arch)) {
+                                valid = false;
+                                break;
+                            }
+                        }
+                        if (end_insn_idx > 0 && is_padding_or_prefix(sub_insns[0])) {
+                            valid = false;
+                        }
+
+                        if (valid) {
+                            Gadget g;
+                            g.architecture = m_arch;
+                            g.address = sub_insns[0].address;
+                            g.preferred_va = g.address;
+
+                            std::string asm_str;
+                            for (size_t k = 0; k <= end_insn_idx; ++k) {
+                                std::string mnem = sub_insns[k].mnemonic ? sub_insns[k].mnemonic : "";
+                                std::string ops  = sub_insns[k].op_str ? sub_insns[k].op_str : "";
+                                g.instructions.push_back({ mnem, ops });
+                                if (!asm_str.empty()) asm_str += " ; ";
+                                asm_str += mnem;
+                                if (!ops.empty()) asm_str += " " + ops;
+                            }
+                            g.assembly = asm_str;
+
+                            if (g.instructions.size() == 2 && g.instructions[0].mnemonic == "pop") {
+                                g.target_register = g.instructions[0].op_str;
+                            }
+
+                            // Validate bytes within section bounds
+                            size_t total_bytes = static_cast<size_t>(
+                                (sub_insns[end_insn_idx].address + sub_insns[end_insn_idx].size) - sub_insns[0].address);
+                            if (start_rel + total_bytes <= sec_len) {
+                                bool b_ok = true;
+                                size_t cur = buf_start_idx;
+                                for (size_t k = 0; k <= end_insn_idx; ++k) {
+                                    if (std::memcmp(m_code.data() + cur, sub_insns[k].bytes, sub_insns[k].size) != 0) {
+                                        b_ok = false;
+                                        break;
+                                    }
+                                    cur += sub_insns[k].size;
+                                }
+                                g.byte_verified = b_ok;
+                            }
+
+                            if (seen_gadgets.insert({ g.address, g.assembly }).second) {
+                                m_gadgets.push_back(g);
+                            }
+                        }
+                    }
+                    cs_free(sub_insns, sub_count);
+                }
             }
         }
     }

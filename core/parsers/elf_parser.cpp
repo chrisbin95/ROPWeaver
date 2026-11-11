@@ -22,9 +22,9 @@ static std::string getElfMachineArchitecture(uint16_t e_machine) {
 
 // ---------------------------------------------------------------------------
 // extract_exec_sections: finds ALL sections with SHF_EXECINSTR set.
-// Sections are concatenated in VA order; gaps between non-contiguous sections
-// are filled with 0xCC (INT3) so that GadgetFinder stops cleanly at section
-// boundaries without generating cross-section gadgets.
+// Sections are packed into out_text separated by 4-byte INT3 (0xCC) fences,
+// while out_mappings records each section's exact virtual address, buffer offset,
+// size, and file offset.
 //
 // Falls back to .text-by-name if no SHF_EXECINSTR sections are found.
 // ---------------------------------------------------------------------------
@@ -33,13 +33,15 @@ bool extract_exec_sections(const uint8_t* data, size_t size, const Elf_Ehdr& ehd
                            std::vector<uint8_t>& out_text,
                            uint64_t& out_base_addr,
                            uint64_t& out_entry_point,
-                           std::vector<SectionInfo>& out_sections)
+                           std::vector<SectionInfo>& out_sections,
+                           std::vector<ExecBufferMapping>& out_mappings)
 {
     size_t sh_off     = ehdr.e_shoff;
     uint16_t sh_num   = ehdr.e_shnum;
     uint16_t sh_esz   = ehdr.e_shentsize;
 
     out_sections.clear();
+    out_mappings.clear();
     // Entry point (may be 0 for PIE / relocatable)
     out_entry_point = static_cast<uint64_t>(ehdr.e_entry);
 
@@ -72,6 +74,7 @@ bool extract_exec_sections(const uint8_t* data, size_t size, const Elf_Ehdr& ehd
         uint64_t va;
         size_t   offset;
         size_t   raw_size;
+        std::string name;
     };
     std::vector<SecInfo> exec_secs;
 
@@ -100,7 +103,7 @@ bool extract_exec_sections(const uint8_t* data, size_t size, const Elf_Ehdr& ehd
         if (raw_offset >= size) continue;
         if (raw_offset + raw_size > size) raw_size = size - raw_offset;
 
-        exec_secs.push_back({ static_cast<uint64_t>(shdr.sh_addr), raw_offset, raw_size });
+        exec_secs.push_back({ static_cast<uint64_t>(shdr.sh_addr), raw_offset, raw_size, sec_name });
     }
 
     // Fallback: search for .text by name if no SHF_EXECINSTR sections found
@@ -113,7 +116,7 @@ bool extract_exec_sections(const uint8_t* data, size_t size, const Elf_Ehdr& ehd
                 size_t raw_size   = static_cast<size_t>(shdr.sh_size);
                 if (raw_offset < size) {
                     if (raw_offset + raw_size > size) raw_size = size - raw_offset;
-                    exec_secs.push_back({ static_cast<uint64_t>(shdr.sh_addr), raw_offset, raw_size });
+                    exec_secs.push_back({ static_cast<uint64_t>(shdr.sh_addr), raw_offset, raw_size, ".text" });
                 }
                 break;
             }
@@ -131,28 +134,66 @@ bool extract_exec_sections(const uint8_t* data, size_t size, const Elf_Ehdr& ehd
 
     out_base_addr = exec_secs[0].va;
 
-    // Concatenate with INT3 gap-fills
+    // Pack sections into out_text separated by 4-byte INT3 boundaries, recording exact mappings
     out_text.clear();
-    uint64_t prevEnd = out_base_addr;
-    for (const auto& sec : exec_secs) {
-        if (sec.va > prevEnd) {
-            size_t gap = static_cast<size_t>(sec.va - prevEnd);
-            if (gap <= 0x10000) {
-                out_text.insert(out_text.end(), gap, 0xCC);
-            } else {
-                // Large gap — use 4-byte INT3 fence to prevent cross-section gadgets
-                out_text.push_back(0xCC);
-                out_text.push_back(0xCC);
-                out_text.push_back(0xCC);
-                out_text.push_back(0xCC);
-            }
+    for (size_t i = 0; i < exec_secs.size(); ++i) {
+        const auto& sec = exec_secs[i];
+        if (i > 0) {
+            // 4-byte INT3 boundary fence between sections
+            out_text.push_back(0xCC);
+            out_text.push_back(0xCC);
+            out_text.push_back(0xCC);
+            out_text.push_back(0xCC);
         }
+
+        ExecBufferMapping mapping;
+        mapping.virtual_address = sec.va;
+        mapping.buffer_offset   = out_text.size();
+        mapping.size            = sec.raw_size;
+        mapping.raw_offset      = sec.offset;
+        mapping.section_name    = sec.name;
+        out_mappings.push_back(mapping);
+
         const uint8_t* ptr = data + sec.offset;
         out_text.insert(out_text.end(), ptr, ptr + sec.raw_size);
-        prevEnd = sec.va + sec.raw_size;
     }
 
     return !out_text.empty();
+}
+
+// ---------------------------------------------------------------------------
+// compute_elf_image_base: determines the ELF image base from PT_LOAD segments
+// ---------------------------------------------------------------------------
+template <typename Elf_Ehdr, typename Elf_Phdr>
+static uint64_t compute_elf_image_base(const uint8_t* data, size_t size, const Elf_Ehdr& ehdr,
+                                       const std::vector<SectionInfo>& sections)
+{
+    if (ehdr.e_phoff != 0 && ehdr.e_phnum > 0 && ehdr.e_phentsize == sizeof(Elf_Phdr)) {
+        if (ehdr.e_phoff + static_cast<size_t>(ehdr.e_phnum) * sizeof(Elf_Phdr) <= size) {
+            const Elf_Phdr* phdr_table = reinterpret_cast<const Elf_Phdr*>(data + ehdr.e_phoff);
+            uint64_t min_vaddr = UINT64_MAX;
+            bool found_pt_load = false;
+            for (uint16_t i = 0; i < ehdr.e_phnum; ++i) {
+                if (phdr_table[i].p_type == PT_LOAD) {
+                    if (phdr_table[i].p_vaddr < min_vaddr) {
+                        min_vaddr = phdr_table[i].p_vaddr;
+                        found_pt_load = true;
+                    }
+                }
+            }
+            if (found_pt_load && min_vaddr != UINT64_MAX) {
+                return min_vaddr;
+            }
+        }
+    }
+    // Fallback if no PT_LOAD: lowest non-zero section virtual address
+    uint64_t lowest_sec_va = UINT64_MAX;
+    for (const auto& sec : sections) {
+        if (sec.virtual_address != 0 && sec.virtual_address < lowest_sec_va) {
+            lowest_sec_va = sec.virtual_address;
+        }
+    }
+    return (lowest_sec_va != UINT64_MAX) ? lowest_sec_va : 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -266,9 +307,11 @@ bool ELFParser::parse(const std::string& filepath) {
 
         if (!extract_exec_sections<Elf32_Ehdr, Elf32_Shdr>(
                 data, size, hdr32,
-                m_text_section, m_text_section_base_address, m_entry_point, m_sections)) {
+                m_text_section, m_text_section_base_address, m_entry_point, m_sections, m_exec_mappings)) {
             return false;
         }
+
+        m_image_base = compute_elf_image_base<Elf32_Ehdr, Elf32_Phdr>(data, size, hdr32, m_sections);
 
         detect_mitigations<Elf32_Ehdr, Elf32_Phdr, Elf32_Dyn>(
             data, size, hdr32,
@@ -281,9 +324,11 @@ bool ELFParser::parse(const std::string& filepath) {
 
         if (!extract_exec_sections<Elf64_Ehdr, Elf64_Shdr>(
                 data, size, hdr64,
-                m_text_section, m_text_section_base_address, m_entry_point, m_sections)) {
+                m_text_section, m_text_section_base_address, m_entry_point, m_sections, m_exec_mappings)) {
             return false;
         }
+
+        m_image_base = compute_elf_image_base<Elf64_Ehdr, Elf64_Phdr>(data, size, hdr64, m_sections);
 
         detect_mitigations<Elf64_Ehdr, Elf64_Phdr, Elf64_Dyn>(
             data, size, hdr64,

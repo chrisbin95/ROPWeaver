@@ -67,7 +67,7 @@ int main(int argc, char* argv[]) {
     }
 
     std::cout << "[*] Searching for ROP gadgets..." << std::endl;
-    GadgetFinder finder(binaryCode, baseAddress, arch_to_use, filename, 20);
+    GadgetFinder finder(binaryCode, baseAddress, arch_to_use, filename, parser->getExecBufferMappings(), 20);
     finder.findGadgets();
     auto gadgets = finder.getGadgets();
 
