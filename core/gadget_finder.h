@@ -14,20 +14,24 @@ public:
                  uint64_t base,
                  const std::string& arch,
                  const std::string& binary_path,
-                 size_t maxSize = 10);
+                 size_t maxSize = 10,
+                 Endianness instruction_endianness = Endianness::Little);
 
     GadgetFinder(const std::vector<unsigned char>& code,
                  uint64_t base,
                  const std::string& arch,
                  const std::string& binary_path,
                  const std::vector<ExecBufferMapping>& mappings,
-                 size_t maxSize = 10);
+                 size_t maxSize = 10,
+                 Endianness instruction_endianness = Endianness::Little);
 
     ~GadgetFinder();
 
     void findGadgets();
     std::vector<Gadget>& getGadgets() { return m_gadgets; }
     const std::vector<Gadget>& getGadgets() const { return m_gadgets; }
+
+    Endianness getInstructionEndianness() const { return m_instruction_endianness; }
 
     std::string determineCategory(const Gadget& g) const;
     std::map<std::string, std::vector<Gadget>> categorizeGadgets();
@@ -41,6 +45,7 @@ private:
     std::string m_binaryPath; 
     size_t m_maxSize;
     std::vector<ExecBufferMapping> m_mappings;
+    Endianness m_instruction_endianness;
 
     csh handle;
     cs_arch arch_id;

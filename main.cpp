@@ -156,9 +156,22 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    Endianness inst_endian = parser->getInstructionEndianness();
+    if (inst_endian == Endianness::Unknown || inst_endian == Endianness::Unsupported) {
+        std::string reason = (inst_endian == Endianness::Unsupported) ? "Unsupported" : "Unknown";
+        std::cerr << "[!] Error: " << reason << " instruction endianness for architecture: "
+                  << arch_to_use << " in binary: " << options.filename << std::endl;
+        return 1;
+    }
+
     std::cout << "[" << ANSI_COLOR_ORANGE << "*" << ANSI_COLOR_RESET << "] Searching for ROP gadgets..." << std::endl;
-    GadgetFinder gadget_finder(binaryCode, baseAddress, arch_to_use, options.filename, parser->getExecBufferMappings(), 10);
-    gadget_finder.findGadgets();
+    GadgetFinder gadget_finder(binaryCode, baseAddress, arch_to_use, options.filename, parser->getExecBufferMappings(), 10, inst_endian);
+    try {
+        gadget_finder.findGadgets();
+    } catch (const std::exception& ex) {
+        std::cerr << "[!] Error during gadget analysis: " << ex.what() << std::endl;
+        return 1;
+    }
     std::vector<Gadget>& gadgets = gadget_finder.getGadgets();
     std::cout << "[" << ANSI_COLOR_ORANGE << "*" << ANSI_COLOR_RESET << "] Found " << gadgets.size() << " gadgets." << std::endl;
 

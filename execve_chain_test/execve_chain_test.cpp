@@ -66,9 +66,20 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    Endianness inst_endian = parser->getInstructionEndianness();
+    if (inst_endian == Endianness::Unknown || inst_endian == Endianness::Unsupported) {
+        std::cerr << "⚠️ [Error] Unsupported or unknown instruction endianness for architecture: " << arch_to_use << std::endl;
+        return 1;
+    }
+
     std::cout << "[*] Searching for ROP gadgets..." << std::endl;
-    GadgetFinder finder(binaryCode, baseAddress, arch_to_use, filename, parser->getExecBufferMappings(), 20);
-    finder.findGadgets();
+    GadgetFinder finder(binaryCode, baseAddress, arch_to_use, filename, parser->getExecBufferMappings(), 20, inst_endian);
+    try {
+        finder.findGadgets();
+    } catch (const std::exception& ex) {
+        std::cerr << "⚠️ [Error] " << ex.what() << std::endl;
+        return 1;
+    }
     auto gadgets = finder.getGadgets();
 
     std::cout << "[*] Found " << gadgets.size() << " gadgets." << std::endl;
