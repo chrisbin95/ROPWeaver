@@ -122,6 +122,58 @@ bool decode_dyn(const uint8_t* p, size_t remaining, bool is_64, bool is_be, Deco
     }
 }
 
+struct DecodedSym {
+    uint32_t st_name = 0;
+    uint8_t  st_info = 0;
+    uint8_t  st_other = 0;
+    uint16_t st_shndx = 0;
+    uint64_t st_value = 0;
+    uint64_t st_size = 0;
+};
+
+bool decode_sym(const uint8_t* p, size_t remaining, bool is_64, bool is_be, DecodedSym& out) {
+    if (is_64) {
+        if (remaining < sizeof(Elf64_Sym)) return false;
+        out.st_name  = read_u32(p + 0, is_be);
+        out.st_info  = p[4];
+        out.st_other = p[5];
+        out.st_shndx = read_u16(p + 6, is_be);
+        out.st_value = read_u64(p + 8, is_be);
+        out.st_size  = read_u64(p + 16, is_be);
+        return true;
+    } else {
+        if (remaining < sizeof(Elf32_Sym)) return false;
+        out.st_name  = read_u32(p + 0, is_be);
+        out.st_value = read_u32(p + 4, is_be);
+        out.st_size  = read_u32(p + 8, is_be);
+        out.st_info  = p[12];
+        out.st_other = p[13];
+        out.st_shndx = read_u16(p + 14, is_be);
+        return true;
+    }
+}
+
+// Helper: recognize ARM ELF mapping symbols ($a, $t, $d with optional .<suffix>)
+bool parse_arm_mapping_symbol(const char* name, ArmRegionType& out_type) {
+    if (!name) return false;
+    if (name[0] != '$') return false;
+    char mode_char = name[1];
+    if (mode_char != 'a' && mode_char != 't' && mode_char != 'd') return false;
+    if (name[2] != '\0' && name[2] != '.') return false;
+
+    if (mode_char == 'a') {
+        out_type = ArmRegionType::Arm;
+        return true;
+    } else if (mode_char == 't') {
+        out_type = ArmRegionType::Thumb;
+        return true;
+    } else if (mode_char == 'd') {
+        out_type = ArmRegionType::Data;
+        return true;
+    }
+    return false;
+}
+
 } // anonymous namespace
 
 // ---------------------------------------------------------------------------
@@ -135,11 +187,14 @@ bool decode_dyn(const uint8_t* p, size_t remaining, bool is_64, bool is_be, Deco
 template <typename Elf_Ehdr>
 static bool extract_exec_sections(const uint8_t* data, size_t size, const Elf_Ehdr& ehdr,
                                   bool is_64, bool is_be,
+                                  const std::string& arch,
                                   std::vector<uint8_t>& out_text,
                                   uint64_t& out_base_addr,
                                   uint64_t& out_entry_point,
                                   std::vector<SectionInfo>& out_sections,
-                                  std::vector<ExecBufferMapping>& out_mappings)
+                                  std::vector<ExecBufferMapping>& out_mappings,
+                                  std::vector<ArmMappingSymbol>& out_arm_symbols,
+                                  std::vector<ArmCodeRegion>& out_arm_regions)
 {
     uint64_t sh_off   = ehdr.e_shoff;
     uint16_t sh_num   = ehdr.e_shnum;
@@ -280,6 +335,118 @@ static bool extract_exec_sections(const uint8_t* data, size_t size, const Elf_Eh
 
         const uint8_t* ptr = data + sec.offset;
         out_text.insert(out_text.end(), ptr, ptr + sec.raw_size);
+    }
+
+    out_arm_symbols.clear();
+    out_arm_regions.clear();
+
+    if (arch == "armv7" || arch == "arm") {
+        // Collect mapping symbols from all SHT_SYMTAB and SHT_DYNSYM sections
+        std::vector<ArmMappingSymbol> raw_symbols;
+        for (uint16_t i = 0; i < sh_num; ++i) {
+            const auto& shdr = shdrs[i];
+            if (shdr.sh_type != SHT_SYMTAB && shdr.sh_type != SHT_DYNSYM) continue;
+            uint32_t str_link = shdr.sh_link;
+            if (str_link >= sh_num) continue;
+            const auto& str_shdr = shdrs[str_link];
+            if (str_shdr.sh_offset >= size || str_shdr.sh_size > size - str_shdr.sh_offset) continue;
+            const char* str_table = reinterpret_cast<const char*>(data + str_shdr.sh_offset);
+            size_t str_size = static_cast<size_t>(str_shdr.sh_size);
+
+            size_t sym_esz = (shdr.sh_entsize > 0) ? static_cast<size_t>(shdr.sh_entsize) : (is_64 ? sizeof(Elf64_Sym) : sizeof(Elf32_Sym));
+            if (sym_esz == 0 || shdr.sh_offset >= size) continue;
+            size_t max_bytes = std::min<size_t>(shdr.sh_size, size - shdr.sh_offset);
+            size_t num_syms = max_bytes / sym_esz;
+
+            for (size_t s = 0; s < num_syms; ++s) {
+                size_t sym_offset = static_cast<size_t>(shdr.sh_offset) + s * sym_esz;
+                DecodedSym sym;
+                if (!decode_sym(data + sym_offset, size - sym_offset, is_64, is_be, sym)) continue;
+                if (sym.st_name >= str_size) continue;
+                const char* sname = str_table + sym.st_name;
+                ArmRegionType rtype;
+                if (!parse_arm_mapping_symbol(sname, rtype)) continue;
+
+                ArmMappingSymbol m;
+                // Mapping symbol addresses are virtual addresses; clear bit 0 if set
+                m.address = sym.st_value & ~1ULL;
+                m.type = rtype;
+                m.name = sname;
+                raw_symbols.push_back(m);
+            }
+        }
+
+        // Sort and deduplicate mapping symbols by address ascending
+        if (!raw_symbols.empty()) {
+            std::sort(raw_symbols.begin(), raw_symbols.end(), [](const ArmMappingSymbol& a, const ArmMappingSymbol& b) {
+                if (a.address != b.address) return a.address < b.address;
+                return a.name < b.name;
+            });
+            std::vector<ArmMappingSymbol> dedup;
+            for (const auto& sym : raw_symbols) {
+                if (!dedup.empty() && dedup.back().address == sym.address) {
+                    dedup.back() = sym;
+                } else {
+                    dedup.push_back(sym);
+                }
+            }
+            out_arm_symbols = dedup;
+        }
+
+        // Construct contiguous ordered code/data ranges for each executable section mapping
+        for (const auto& sec_map : out_mappings) {
+            uint64_t sec_va = sec_map.virtual_address;
+            uint64_t sec_end = sec_va + sec_map.size;
+
+            std::vector<ArmMappingSymbol> sec_syms;
+            for (const auto& sym : out_arm_symbols) {
+                if (sym.address >= sec_va && sym.address < sec_end) {
+                    sec_syms.push_back(sym);
+                }
+            }
+
+            if (sec_syms.empty()) {
+                // Safe default for stripped or unmapped ARM binaries: entire section is ARM code
+                ArmCodeRegion r;
+                r.start_address = sec_va;
+                r.end_address = sec_end;
+                r.size = sec_map.size;
+                r.buffer_offset = sec_map.buffer_offset;
+                r.type = ArmRegionType::Arm;
+                r.is_executable = true;
+                r.section_name = sec_map.section_name;
+                out_arm_regions.push_back(r);
+            } else {
+                // If the first symbol starts after sec_va, the prefix region is ARM mode
+                if (sec_syms[0].address > sec_va) {
+                    ArmCodeRegion r;
+                    r.start_address = sec_va;
+                    r.end_address = sec_syms[0].address;
+                    r.size = static_cast<size_t>(sec_syms[0].address - sec_va);
+                    r.buffer_offset = sec_map.buffer_offset;
+                    r.type = ArmRegionType::Arm;
+                    r.is_executable = true;
+                    r.section_name = sec_map.section_name;
+                    out_arm_regions.push_back(r);
+                }
+
+                for (size_t k = 0; k < sec_syms.size(); ++k) {
+                    uint64_t r_start = sec_syms[k].address;
+                    uint64_t r_end = (k + 1 < sec_syms.size()) ? sec_syms[k + 1].address : sec_end;
+                    if (r_end > r_start) {
+                        ArmCodeRegion r;
+                        r.start_address = r_start;
+                        r.end_address = r_end;
+                        r.size = static_cast<size_t>(r_end - r_start);
+                        r.buffer_offset = sec_map.buffer_offset + static_cast<size_t>(r_start - sec_va);
+                        r.type = sec_syms[k].type;
+                        r.is_executable = (sec_syms[k].type != ArmRegionType::Data);
+                        r.section_name = sec_map.section_name;
+                        out_arm_regions.push_back(r);
+                    }
+                }
+            }
+        }
     }
 
     return !out_text.empty();
@@ -455,6 +622,7 @@ bool ELFParser::parse(const std::string& filepath) {
         return false;
     }
     m_arm_be8 = false;
+    m_osabi = data[EI_OSABI];
 
     if (data[EI_CLASS] == ELFCLASS32) {
         if (size < sizeof(Elf32_Ehdr)) return false;
@@ -480,8 +648,9 @@ bool ELFParser::parse(const std::string& filepath) {
             m_arm_be8 = true;
         }
 
-        if (!extract_exec_sections(data, size, hdr32, false, m_is_big_endian,
-                m_text_section, m_text_section_base_address, m_entry_point, m_sections, m_exec_mappings)) {
+        if (!extract_exec_sections(data, size, hdr32, false, m_is_big_endian, m_arch,
+                m_text_section, m_text_section_base_address, m_entry_point, m_sections, m_exec_mappings,
+                m_arm_mapping_symbols, m_arm_code_regions)) {
             return false;
         }
 
@@ -510,8 +679,9 @@ bool ELFParser::parse(const std::string& filepath) {
         m_elf_flags = hdr64.e_flags;
         m_arch = getElfMachineArchitecture(hdr64.e_machine);
 
-        if (!extract_exec_sections(data, size, hdr64, true, m_is_big_endian,
-                m_text_section, m_text_section_base_address, m_entry_point, m_sections, m_exec_mappings)) {
+        if (!extract_exec_sections(data, size, hdr64, true, m_is_big_endian, m_arch,
+                m_text_section, m_text_section_base_address, m_entry_point, m_sections, m_exec_mappings,
+                m_arm_mapping_symbols, m_arm_code_regions)) {
             return false;
         }
 
@@ -582,4 +752,11 @@ bool ELFParser::is64Bit() const {
     if (hdr64.e_ident[EI_CLASS] == ELFCLASS64) return true;
     if (hdr32.e_ident[EI_CLASS] == ELFCLASS32) return false;
     return false;
+}
+
+bool ELFParser::isRvcEnabled() const {
+    if (m_arch != "riscv32" && m_arch != "riscv64") {
+        return false;
+    }
+    return (m_elf_flags & EF_RISCV_RVC) != 0;
 }

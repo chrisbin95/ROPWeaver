@@ -4,6 +4,11 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include <limits>
+#include <cerrno>
+#include <cstdlib>
+#include <cctype>
+#include <cstddef>
 
 // ANSI escape codes for coloring
 #define ANSI_COLOR_GREEN   "\x1b[32m"
@@ -72,6 +77,115 @@ CLIOptions CLI::parseArguments(int argc, char** argv) {
                 return opts;
             }
         }
+        else if (arg == "--offset" || arg == "-O") {
+            if (i + 1 >= argc) {
+                std::cerr << "[!] Error: Missing value for --offset option.\n";
+                printUsage();
+                return opts;
+            }
+            std::string offsetStr = argv[++i];
+            if (offsetStr.empty()) {
+                std::cerr << "[!] Error: Missing value for --offset option.\n";
+                printUsage();
+                return opts;
+            }
+
+            // Check if it's another flag or negative number
+            if (offsetStr[0] == '-') {
+                if (offsetStr.size() > 1 && std::isdigit(static_cast<unsigned char>(offsetStr[1]))) {
+                    std::cerr << "[!] Error: Invalid --offset value \"" << offsetStr << "\": negative offsets are not permitted.\n";
+                } else {
+                    std::cerr << "[!] Error: Missing value for --offset option (received flag \"" << offsetStr << "\").\n";
+                }
+                printUsage();
+                return opts;
+            }
+
+            // Reject explicit plus signs
+            if (offsetStr[0] == '+') {
+                std::cerr << "[!] Error: Invalid --offset value \"" << offsetStr << "\": explicit plus signs are not permitted.\n";
+                printUsage();
+                return opts;
+            }
+
+            // Must start with an ASCII digit
+            if (!std::isdigit(static_cast<unsigned char>(offsetStr[0]))) {
+                std::cerr << "[!] Error: Invalid --offset value \"" << offsetStr << "\": malformed number.\n";
+                printUsage();
+                return opts;
+            }
+
+            // Determine base and enforce strict formatting:
+            // - Values starting with 0x or 0X are parsed as hexadecimal (base 16)
+            // - All other values are parsed as decimal (base 10); octal interpretation is strictly prohibited
+            int base = 10;
+            if (offsetStr.size() >= 2 && offsetStr[0] == '0' && (offsetStr[1] == 'x' || offsetStr[1] == 'X')) {
+                base = 16;
+                if (offsetStr.size() == 2) {
+                    std::cerr << "[!] Error: Invalid --offset value \"" << offsetStr << "\": missing hexadecimal digits.\n";
+                    printUsage();
+                    return opts;
+                }
+                for (size_t idx = 2; idx < offsetStr.size(); ++idx) {
+                    if (!std::isxdigit(static_cast<unsigned char>(offsetStr[idx]))) {
+                        std::cerr << "[!] Error: Invalid --offset value \"" << offsetStr << "\": malformed hexadecimal character '" << offsetStr[idx] << "'.\n";
+                        printUsage();
+                        return opts;
+                    }
+                }
+            } else {
+                // Reject unsupported prefixes (e.g. binary 0b/0B or octal 0o/0O)
+                if (offsetStr.size() >= 2 && offsetStr[0] == '0' && (offsetStr[1] == 'b' || offsetStr[1] == 'B' || offsetStr[1] == 'o' || offsetStr[1] == 'O')) {
+                    std::cerr << "[!] Error: Invalid --offset value \"" << offsetStr << "\": unsupported prefix.\n";
+                    printUsage();
+                    return opts;
+                }
+                // Strictly validate all characters as decimal digits (0-9)
+                for (size_t idx = 0; idx < offsetStr.size(); ++idx) {
+                    if (!std::isdigit(static_cast<unsigned char>(offsetStr[idx]))) {
+                        std::cerr << "[!] Error: Invalid --offset value \"" << offsetStr << "\": malformed decimal character '" << offsetStr[idx] << "'.\n";
+                        printUsage();
+                        return opts;
+                    }
+                }
+            }
+
+            char* endptr = nullptr;
+            errno = 0;
+            unsigned long long val = std::strtoull(offsetStr.c_str(), &endptr, base);
+
+            // Check for malformed / trailing non-numeric characters
+            if (endptr == offsetStr.c_str() || *endptr != '\0') {
+                std::cerr << "[!] Error: Invalid --offset value \"" << offsetStr << "\": malformed number (trailing non-numeric characters).\n";
+                printUsage();
+                return opts;
+            }
+
+            // Check for numerical overflow (ERANGE)
+            if (errno == ERANGE) {
+                std::cerr << "[!] Error: Invalid --offset value \"" << offsetStr << "\": numerical overflow (exceeds range).\n";
+                printUsage();
+                return opts;
+            }
+
+            // Check against platform size_t capacity
+            if (val > std::numeric_limits<size_t>::max()) {
+                std::cerr << "[!] Error: Invalid --offset value \"" << offsetStr << "\": value exceeds platform size_t capacity.\n";
+                printUsage();
+                return opts;
+            }
+
+            // Check against maximum permitted 16 MiB limit (16 * 1024 * 1024 = 16777216 bytes)
+            constexpr unsigned long long MAX_EXPLOIT_OFFSET = 16ULL * 1024ULL * 1024ULL; // 16 MiB
+            if (val > MAX_EXPLOIT_OFFSET) {
+                std::cerr << "[!] Error: Invalid --offset value " << val << ": exceeds maximum permitted limit (16 MiB).\n";
+                printUsage();
+                return opts;
+            }
+
+            opts.exploitOffset = static_cast<size_t>(val);
+            opts.useCustomOffset = true;
+        }
         else if (arg == "--payload-gen" || arg == "--payload" || arg == "-p" || arg == "payload") {
             opts.generatePayload = true;
             opts.autoChain = true;
@@ -118,6 +232,7 @@ void CLI::printUsage() const {
               << "  --suggest-gadgets     List suggested gadgets grouped by category\n"
               << "  --auto-chain, -a      Attempt automatic ROP chain generation\n"
               << "  --binsh-addr [addr]   Manually specify /bin/sh address (hex or decimal)\n"
+              << "  --offset, -O [bytes]  Payload padding offset to return address (default: 104, max: 16MiB)\n"
               << "  --upload-report       Upload json to Firebase\n"
               << "  --force, -f           Force upload to Firebase (overwrite if report exists)\n"
               << "  --payload-gen, -p     Generate a raw exploit payload from a successful ROP chain\n"

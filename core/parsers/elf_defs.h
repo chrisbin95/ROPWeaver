@@ -111,6 +111,26 @@ struct Elf64_Dyn {
   } d_un;
 };
 
+// Symbol table entry 32-bit (16 bytes)
+struct Elf32_Sym {
+  uint32_t st_name;
+  uint32_t st_value;
+  uint32_t st_size;
+  uint8_t  st_info;
+  uint8_t  st_other;
+  uint16_t st_shndx;
+};
+
+// Symbol table entry 64-bit (24 bytes)
+struct Elf64_Sym {
+  uint32_t st_name;
+  uint8_t  st_info;
+  uint8_t  st_other;
+  uint16_t st_shndx;
+  uint64_t st_value;
+  uint64_t st_size;
+};
+
 #pragma pack(pop)
 
 // ELF Identification indexes
@@ -141,8 +161,41 @@ constexpr uint8_t ELFDATANONE = 0;
 constexpr uint8_t ELFDATA2LSB = 1;
 constexpr uint8_t ELFDATA2MSB = 2;
 
-// ARM-specific Flags
-constexpr uint32_t EF_ARM_BE8 = 0x00800000;
+// OS ABI values (e_ident[EI_OSABI])
+constexpr uint8_t ELFOSABI_NONE       = 0;   // System V / None (standard Linux default)
+constexpr uint8_t ELFOSABI_SYSV       = 0;   // Alias for NONE
+constexpr uint8_t ELFOSABI_HPUX       = 1;   // HP-UX
+constexpr uint8_t ELFOSABI_NETBSD     = 2;   // NetBSD
+constexpr uint8_t ELFOSABI_GNU        = 3;   // GNU / Linux extensions
+constexpr uint8_t ELFOSABI_LINUX      = 3;   // Alias for GNU
+constexpr uint8_t ELFOSABI_SOLARIS    = 6;   // Sun Solaris
+constexpr uint8_t ELFOSABI_AIX        = 7;   // IBM AIX
+constexpr uint8_t ELFOSABI_IRIX       = 8;   // SGI Irix
+constexpr uint8_t ELFOSABI_FREEBSD    = 9;   // FreeBSD
+constexpr uint8_t ELFOSABI_OPENBSD    = 12;  // OpenBSD
+constexpr uint8_t ELFOSABI_ARM_AEABI  = 64;  // ARM EABI (used by some embedded/EABI compilers)
+constexpr uint8_t ELFOSABI_ARM        = 97;  // ARM
+constexpr uint8_t ELFOSABI_STANDALONE = 255; // Standalone / bare-metal embedded
+
+// ARM-specific Flags (AAELF32 §4.3.4)
+constexpr uint32_t EF_ARM_EABIMASK     = 0xFF000000;
+constexpr uint32_t EF_ARM_EABI_UNKNOWN = 0x00000000; // Legacy OABI
+constexpr uint32_t EF_ARM_EABI_VER1    = 0x01000000;
+constexpr uint32_t EF_ARM_EABI_VER2    = 0x02000000;
+constexpr uint32_t EF_ARM_EABI_VER3    = 0x03000000;
+constexpr uint32_t EF_ARM_EABI_VER4    = 0x04000000;
+constexpr uint32_t EF_ARM_EABI_VER5    = 0x05000000;
+constexpr uint32_t EF_ARM_BE8          = 0x00800000;
+
+// RISC-V specific Flags (RISC-V ELF psABI §8.1)
+constexpr uint32_t EF_RISCV_RVC              = 0x0001; // Compressed instructions
+constexpr uint32_t EF_RISCV_FLOAT_ABI_MASK   = 0x0006;
+constexpr uint32_t EF_RISCV_FLOAT_ABI_SOFT   = 0x0000;
+constexpr uint32_t EF_RISCV_FLOAT_ABI_SINGLE = 0x0002;
+constexpr uint32_t EF_RISCV_FLOAT_ABI_DOUBLE = 0x0004;
+constexpr uint32_t EF_RISCV_FLOAT_ABI_QUAD   = 0x0006;
+constexpr uint32_t EF_RISCV_RVE              = 0x0008; // Embedded 16-register variant (A7/X17 does not exist)
+constexpr uint32_t EF_RISCV_TSO              = 0x0010; // Total Store Ordering
 
 // Safe endian-aware integer readers (bounds-checked by caller, safe on
 // unaligned memory)
@@ -227,6 +280,7 @@ constexpr uint32_t SHT_DYNAMIC = 6;
 constexpr uint32_t SHT_NOTE = 7;
 constexpr uint32_t SHT_NOBITS = 8;
 constexpr uint32_t SHT_REL = 9;
+constexpr uint32_t SHT_DYNSYM = 11;
 constexpr uint64_t SHF_WRITE = 0x1;
 constexpr uint64_t SHF_ALLOC = 0x2;
 constexpr uint64_t SHF_EXECINSTR = 0x4;

@@ -37,7 +37,21 @@ public:
     Endianness getInstructionEndianness() const override { return m_instruction_endianness; }
     bool isBigEndian() const { return m_metadata_endianness == Endianness::Big; }
     bool isArmBe8() const { return m_arm_be8; }
-    uint32_t getElfFlags() const { return m_elf_flags; }
+    uint32_t getElfFlags() const override { return m_elf_flags; }
+    uint8_t getOsAbi() const override { return m_osabi; }
+    bool isArmEabi() const override {
+        if (m_arch != "armv7" && hdr32.e_machine != EM_ARM) return false;
+        uint32_t ver = m_elf_flags & EF_ARM_EABIMASK;
+        return (ver == EF_ARM_EABI_VER1 || ver == EF_ARM_EABI_VER2 ||
+                ver == EF_ARM_EABI_VER3 || ver == EF_ARM_EABI_VER4 ||
+                ver == EF_ARM_EABI_VER5);
+    }
+    bool isRvcEnabled() const override;
+
+    // ARM ELF Mapping symbols and Code/Data regions (AAELF32 §4.5.2)
+    const std::vector<ArmMappingSymbol>& getArmMappingSymbols() const override { return m_arm_mapping_symbols; }
+    const std::vector<ArmCodeRegion>& getArmCodeRegions() const override { return m_arm_code_regions; }
+    bool hasArmMappingSymbols() const override { return !m_arm_mapping_symbols.empty(); }
 
     // Security mitigations (override FileParser defaults)
     bool isNxEnabled() const override { return m_nx_enabled; }
@@ -56,6 +70,7 @@ private:
     bool m_is_big_endian                = false;
     bool m_arm_be8                      = false;
     uint32_t m_elf_flags                = 0;
+    uint8_t m_osabi                     = 0;
 
     // Members needed to satisfy FileParser getters
     std::vector<uint8_t> m_text_section;
@@ -65,6 +80,8 @@ private:
     std::string m_arch = "unknown";
     std::vector<SectionInfo> m_sections;
     std::vector<ExecBufferMapping> m_exec_mappings;
+    std::vector<ArmMappingSymbol> m_arm_mapping_symbols;
+    std::vector<ArmCodeRegion> m_arm_code_regions;
 
     // Mitigation detection results
     bool m_nx_enabled     = false;

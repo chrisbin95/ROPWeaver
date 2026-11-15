@@ -112,17 +112,22 @@ std::string ArchDetector::detectPEArchitecture(const std::vector<uint8_t>& data)
 std::string ArchDetector::detectMachOArchitecture(const std::vector<uint8_t>& data) const {
     if (data.size() < 4) return "unknown";
 
-    uint32_t magic;
-    std::memcpy(&magic, data.data(), 4);
+    MachOFormat fmt = detectMachOFormat(data.data());
+    if (fmt == MachOFormat::Invalid) return "unknown";
 
-    // CONSTANTS use GLOBAL scope
-    if (magic == MH_MAGIC || magic == MH_MAGIC_64) {
-        // STRUCT uses ropweaver::
-        const ropweaver::MachO_Header* header = reinterpret_cast<const ropweaver::MachO_Header*>(data.data());
-        switch (header->cputype) {
-            // CONSTANTS use GLOBAL scope
-            case CPU_TYPE_X86: 
-                return "x86";
+    if (isFatMachO(fmt)) {
+        return "fat";
+    }
+
+    // Thin Mach-O: need at least 8 bytes to decode cputype at offset 4
+    if (data.size() < 8) return "unknown";
+
+    bool is_be = isMachOBigEndian(fmt);
+    bool is_64 = isMachO64(fmt);
+    int32_t cputype = read_i32(data.data() + 4, is_be);
+
+    if (is_64) {
+        switch (cputype) {
             case CPU_TYPE_X86_64:
                 return "x86_64";
             case CPU_TYPE_ARM64:
@@ -130,22 +135,20 @@ std::string ArchDetector::detectMachOArchitecture(const std::vector<uint8_t>& da
             default:
                 return "unknown";
         }
-    } else if (magic == FAT_MAGIC || magic == FAT_MAGIC_64) {
-        return "fat"; 
+    } else {
+        switch (cputype) {
+            case CPU_TYPE_X86:
+                return "x86";
+            case CPU_TYPE_ARM:
+                return "armv7";
+            default:
+                return "unknown";
+        }
     }
-    
-    // Simplistic check for little-endian magic bytes (MH_CIGAM/MH_CIGAM_64)
-    uint32_t reversed_magic = (magic >> 24) | ((magic >> 8) & 0x0000FF00) | ((magic << 8) & 0x00FF0000) | (magic << 24);
-    
-    if (reversed_magic == MH_MAGIC || reversed_magic == MH_MAGIC_64 || reversed_magic == FAT_MAGIC || reversed_magic == FAT_MAGIC_64) {
-        return "x86_64"; 
-    }
-
-    return "unknown";
 }
 
 // Factory function
-std::unique_ptr<FileParser> ArchDetector::createFileParser(const std::string& filepath) const {
+std::unique_ptr<FileParser> ArchDetector::createFileParser(const std::string& filepath, const std::string& targetArch) const {
     std::ifstream file(filepath, std::ios::binary);
     if (!file.is_open()) {
         std::cerr << "[!] Could not open file: " << filepath << std::endl;
@@ -204,13 +207,19 @@ std::unique_ptr<FileParser> ArchDetector::createFileParser(const std::string& fi
     }
 
     // Mach-O detection
-    if (buffer[0] == 0xca || buffer[0] == 0xfe) { // Check for common Mach-O magic starts
+    MachOFormat macho_fmt = detectMachOFormat(buffer.data());
+    if (macho_fmt != MachOFormat::Invalid) {
         // Read enough for Mach-O header/fat header
         std::vector<uint8_t> machoBuffer(1024, 0);
         file.seekg(0, std::ios::beg);
-        if (file.read(reinterpret_cast<char*>(machoBuffer.data()), machoBuffer.size())) {
+        file.read(reinterpret_cast<char*>(machoBuffer.data()), machoBuffer.size());
+        std::streamsize bytes_read = file.gcount();
+        if (bytes_read >= 4) {
+            machoBuffer.resize(static_cast<size_t>(bytes_read));
             std::string arch = detectMachOArchitecture(machoBuffer);
-            if (arch == "x86" || arch == "x86_64" || arch == "fat") return std::make_unique<ropweaver::MachOParser>(filepath);
+            if (arch == "x86" || arch == "x86_64" || arch == "armv7" || arch == "aarch64" || arch == "fat") {
+                return std::make_unique<ropweaver::MachOParser>(filepath, targetArch);
+            }
         }
     }
 

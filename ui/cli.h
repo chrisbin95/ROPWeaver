@@ -1,7 +1,8 @@
 // cli.h
 #pragma once
 #include <string>
-#include <cstdint>  // <-- Add this
+#include <cstdint>
+#include <cstddef>
 
 struct CLIOptions {
     bool valid = false;             // Set to true only when args are good
@@ -16,6 +17,8 @@ struct CLIOptions {
     bool useManualBinsh = false;    // true if user provides --binsh-addr
     bool generatePayload = false;   // payload generation
     bool forceUpload = false;       // --force, -f (overwrite / skip deduplication)
+    size_t exploitOffset = 104;     // Exploit payload padding offset (default: 104 bytes)
+    bool useCustomOffset = false;   // True if user provides --offset / -O
 };
 
 class CLI {

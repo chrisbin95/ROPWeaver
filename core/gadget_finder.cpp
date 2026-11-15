@@ -1,4 +1,6 @@
 #include "gadget_finder.h"
+#include "capstone_compat.h"
+#include "parsers/elf_defs.h"
 #include <iostream>
 #include <fstream>
 #include <stdexcept>
@@ -10,22 +12,45 @@
 #include <set>
 #include <cctype>
 
-// Helper: Detect ELF class for RISC-V
-static cs_mode get_riscv_mode_from_binary(const std::string& binary_path) {
+// Helper: Detect ELF class and RVC capability for RISC-V
+static cs_mode get_riscv_mode_from_binary(const std::string& binary_path, const std::string& default_arch) {
+    cs_mode base_mode = (default_arch == "riscv64") ? CS_MODE_RISCV64 : CS_MODE_RISCV32;
+    if (binary_path.empty()) {
+        return base_mode;
+    }
     std::ifstream file(binary_path, std::ios::binary);
     if (!file) {
-        throw std::runtime_error("Could not open binary file.");
+        return base_mode;
     }
     unsigned char e_ident[16];
     if (!file.read(reinterpret_cast<char*>(e_ident), sizeof(e_ident))) {
-        throw std::runtime_error("Failed to read ELF header.");
+        return base_mode;
     }
-    if (e_ident[4] == 1) { // 32-bit ELF
-        return CS_MODE_RISCV32;
-    } else if (e_ident[4] == 2) { // 64-bit ELF
-        return CS_MODE_RISCV64;
+    bool is_64 = (e_ident[4] == 2);
+    base_mode = is_64 ? CS_MODE_RISCV64 : CS_MODE_RISCV32;
+
+    uint32_t e_flags = 0;
+    bool is_be = (e_ident[5] == 2);
+    if (is_64) {
+        // Elf64_Ehdr: e_flags is at offset 48 (4 bytes)
+        file.seekg(48, std::ios::beg);
+        uint8_t flags_buf[4];
+        if (file.read(reinterpret_cast<char*>(flags_buf), 4)) {
+            e_flags = ropweaver::read_u32(flags_buf, is_be);
+        }
+    } else {
+        // Elf32_Ehdr: e_flags is at offset 36 (4 bytes)
+        file.seekg(36, std::ios::beg);
+        uint8_t flags_buf[4];
+        if (file.read(reinterpret_cast<char*>(flags_buf), 4)) {
+            e_flags = ropweaver::read_u32(flags_buf, is_be);
+        }
     }
-    throw std::runtime_error("Unsupported ELF class.");
+
+    if (e_flags & ropweaver::EF_RISCV_RVC) {
+        base_mode = static_cast<cs_mode>(base_mode | ROPW_CS_MODE_RISCVC);
+    }
+    return base_mode;
 }
 
 GadgetFinder::GadgetFinder(const std::vector<unsigned char>& code,
@@ -33,8 +58,10 @@ GadgetFinder::GadgetFinder(const std::vector<unsigned char>& code,
                            const std::string& arch,
                            const std::string& binary_path,
                            size_t maxSize,
-                           Endianness instruction_endianness)
-    : GadgetFinder(code, base, arch, binary_path, {}, maxSize, instruction_endianness)
+                           Endianness instruction_endianness,
+                           bool rvc_enabled,
+                           const std::vector<ArmCodeRegion>& arm_regions)
+    : GadgetFinder(code, base, arch, binary_path, {}, maxSize, instruction_endianness, rvc_enabled, arm_regions)
 {
 }
 
@@ -44,7 +71,9 @@ GadgetFinder::GadgetFinder(const std::vector<unsigned char>& code,
                            const std::string& binary_path,
                            const std::vector<ExecBufferMapping>& mappings,
                            size_t maxSize,
-                           Endianness instruction_endianness)
+                           Endianness instruction_endianness,
+                           bool rvc_enabled,
+                           const std::vector<ArmCodeRegion>& arm_regions)
     : m_code(code),
       m_baseAddress(base),
       m_arch(arch),
@@ -52,6 +81,8 @@ GadgetFinder::GadgetFinder(const std::vector<unsigned char>& code,
       m_maxSize(maxSize),
       m_mappings(mappings),
       m_instruction_endianness(instruction_endianness),
+      m_rvc_enabled(rvc_enabled),
+      m_arm_regions(arm_regions),
       handle(0),
       arch_id(CS_ARCH_X86),
       mode(CS_MODE_32)
@@ -95,19 +126,43 @@ GadgetFinder::GadgetFinder(const std::vector<unsigned char>& code,
         if (m_instruction_endianness == Endianness::Big) {
             mode = static_cast<cs_mode>(mode | CS_MODE_BIG_ENDIAN);
         }
+        cs_mode thumb_mode = CS_MODE_THUMB;
+        if (m_instruction_endianness == Endianness::Big) {
+            thumb_mode = static_cast<cs_mode>(thumb_mode | CS_MODE_BIG_ENDIAN);
+        }
+        if (cs_open(CS_ARCH_ARM, thumb_mode, &thumb_handle) != CS_ERR_OK) {
+            throw std::runtime_error("Failed to initialize Capstone Thumb handle");
+        }
+        cs_option(thumb_handle, CS_OPT_DETAIL, CS_OPT_ON);
     } else if (arch == "riscv32") {
         arch_id = CS_ARCH_RISCV;
-        mode = get_riscv_mode_from_binary(binary_path);
-        if (mode != CS_MODE_RISCV32) mode = CS_MODE_RISCV32;
+        mode = get_riscv_mode_from_binary(binary_path, arch);
+        mode = static_cast<cs_mode>(mode | CS_MODE_RISCV32);
+        if (m_rvc_enabled) {
+            mode = static_cast<cs_mode>(mode | ROPW_CS_MODE_RISCVC);
+        }
+        if ((mode & ROPW_CS_MODE_RISCVC) != 0) {
+            m_rvc_enabled = true;
+        }
     } else if (arch == "riscv64") {
         arch_id = CS_ARCH_RISCV;
-        mode = get_riscv_mode_from_binary(binary_path);
-        if (mode != CS_MODE_RISCV64) mode = CS_MODE_RISCV64;
+        mode = get_riscv_mode_from_binary(binary_path, arch);
+        mode = static_cast<cs_mode>(mode | CS_MODE_RISCV64);
+        if (m_rvc_enabled) {
+            mode = static_cast<cs_mode>(mode | ROPW_CS_MODE_RISCVC);
+        }
+        if ((mode & ROPW_CS_MODE_RISCVC) != 0) {
+            m_rvc_enabled = true;
+        }
     } else {
         throw std::runtime_error("Unsupported architecture: " + arch);
     }
 
     if (cs_open(arch_id, mode, &handle) != CS_ERR_OK) {
+        if (thumb_handle != 0) {
+            cs_close(&thumb_handle);
+            thumb_handle = 0;
+        }
         throw std::runtime_error("Failed to initialize Capstone handle");
     }
     cs_option(handle, CS_OPT_DETAIL, CS_OPT_ON);
@@ -117,6 +172,10 @@ GadgetFinder::~GadgetFinder() {
     if (handle != 0) {
         cs_close(&handle);
         handle = 0;
+    }
+    if (thumb_handle != 0) {
+        cs_close(&thumb_handle);
+        thumb_handle = 0;
     }
 }
 
@@ -141,10 +200,13 @@ static bool is_terminator_instruction(const cs_insn& insn, const std::string& ar
 
     // ARM / Thumb
     if (arch == "armv7" || arch == "arm" || arch == "thumb") {
-        if (mnem == "bx" && (ops.find("lr") != std::string::npos || ops.find("r14") != std::string::npos)) {
+        if (mnem == "bkpt") {
+            return false;
+        }
+        if ((mnem == "bx" || mnem == "bx.w") && (ops.find("lr") != std::string::npos || ops.find("r14") != std::string::npos)) {
             return true;
         }
-        if (mnem == "pop" && ops.find("pc") != std::string::npos) {
+        if ((mnem == "pop" || mnem == "pop.w") && ops.find("pc") != std::string::npos) {
             return true;
         }
         if (mnem == "svc" || mnem == "swi") {
@@ -161,7 +223,16 @@ static bool is_terminator_instruction(const cs_insn& insn, const std::string& ar
 
     // RISC-V
     if (arch == "riscv32" || arch == "riscv64") {
-        if (mnem == "ret" || (mnem == "jalr" && (ops.find("ra") != std::string::npos || ops.find("zero") != std::string::npos))) {
+        // Traps and breakpoints are strictly non-terminating (raise exceptions / debugger halts)
+        if (mnem == "ebreak" || mnem == "c.ebreak") {
+            return false;
+        }
+        // Do NOT classify c.jalr as a return gadget (it sets ra = PC + 2 and functions as an indirect call)
+        if (mnem == "c.jalr") {
+            return false;
+        }
+        if (mnem == "ret" || (mnem == "c.jr" && ops.find("ra") != std::string::npos) ||
+            (mnem == "jalr" && (ops.find("ra") != std::string::npos || ops.find("zero") != std::string::npos))) {
             return true;
         }
         if (mnem == "ecall") {
@@ -174,15 +245,20 @@ static bool is_terminator_instruction(const cs_insn& insn, const std::string& ar
 
 static bool is_invalid_or_branch_instruction(const cs_insn& insn, const std::string& arch) {
     std::string mnem = insn.mnemonic ? insn.mnemonic : "";
+    std::string ops  = insn.op_str ? insn.op_str : "";
     std::transform(mnem.begin(), mnem.end(), mnem.begin(), [](unsigned char c){ return std::tolower(c); });
+    std::transform(ops.begin(), ops.end(), ops.begin(), [](unsigned char c){ return std::tolower(c); });
 
     // Halting / trapping / illegal
-    if (mnem == "hlt" || mnem == "ud2" || mnem == "int3" || mnem == "ill") {
+    if (mnem == "hlt" || mnem == "ud2" || mnem == "int3" || mnem == "ill" || mnem == "ebreak" || mnem == "c.ebreak" || mnem == "bkpt") {
         return true;
     }
 
     // Intermediate returns and system calls
-    if (mnem == "ret" || mnem == "retf" || mnem == "retfq" || mnem == "syscall" || mnem == "sysenter" || mnem == "ecall") {
+    if (mnem == "ret" || mnem == "retf" || mnem == "retfq" || mnem == "syscall" || mnem == "sysenter" || mnem == "ecall" || mnem == "svc" || mnem == "swi") {
+        return true;
+    }
+    if ((mnem == "pop" || mnem == "pop.w") && ops.find("pc") != std::string::npos) {
         return true;
     }
     if (mnem == "int") {
@@ -204,7 +280,8 @@ static bool is_invalid_or_branch_instruction(const cs_insn& insn, const std::str
             return true;
         }
     } else if (arch == "riscv32" || arch == "riscv64") {
-        if (mnem.rfind("b", 0) == 0 || mnem.rfind("j", 0) == 0) {
+        if (mnem.rfind("b", 0) == 0 || mnem.rfind("j", 0) == 0 ||
+            mnem.rfind("c.b", 0) == 0 || mnem.rfind("c.j", 0) == 0) {
             return true;
         }
     }
@@ -215,7 +292,7 @@ static bool is_invalid_or_branch_instruction(const cs_insn& insn, const std::str
 static bool is_padding_or_prefix(const cs_insn& insn) {
     std::string mnem = insn.mnemonic ? insn.mnemonic : "";
     std::transform(mnem.begin(), mnem.end(), mnem.begin(), [](unsigned char c){ return std::tolower(c); });
-    return (mnem == "nop" || mnem == "endbr64" || mnem == "endbr32");
+    return (mnem == "nop" || mnem == "nop.w" || mnem == "c.nop" || mnem == "endbr64" || mnem == "endbr32");
 }
 
 // Forward declaration
@@ -238,20 +315,47 @@ void GadgetFinder::findGadgets() {
 
     std::set<std::pair<uint64_t, std::string>> seen_gadgets;
 
-    // Disassemble each mapped executable section individually using its true virtual address
-    for (const auto& sec_map : m_mappings) {
-        if (sec_map.buffer_offset >= m_code.size() || sec_map.size == 0) continue;
-        size_t sec_len = std::min(sec_map.size, m_code.size() - sec_map.buffer_offset);
-        const uint8_t* sec_data = m_code.data() + sec_map.buffer_offset;
-        uint64_t sec_va = sec_map.virtual_address;
+    // Determine mapping units to disassemble in Pass 1:
+    // For ARM with mapping symbols, use ARM and Thumb instruction regions directly, excluding $d (data)
+    struct DisasmUnit {
+        size_t buffer_offset;
+        size_t size;
+        uint64_t virtual_address;
+        bool is_thumb;
+    };
+    std::vector<DisasmUnit> units;
+
+    if ((m_arch == "armv7" || m_arch == "arm") && !m_arm_regions.empty()) {
+        for (const auto& reg : m_arm_regions) {
+            // Ensure $d regions are excluded from instruction decoding.
+            if (!reg.is_executable || reg.type == ArmRegionType::Data) {
+                continue;
+            }
+            bool is_thumb = (reg.type == ArmRegionType::Thumb);
+            units.push_back({ reg.buffer_offset, reg.size, reg.start_address, is_thumb });
+        }
+    } else {
+        for (const auto& sec_map : m_mappings) {
+            units.push_back({ sec_map.buffer_offset, sec_map.size, sec_map.virtual_address, false });
+        }
+    }
+
+    // Disassemble each unit individually using its true virtual address
+    for (const auto& unit : units) {
+        if (unit.buffer_offset >= m_code.size() || unit.size == 0) continue;
+        size_t sec_len = std::min(unit.size, m_code.size() - unit.buffer_offset);
+        const uint8_t* sec_data = m_code.data() + unit.buffer_offset;
+        uint64_t sec_va = unit.virtual_address;
+        csh active_handle = unit.is_thumb ? thumb_handle : handle;
+        std::string active_arch = unit.is_thumb ? "thumb" : m_arch;
 
         // --- Pass 1: Linear Disassembly for this section ---
         cs_insn *all_insns = nullptr;
-        size_t count = cs_disasm(handle, sec_data, sec_len, sec_va, 0, &all_insns);
+        size_t count = cs_disasm(active_handle, sec_data, sec_len, sec_va, 0, &all_insns);
 
         if (count > 0) {
             for (size_t i = 0; i < count; ++i) {
-                if (!is_terminator_instruction(all_insns[i], m_arch)) {
+                if (!is_terminator_instruction(all_insns[i], active_arch)) {
                     continue;
                 }
 
@@ -268,7 +372,7 @@ void GadgetFinder::findGadgets() {
                             valid = false;
                             break;
                         }
-                        if (is_invalid_or_branch_instruction(all_insns[k], m_arch)) {
+                        if (is_invalid_or_branch_instruction(all_insns[k], active_arch)) {
                             valid = false;
                             break;
                         }
@@ -277,7 +381,7 @@ void GadgetFinder::findGadgets() {
 
                     std::string term_mnem = all_insns[i].mnemonic ? all_insns[i].mnemonic : "";
                     std::transform(term_mnem.begin(), term_mnem.end(), term_mnem.begin(), [](unsigned char c){ return std::tolower(c); });
-                    if (term_mnem == "hlt" || term_mnem == "ud2" || term_mnem == "int3") {
+                    if (term_mnem == "hlt" || term_mnem == "ud2" || term_mnem == "int3" || term_mnem == "ebreak" || term_mnem == "c.ebreak" || term_mnem == "bkpt") {
                         continue;
                     }
 
@@ -285,6 +389,10 @@ void GadgetFinder::findGadgets() {
                     g.architecture = m_arch;
                     g.address = all_insns[start_idx].address;
                     g.preferred_va = g.address;
+                    g.is_thumb = unit.is_thumb;
+                    g.entry_address = (unit.is_thumb && (m_arch == "armv7" || m_arch == "arm" || m_arch == "thumb"))
+                                        ? (g.address | 1ULL)
+                                        : g.address;
 
                     std::string asm_str;
                     for (size_t k = start_idx; k <= i; ++k) {
@@ -298,7 +406,7 @@ void GadgetFinder::findGadgets() {
                     }
                     g.assembly = asm_str;
 
-                    if (g.instructions.size() == 2 && g.instructions[0].mnemonic == "pop") {
+                    if (g.instructions.size() == 2 && (g.instructions[0].mnemonic == "pop" || g.instructions[0].mnemonic == "pop.w")) {
                         g.target_register = g.instructions[0].op_str;
                     }
 
@@ -308,7 +416,7 @@ void GadgetFinder::findGadgets() {
                         size_t total_bytes = static_cast<size_t>((all_insns[i].address + all_insns[i].size) - all_insns[start_idx].address);
                         if (rel_offset + total_bytes <= sec_len) {
                             bool b_ok = true;
-                            size_t cur = sec_map.buffer_offset + rel_offset;
+                            size_t cur = unit.buffer_offset + rel_offset;
                             for (size_t k = start_idx; k <= i; ++k) {
                                 if (std::memcmp(m_code.data() + cur, all_insns[k].bytes, all_insns[k].size) != 0) {
                                     b_ok = false;
@@ -342,7 +450,7 @@ void GadgetFinder::findGadgets() {
                 size_t max_back = std::min<size_t>(term_rel, 15);
                 for (size_t back = 1; back <= max_back; ++back) {
                     size_t start_rel = term_rel - back;
-                    size_t buf_start_idx = sec_map.buffer_offset + start_rel;
+                    size_t buf_start_idx = unit.buffer_offset + start_rel;
                     size_t remaining_in_sec = sec_len - start_rel;
                     size_t read_len = std::min<size_t>(back + 4, remaining_in_sec);
 
@@ -384,6 +492,8 @@ void GadgetFinder::findGadgets() {
                             g.architecture = m_arch;
                             g.address = sub_insns[0].address;
                             g.preferred_va = g.address;
+                            g.is_thumb = false;
+                            g.entry_address = g.address;
 
                             std::string asm_str;
                             for (size_t k = 0; k <= end_insn_idx; ++k) {
@@ -399,6 +509,215 @@ void GadgetFinder::findGadgets() {
                             if (g.instructions.size() == 2 && g.instructions[0].mnemonic == "pop") {
                                 g.target_register = g.instructions[0].op_str;
                             }
+
+                            // Validate bytes within section bounds
+                            size_t total_bytes = static_cast<size_t>(
+                                (sub_insns[end_insn_idx].address + sub_insns[end_insn_idx].size) - sub_insns[0].address);
+                            if (start_rel + total_bytes <= sec_len) {
+                                bool b_ok = true;
+                                size_t cur = buf_start_idx;
+                                for (size_t k = 0; k <= end_insn_idx; ++k) {
+                                    if (std::memcmp(m_code.data() + cur, sub_insns[k].bytes, sub_insns[k].size) != 0) {
+                                        b_ok = false;
+                                        break;
+                                    }
+                                    cur += sub_insns[k].size;
+                                }
+                                g.byte_verified = b_ok;
+                            }
+
+                            if (seen_gadgets.insert({ g.address, g.assembly }).second) {
+                                m_gadgets.push_back(g);
+                            }
+                        }
+                    }
+                    cs_free(sub_insns, sub_count);
+                }
+            }
+        } else if ((m_arch == "riscv32" || m_arch == "riscv64") && m_rvc_enabled) {
+            // --- Pass 2: Candidate scanning for RVC (16-bit and 32-bit instructions) ---
+            for (size_t term_rel = 0; term_rel < sec_len; term_rel += 2) {
+                // Pre-filter candidate terminator positions on 2-byte aligned offsets
+                bool is_term_candidate = false;
+                if (term_rel + 1 < sec_len) {
+                    uint8_t b0 = sec_data[term_rel];
+                    uint8_t b1 = sec_data[term_rel + 1];
+                    // c.jr ra is 0x8082 (little-endian bytes 0x82, 0x80)
+                    if (b0 == 0x82 && b1 == 0x80) {
+                        is_term_candidate = true;
+                    }
+                    // 32-bit jalr / ret has opcode 0x67 in bits [6:0]
+                    else if (b0 == 0x67) {
+                        is_term_candidate = true;
+                    }
+                    // 32-bit ecall is 0x00000073
+                    else if (b0 == 0x73 && b1 == 0x00) {
+                        is_term_candidate = true;
+                    }
+                }
+                if (!is_term_candidate) continue;
+
+                size_t max_back = std::min<size_t>(term_rel, max_depth * 4);
+                for (size_t back = 0; back <= max_back; back += 2) {
+                    size_t start_rel = term_rel - back;
+                    size_t buf_start_idx = unit.buffer_offset + start_rel;
+                    size_t remaining_in_sec = sec_len - start_rel;
+                    size_t read_len = std::min<size_t>(back + 4, remaining_in_sec);
+
+                    cs_insn *sub_insns = nullptr;
+                    size_t sub_count = cs_disasm(handle, m_code.data() + buf_start_idx, read_len,
+                                                 sec_va + start_rel, max_depth, &sub_insns);
+                    if (sub_count == 0) continue;
+
+                    bool match = false;
+                    size_t end_insn_idx = 0;
+                    for (size_t k = 0; k < sub_count; ++k) {
+                        if (sub_insns[k].address == sec_va + term_rel) {
+                            if (is_terminator_instruction(sub_insns[k], m_arch)) {
+                                match = true;
+                                end_insn_idx = k;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (match && end_insn_idx < max_depth) {
+                        bool valid = true;
+                        for (size_t k = 0; k < end_insn_idx; ++k) {
+                            if (sub_insns[k].address + sub_insns[k].size != sub_insns[k + 1].address) {
+                                valid = false;
+                                break;
+                            }
+                            if (is_invalid_or_branch_instruction(sub_insns[k], m_arch)) {
+                                valid = false;
+                                break;
+                            }
+                        }
+                        if (end_insn_idx > 0 && is_padding_or_prefix(sub_insns[0])) {
+                            valid = false;
+                        }
+
+                        if (valid) {
+                            Gadget g;
+                            g.architecture = m_arch;
+                            g.address = sub_insns[0].address;
+                            g.preferred_va = g.address;
+                            g.is_thumb = false;
+                            g.entry_address = g.address;
+
+                            std::string asm_str;
+                            for (size_t k = 0; k <= end_insn_idx; ++k) {
+                                std::string mnem = sub_insns[k].mnemonic ? sub_insns[k].mnemonic : "";
+                                std::string ops  = sub_insns[k].op_str ? sub_insns[k].op_str : "";
+                                g.instructions.push_back({ mnem, ops });
+                                if (!asm_str.empty()) asm_str += " ; ";
+                                asm_str += mnem;
+                                if (!ops.empty()) asm_str += " " + ops;
+                            }
+                            g.assembly = asm_str;
+
+                            // Validate bytes within section bounds
+                            size_t total_bytes = static_cast<size_t>(
+                                (sub_insns[end_insn_idx].address + sub_insns[end_insn_idx].size) - sub_insns[0].address);
+                            if (start_rel + total_bytes <= sec_len) {
+                                bool b_ok = true;
+                                size_t cur = buf_start_idx;
+                                for (size_t k = 0; k <= end_insn_idx; ++k) {
+                                    if (std::memcmp(m_code.data() + cur, sub_insns[k].bytes, sub_insns[k].size) != 0) {
+                                        b_ok = false;
+                                        break;
+                                    }
+                                    cur += sub_insns[k].size;
+                                }
+                                g.byte_verified = b_ok;
+                            }
+
+                            if (seen_gadgets.insert({ g.address, g.assembly }).second) {
+                                m_gadgets.push_back(g);
+                            }
+                        }
+                    }
+                    cs_free(sub_insns, sub_count);
+                }
+            }
+        } else if (unit.is_thumb) {
+            // --- Pass 2: Candidate scanning for Thumb (16-bit and 32-bit instructions) ---
+            for (size_t term_rel = 0; term_rel < sec_len; term_rel += 2) {
+                // Pre-filter candidate terminator positions on 2-byte aligned offsets
+                bool is_term_candidate = false;
+                if (term_rel + 1 < sec_len) {
+                    uint8_t b0 = sec_data[term_rel];
+                    uint8_t b1 = sec_data[term_rel + 1];
+                    if (m_instruction_endianness == Endianness::Big) {
+                        if (b0 == 0x47 || b0 == 0xBD || b0 == 0xDF || b0 == 0xE8 || b0 == 0xF8) {
+                            is_term_candidate = true;
+                        }
+                    } else {
+                        if (b1 == 0x47 || b1 == 0xBD || b1 == 0xDF || b1 == 0xE8 || b1 == 0xF8) {
+                            is_term_candidate = true;
+                        }
+                    }
+                }
+                if (!is_term_candidate) continue;
+
+                size_t max_back = std::min<size_t>(term_rel, max_depth * 4);
+                for (size_t back = 0; back <= max_back; back += 2) {
+                    size_t start_rel = term_rel - back;
+                    size_t buf_start_idx = unit.buffer_offset + start_rel;
+                    size_t remaining_in_sec = sec_len - start_rel;
+                    size_t read_len = std::min<size_t>(back + 4, remaining_in_sec);
+
+                    cs_insn *sub_insns = nullptr;
+                    size_t sub_count = cs_disasm(active_handle, m_code.data() + buf_start_idx, read_len,
+                                                 sec_va + start_rel, max_depth, &sub_insns);
+                    if (sub_count == 0) continue;
+
+                    bool match = false;
+                    size_t end_insn_idx = 0;
+                    for (size_t k = 0; k < sub_count; ++k) {
+                        if (sub_insns[k].address == sec_va + term_rel) {
+                            if (is_terminator_instruction(sub_insns[k], "thumb")) {
+                                match = true;
+                                end_insn_idx = k;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (match && end_insn_idx < max_depth) {
+                        bool valid = true;
+                        for (size_t k = 0; k < end_insn_idx; ++k) {
+                            if (sub_insns[k].address + sub_insns[k].size != sub_insns[k + 1].address) {
+                                valid = false;
+                                break;
+                            }
+                            if (is_invalid_or_branch_instruction(sub_insns[k], "thumb")) {
+                                valid = false;
+                                break;
+                            }
+                        }
+                        if (end_insn_idx > 0 && is_padding_or_prefix(sub_insns[0])) {
+                            valid = false;
+                        }
+
+                        if (valid) {
+                            Gadget g;
+                            g.architecture = m_arch;
+                            g.address = sub_insns[0].address;
+                            g.preferred_va = g.address;
+                            g.is_thumb = true;
+                            g.entry_address = g.address | 1ULL;
+
+                            std::string asm_str;
+                            for (size_t k = 0; k <= end_insn_idx; ++k) {
+                                std::string mnem = sub_insns[k].mnemonic ? sub_insns[k].mnemonic : "";
+                                std::string ops  = sub_insns[k].op_str ? sub_insns[k].op_str : "";
+                                g.instructions.push_back({ mnem, ops });
+                                if (!asm_str.empty()) asm_str += " ; ";
+                                asm_str += mnem;
+                                if (!ops.empty()) asm_str += " " + ops;
+                            }
+                            g.assembly = asm_str;
 
                             // Validate bytes within section bounds
                             size_t total_bytes = static_cast<size_t>(
@@ -482,7 +801,7 @@ static void classify_gadget_multidim(Gadget &g, const std::string &arch) {
     };
 
     bool is_x86 = (arch == "x86" || arch == "x86_64");
-    bool is_arm  = (arch == "armv7" || arch == "arm");
+    bool is_arm  = (arch == "armv7" || arch == "arm" || arch == "thumb");
 
     // Terminator type
     {
@@ -495,13 +814,15 @@ static void classify_gadget_multidim(Gadget &g, const std::string &arch) {
             g.terminator_type = "SYSCALL";
         } else if (lm == "jmp" || lm == "b") {
             g.terminator_type = "JMP";
-        } else if (lm == "call" || lm == "bl" || lm == "blx" || lm == "blr") {
+        } else if (lm == "call" || lm == "bl" || lm == "blx" || lm == "blr" || lm == "c.jalr" || lm == "c.jal") {
             g.terminator_type = "CALL";
-        } else if (lm == "bx" && (last.op_str.find("lr") != std::string::npos)) {
+        } else if ((lm == "bx" || lm == "bx.w") && (last.op_str.find("lr") != std::string::npos)) {
             g.terminator_type = "RET";
-        } else if (lm == "pop" && last.op_str.find("pc") != std::string::npos) {
+        } else if ((lm == "pop" || lm == "pop.w") && last.op_str.find("pc") != std::string::npos) {
             g.terminator_type = "RET";
         } else if (lm == "jalr") {
+            g.terminator_type = "RET";
+        } else if (lm == "c.jr" && last.op_str.find("ra") != std::string::npos) {
             g.terminator_type = "RET";
         } else {
             g.terminator_type = lm;
@@ -616,8 +937,8 @@ static void classify_gadget_multidim(Gadget &g, const std::string &arch) {
                 regs_mod_set.insert("rbp");
             }
         } else if (is_arm) {
-            if (mnem == "push") { g.stack_delta -= 4; regs_read_set.insert("sp"); regs_mod_set.insert("sp"); }
-            else if (mnem == "pop")  { g.stack_delta += 4; g.stack_consumption += 4; regs_read_set.insert("sp"); regs_mod_set.insert("sp"); }
+            if (mnem == "push" || mnem == "push.w") { g.stack_delta -= 4; regs_read_set.insert("sp"); regs_mod_set.insert("sp"); }
+            else if (mnem == "pop" || mnem == "pop.w")  { g.stack_delta += 4; g.stack_consumption += 4; regs_read_set.insert("sp"); regs_mod_set.insert("sp"); }
         }
 
         // --- Memory access and comparison detection ---

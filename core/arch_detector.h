@@ -17,7 +17,7 @@ public:
     std::string detectPEArchitecture(const std::vector<uint8_t>& data) const;
     std::string detectMachOArchitecture(const std::vector<uint8_t>& data) const;
 
-    std::unique_ptr<FileParser> createFileParser(const std::string& filepath) const;
+    std::unique_ptr<FileParser> createFileParser(const std::string& filepath, const std::string& targetArch = "") const;
 };
 
 } // namespace ropweaver

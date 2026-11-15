@@ -15,7 +15,9 @@ public:
                  const std::string& arch,
                  const std::string& binary_path,
                  size_t maxSize = 10,
-                 Endianness instruction_endianness = Endianness::Little);
+                 Endianness instruction_endianness = Endianness::Little,
+                 bool rvc_enabled = false,
+                 const std::vector<ArmCodeRegion>& arm_regions = {});
 
     GadgetFinder(const std::vector<unsigned char>& code,
                  uint64_t base,
@@ -23,7 +25,9 @@ public:
                  const std::string& binary_path,
                  const std::vector<ExecBufferMapping>& mappings,
                  size_t maxSize = 10,
-                 Endianness instruction_endianness = Endianness::Little);
+                 Endianness instruction_endianness = Endianness::Little,
+                 bool rvc_enabled = false,
+                 const std::vector<ArmCodeRegion>& arm_regions = {});
 
     ~GadgetFinder();
 
@@ -32,6 +36,8 @@ public:
     const std::vector<Gadget>& getGadgets() const { return m_gadgets; }
 
     Endianness getInstructionEndianness() const { return m_instruction_endianness; }
+    bool isRvcEnabled() const { return m_rvc_enabled; }
+    const std::vector<ArmCodeRegion>& getArmCodeRegions() const { return m_arm_regions; }
 
     std::string determineCategory(const Gadget& g) const;
     std::map<std::string, std::vector<Gadget>> categorizeGadgets();
@@ -46,8 +52,11 @@ private:
     size_t m_maxSize;
     std::vector<ExecBufferMapping> m_mappings;
     Endianness m_instruction_endianness;
+    bool m_rvc_enabled = false;
+    std::vector<ArmCodeRegion> m_arm_regions;
 
     csh handle;
+    csh thumb_handle = 0;
     cs_arch arch_id;
     cs_mode mode;
 

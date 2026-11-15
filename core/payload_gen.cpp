@@ -11,6 +11,7 @@
 #include <algorithm>
 #include "parsers/file_parser.h"
 #include "parsers/pe_parser.h"
+#include "parsers/macho_parser.h"
 
 using json = nlohmann::json;
 
@@ -45,14 +46,42 @@ void PayloadGenerator::generate(const ROPChain& chain, size_t paddingSize, const
                                 const json& protections,
                                 const std::string& customReportId,
                                 const std::string& fileHash,
-                                const FileParser* parser) {
+                                const FileParser* parser,
+                                const std::string& reportPath,
+                                const std::string& payloadBinPath,
+                                const std::string& payloadBinReportsPath) {
     // --- 1. Construct the Raw Payload ---
-    std::vector<char> chain_bytes = chain.getPayloadBytes();
-    std::vector<char> payload;
-    bool has_chain = !chain_bytes.empty();
+    std::vector<char> chain_bytes;
+    std::string serialization_error;
+    bool serialization_ok = true;
+    bool has_chain = !chain.get_steps().empty();
 
-    // Only construct payload if we have a valid chain and it's not an unsupported platform
-    if (has_chain && fileType != "PE") {
+    if (has_chain) {
+        if (!parser) {
+            serialization_error = "Target parser metadata is required for architecture-aware payload serialization";
+            serialization_ok = false;
+        } else {
+            size_t wordSize = parser->is64Bit() ? 8 : 4;
+            // Requirement 6: Use FileParser::getMetadataEndianness() for payload data serialization.
+            // Do not use instruction endianness because ARM BE-8 can have different instruction and data byte orders.
+            Endianness dataEndian = parser->getMetadataEndianness();
+            try {
+                chain_bytes = chain.getPayloadBytes(wordSize, dataEndian);
+            } catch (const std::exception& e) {
+                serialization_error = e.what();
+                serialization_ok = false;
+            }
+        }
+    }
+
+    ChainValidationResult vres;
+    if (has_chain && serialization_ok && fileType != "PE") {
+        vres = chain.validate(architecture, parser);
+    }
+
+    std::vector<char> payload;
+    // Only construct payload if we have a valid chain, serialization succeeded, validation passed, and it's not an unsupported platform
+    if (has_chain && serialization_ok && vres.valid && fileType != "PE") {
         payload.assign(paddingSize, 'A');
         payload.insert(payload.end(), chain_bytes.begin(), chain_bytes.end());
     }
@@ -188,8 +217,64 @@ void PayloadGenerator::generate(const ROPChain& chain, size_t paddingSize, const
             pe_prots["SafeSEH_NoSEH"] = peMit.no_seh;
 
             report["protections"] = pe_prots;
+        } else if (fileType == "Mach-O") {
+            const ropweaver::MachOParser* macho_parser = dynamic_cast<const ropweaver::MachOParser*>(parser);
+            ropweaver::MachOMitigations machoMit;
+            if (macho_parser) {
+                machoMit = macho_parser->getMachOMitigations();
+            }
+
+            json macho_prots;
+            macho_prots["Stack_NX"] = machoMit.stack_nx;
+            macho_prots["Heap_NX"]  = (machoMit.heap_nx == ropweaver::HeapNxStatus::ExplicitEnabled) ? "EXPLICIT_ENABLED" : "UNKNOWN";
+
+            std::string wx_status_str = "INCOMPLETE_OR_UNAVAILABLE";
+            if (machoMit.segment_wx_status == ropweaver::SegmentWxStatus::Compliant) {
+                wx_status_str = "COMPLIANT";
+            } else if (machoMit.segment_wx_status == ropweaver::SegmentWxStatus::InitViolation) {
+                wx_status_str = "INIT_VIOLATION";
+            } else if (machoMit.segment_wx_status == ropweaver::SegmentWxStatus::MaxprotPermissive) {
+                wx_status_str = "MAXPROT_PERMISSIVE";
+            }
+
+            macho_prots["Segment_WX"] = {
+                {"status", wx_status_str},
+                {"initprot_compliant", !machoMit.has_wx_initprot},
+                {"maxprot_compliant", !machoMit.has_wx_maxprot}
+            };
+            macho_prots["PIE"] = machoMit.pie;
+
+            std::string canary_status_str = "UNKNOWN";
+            if (machoMit.canary_status == ropweaver::CanaryStatus::SymbolDetected) {
+                canary_status_str = "SYMBOL_DETECTED";
+            } else if (machoMit.canary_status == ropweaver::CanaryStatus::NotDetected) {
+                canary_status_str = "NOT_DETECTED";
+            }
+
+            macho_prots["Canary"] = {
+                {"status", canary_status_str},
+                {"symbol", machoMit.canary_symbol_name.empty() ? nullptr : json(machoMit.canary_symbol_name)},
+                {"notes", (machoMit.canary_status == ropweaver::CanaryStatus::SymbolDetected)
+                          ? "Exact symbol found in LC_SYMTAB. Indicates stack protection runtime dependency; does not prove universal function instrumentation."
+                          : "No canary symbol detected or symbol table unavailable."}
+            };
+
+            macho_prots["Code_Signature"] = {
+                {"load_command_present", machoMit.has_code_signature_cmd},
+                {"data_range_valid", machoMit.data_range_valid},
+                {"superblob_header_valid", machoMit.superblob_header_valid},
+                {"cryptographically_verified", false},
+                {"notes", machoMit.code_signature_notes.empty() ? "No code signature command present." : machoMit.code_signature_notes}
+            };
+
+            macho_prots["RELRO"] = "NOT_APPLICABLE";
+
+            // Backward-compatibility aliases
+            macho_prots["NX"] = parser ? parser->isNxEnabled() : false;
+
+            report["protections"] = macho_prots;
         } else {
-            // ELF / Mach-O Protections
+            // ELF Protections
             if (protections.empty()) {
                 report["protections"] = {
                     {"NX",     parser ? parser->isNxEnabled() : false},
@@ -218,8 +303,73 @@ void PayloadGenerator::generate(const ROPChain& chain, size_t paddingSize, const
                 {"data", nullptr},
                 {"verified_padding_offset", nullptr}
             };
+        } else if (fileType == "Mach-O") {
+            bool isPie = false;
+            if (report.contains("protections") && report["protections"].contains("PIE")) {
+                isPie = report["protections"]["PIE"].get<bool>();
+            }
+
+            if (!has_chain) {
+                report["rop_chain_generation"] = {
+                    {"status", "Failed: Required gadgets missing for Darwin execve chain synthesis"},
+                    {"target_syscall", "execve (0x200003B)"},
+                    {"chain_notes", "Attempted Darwin ROP chain generation. Binary is missing required staging gadgets, /bin/sh string, or pointer arrays."},
+                    {"platform", "macOS Mach-O"},
+                    {"aslr_slide_applied", false},
+                    {"relocation_status", isPie ? "Unresolved: Target binary has MH_PIE enabled. Generated chain uses link-time Preferred Virtual Addresses. Dynamic execution requires runtime ASLR slide adjustment." : "PVA Link-Time Base"}
+                };
+                report["rop_chain_details"] = nullptr;
+                report["raw_payload"] = {
+                    {"status", "Failed: ROP chain generation unsuccessful"},
+                    {"format", "None"},
+                    {"data", nullptr},
+                    {"verified_padding_offset", nullptr}
+                };
+            } else if (!vres.valid) {
+                report["rop_chain_generation"] = {
+                    {"status", "Failure (Validation Error)"},
+                    {"error", vres.error_message},
+                    {"target_syscall", "execve (0x200003B)"},
+                    {"chain_notes", "Darwin ROP chain failed static semantic validation: " + vres.error_message},
+                    {"platform", "macOS Mach-O"},
+                    {"aslr_slide_applied", false},
+                    {"relocation_status", isPie ? "Unresolved: Target binary has MH_PIE enabled. Generated chain uses link-time Preferred Virtual Addresses. Dynamic execution requires runtime ASLR slide adjustment." : "PVA Link-Time Base"},
+                    {"validation", vres.toJson()}
+                };
+                report["rop_chain_details"] = chain.toJson();
+                report["raw_payload"] = {
+                    {"status", "Validation Failed: " + vres.error_message},
+                    {"format", "None"},
+                    {"data", nullptr},
+                    {"verified_padding_offset", nullptr}
+                };
+            } else {
+                std::string chain_notes = "Synthesized Darwin x86_64 ROP chain targeting BSD syscall SYS_execve (0x200003B).";
+                std::string rel_status = "PVA Link-Time Base";
+                if (isPie) {
+                    rel_status = "Unresolved: Target binary has MH_PIE enabled. Generated chain uses link-time Preferred Virtual Addresses. Dynamic execution requires runtime ASLR slide adjustment.";
+                    chain_notes += " Warning: Target binary has MH_PIE enabled; chain uses link-time Preferred Virtual Addresses. Dynamic execution requires ASLR slide resolution.";
+                }
+
+                report["rop_chain_generation"] = {
+                    {"status", isPie ? "Success (Relocation Required)" : "Success"},
+                    {"target_syscall", "execve (0x200003B)"},
+                    {"chain_notes", chain_notes},
+                    {"platform", "macOS Mach-O"},
+                    {"aslr_slide_applied", false},
+                    {"relocation_status", rel_status},
+                    {"validation", vres.toJson()}
+                };
+                report["rop_chain_details"] = chain.toJson();
+                report["raw_payload"] = {
+                    {"status", "Success"},
+                    {"format", "python_hex_string"},
+                    {"data", to_python_hex(payload)},
+                    {"verified_padding_offset", paddingSize}
+                };
+            }
         } else {
-            // Linux ELF / Mach-O
+            // Linux ELF
             if (!has_chain) {
                 report["rop_chain_generation"] = {
                     {"status", "Failed: Required gadgets missing for execve chain synthesis"},
@@ -234,12 +384,43 @@ void PayloadGenerator::generate(const ROPChain& chain, size_t paddingSize, const
                     {"data", nullptr},
                     {"verified_padding_offset", nullptr}
                 };
+            } else if (!serialization_ok) {
+                report["rop_chain_generation"] = {
+                    {"status", "Failed: Payload serialization error - " + serialization_error},
+                    {"target_syscall", "execve (59)"},
+                    {"chain_notes", "ROP chain synthesized but target payload serialization failed: " + serialization_error},
+                    {"platform", "Linux ELF"}
+                };
+                report["rop_chain_details"] = chain.toJson();
+                report["raw_payload"] = {
+                    {"status", "Serialization Failed: " + serialization_error},
+                    {"format", "None"},
+                    {"data", nullptr},
+                    {"verified_padding_offset", nullptr}
+                };
+            } else if (!vres.valid) {
+                report["rop_chain_generation"] = {
+                    {"status", "Failure (Validation Error)"},
+                    {"error", vres.error_message},
+                    {"target_syscall", "execve"},
+                    {"chain_notes", "ROP chain failed static semantic validation: " + vres.error_message},
+                    {"platform", "Linux ELF"},
+                    {"validation", vres.toJson()}
+                };
+                report["rop_chain_details"] = chain.toJson();
+                report["raw_payload"] = {
+                    {"status", "Validation Failed: " + vres.error_message},
+                    {"format", "None"},
+                    {"data", nullptr},
+                    {"verified_padding_offset", nullptr}
+                };
             } else {
                 report["rop_chain_generation"] = {
                     {"status", "Success (Execve-Shell)"},
                     {"target_syscall", "execve (59)"},
-                    {"chain_notes", "Automated ROP chain synthesized successfully."},
-                    {"platform", "Linux ELF"}
+                    {"chain_notes", "Automated ROP chain synthesized and validated successfully."},
+                    {"platform", "Linux ELF"},
+                    {"validation", vres.toJson()}
                 };
                 report["rop_chain_details"] = chain.toJson();
                 report["raw_payload"] = {
@@ -254,8 +435,9 @@ void PayloadGenerator::generate(const ROPChain& chain, size_t paddingSize, const
         // --- Discovered Gadgets with Multi-dimensional Classification (Requirement 2 & 4 & 5) ---
         json gadgetsArr = json::array();
         for (const auto& g : gadgets) {
-            std::stringstream prefVaSs, rvaSs, foSs;
+            std::stringstream prefVaSs, rvaSs, foSs, entryVaSs;
             prefVaSs << "0x" << std::hex << std::setw(16) << std::setfill('0') << g.preferred_va;
+            entryVaSs << "0x" << std::hex << std::setw(16) << std::setfill('0') << g.entry_address;
             rvaSs    << "0x" << std::hex << std::setw(8)  << std::setfill('0') << g.rva;
             foSs     << "0x" << std::hex << std::setw(8)  << std::setfill('0') << g.file_offset;
 
@@ -277,6 +459,8 @@ void PayloadGenerator::generate(const ROPChain& chain, size_t paddingSize, const
             json gadgetEntry = {
                 {"address",                   prefVaSs.str()},
                 {"preferred_va",              prefVaSs.str()},
+                {"entry_address",             entryVaSs.str()},
+                {"is_thumb",                  g.is_thumb},
                 {"rva",                       rvaSs.str()},
                 {"file_offset",               foSs.str()},
                 {"runtime_va",                runtimeVaVal},
@@ -308,9 +492,12 @@ void PayloadGenerator::generate(const ROPChain& chain, size_t paddingSize, const
     }
 
     // --- 3. Write the JSON Report File ---
-    const std::string REPORT_PATH = "reports/output.json";
+    const std::string& REPORT_PATH = reportPath;
     std::error_code ec;
-    std::filesystem::create_directories(std::filesystem::path(REPORT_PATH).parent_path(), ec);
+    std::filesystem::path reportFilePath(REPORT_PATH);
+    if (reportFilePath.has_parent_path() && !reportFilePath.parent_path().empty()) {
+        std::filesystem::create_directories(reportFilePath.parent_path(), ec);
+    }
     std::ofstream outfile(REPORT_PATH);
 
     if (outfile.is_open()) {
@@ -325,30 +512,50 @@ void PayloadGenerator::generate(const ROPChain& chain, size_t paddingSize, const
     }
 
     // --- 4. Write Raw Exploit Payload Files (payload.bin and reports/payload.bin) ---
-    if (has_chain && !payload.empty() && fileType != "PE") {
-        std::string payloadBinReports = "reports/payload.bin";
-        std::ofstream binFile(payloadBinReports, std::ios::binary);
-        if (binFile.is_open()) {
-            binFile.write(payload.data(), payload.size());
-            binFile.close();
-            std::cout << ANSI_COLOR_GREEN << "[+] Raw exploit payload written to: " 
-                      << payloadBinReports << ANSI_COLOR_RESET << std::endl;
+    if (has_chain && serialization_ok && vres.valid && !payload.empty() && fileType != "PE") {
+        if (!payloadBinReportsPath.empty()) {
+            std::filesystem::path p(payloadBinReportsPath);
+            if (p.has_parent_path() && !p.parent_path().empty()) {
+                std::filesystem::create_directories(p.parent_path(), ec);
+            }
+            std::ofstream binFile(payloadBinReportsPath, std::ios::binary);
+            if (binFile.is_open()) {
+                binFile.write(payload.data(), payload.size());
+                binFile.close();
+                std::cout << ANSI_COLOR_GREEN << "[+] Raw exploit payload written to: "
+                          << payloadBinReportsPath << ANSI_COLOR_RESET << std::endl;
+            }
         }
 
-        std::ofstream binFileCwd("payload.bin", std::ios::binary);
-        if (binFileCwd.is_open()) {
-            binFileCwd.write(payload.data(), payload.size());
-            binFileCwd.close();
-            std::cout << ANSI_COLOR_GREEN << "[+] Exploit payload also saved to: payload.bin" 
-                      << ANSI_COLOR_RESET << std::endl;
+        if (!payloadBinPath.empty()) {
+            std::filesystem::path p(payloadBinPath);
+            if (p.has_parent_path() && !p.parent_path().empty()) {
+                std::filesystem::create_directories(p.parent_path(), ec);
+            }
+            std::ofstream binFileCwd(payloadBinPath, std::ios::binary);
+            if (binFileCwd.is_open()) {
+                binFileCwd.write(payload.data(), payload.size());
+                binFileCwd.close();
+                std::cout << ANSI_COLOR_GREEN << "[+] Exploit payload also saved to: "
+                          << payloadBinPath << ANSI_COLOR_RESET << std::endl;
+            }
         }
     } else {
         if (fileType == "PE") {
-            std::cout << ANSI_COLOR_ORANGE << "[!] Skipping payload.bin export: Automated payload generation unsupported for Windows PE." 
+            std::cout << ANSI_COLOR_ORANGE << "[!] Skipping payload.bin export: Automated payload generation unsupported for Windows PE."
                       << ANSI_COLOR_RESET << std::endl;
-        } else {
-            std::cout << ANSI_COLOR_ORANGE << "[!] Skipping payload.bin export: No ROP chain synthesized." 
+        } else if (fileType == "Mach-O") {
+            std::cout << ANSI_COLOR_ORANGE << "[!] Skipping payload.bin export: Automated payload generation unsupported for macOS Mach-O."
                       << ANSI_COLOR_RESET << std::endl;
+        } else if (!has_chain) {
+            std::cout << ANSI_COLOR_ORANGE << "[!] Skipping payload.bin export: No ROP chain synthesized."
+                      << ANSI_COLOR_RESET << std::endl;
+        } else if (!serialization_ok) {
+            std::cout << ANSI_COLOR_ORANGE << "[!] Skipping payload.bin export: Payload serialization failed ("
+                      << serialization_error << ")." << ANSI_COLOR_RESET << std::endl;
+        } else if (!vres.valid) {
+            std::cout << ANSI_COLOR_ORANGE << "[!] Skipping payload.bin export: Semantic ROP chain validation failed ("
+                      << vres.error_message << ")." << ANSI_COLOR_RESET << std::endl;
         }
     }
 }

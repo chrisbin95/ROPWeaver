@@ -17,5 +17,8 @@ public:
                   const nlohmann::json& protections = {},
                   const std::string& customReportId = "",
                   const std::string& fileHash = "",
-                  const FileParser* parser = nullptr);
+                  const FileParser* parser = nullptr,
+                  const std::string& reportPath = "reports/output.json",
+                  const std::string& payloadBinPath = "payload.bin",
+                  const std::string& payloadBinReportsPath = "reports/payload.bin");
 };

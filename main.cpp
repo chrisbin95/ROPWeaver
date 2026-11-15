@@ -23,6 +23,7 @@
 #include "core/parsers/file_parser.h"
 #include "core/parsers/pe_parser.h"
 #include "core/parsers/elf_parser.h"
+#include "core/parsers/macho_parser.h"
 #include "core/payload_gen.h"
 
 // UI and Firebase
@@ -89,13 +90,13 @@ int main(int argc, char* argv[]) {
 
     // Arch detector is in ropweaver namespace
     ropweaver::ArchDetector arch_detector;
-    std::unique_ptr<FileParser> parser = arch_detector.createFileParser(options.filename);
+    std::unique_ptr<FileParser> parser = arch_detector.createFileParser(options.filename, options.architecture);
     if (!parser || !parser->parse(options.filename)) {
         std::cerr << "[!] Error: Failed to parse binary: " << options.filename << std::endl;
         return 1;
     }
 
-    std::string arch_to_use = options.architecture.empty() ? parser->getArchitecture() : options.architecture;
+    std::string arch_to_use = parser->getArchitecture();
     if (arch_to_use == "unknown" || !arch_detector.isSupported(arch_to_use)) {
         std::cerr << "[!] Error: Unsupported or unknown architecture: " << arch_to_use << std::endl;
         return 1;
@@ -107,8 +108,9 @@ int main(int argc, char* argv[]) {
     nlohmann::json protections = nlohmann::json::object();
 
     // Cast to concrete parser types to access extended fields
-    ropweaver::PEParser*  pe_parser  = dynamic_cast<ropweaver::PEParser*>(parser.get());
-    ropweaver::ELFParser* elf_parser = dynamic_cast<ropweaver::ELFParser*>(parser.get());
+    ropweaver::PEParser*    pe_parser    = dynamic_cast<ropweaver::PEParser*>(parser.get());
+    ropweaver::ELFParser*   elf_parser   = dynamic_cast<ropweaver::ELFParser*>(parser.get());
+    ropweaver::MachOParser* macho_parser = dynamic_cast<ropweaver::MachOParser*>(parser.get());
 
     if (binaryType == "PE") {
         ropweaver::PEMitigations peMit;
@@ -135,8 +137,59 @@ int main(int argc, char* argv[]) {
                   << ", GS-Cookie=" << (peMit.gs_status != "NOT_DETECTED" ? ANSI_COLOR_GREEN + peMit.gs_status : "\033[31mNOT_DETECTED") << ANSI_COLOR_RESET
                   << ", SafeSEH=" << peMit.safeseh_status
                   << std::endl;
+    } else if (binaryType == "Mach-O") {
+        ropweaver::MachOMitigations machoMit;
+        if (macho_parser) machoMit = macho_parser->getMachOMitigations();
+
+        protections["Stack_NX"] = machoMit.stack_nx;
+        protections["Heap_NX"]  = (machoMit.heap_nx == ropweaver::HeapNxStatus::ExplicitEnabled) ? "EXPLICIT_ENABLED" : "UNKNOWN";
+        protections["PIE"]      = machoMit.pie;
+        protections["RELRO"]    = "NOT_APPLICABLE";
+        protections["NX"]       = parser->isNxEnabled();
+        protections["Canary"]   = parser->isCanaryEnabled();
+
+        std::string wx_str;
+        if (machoMit.segment_wx_status == ropweaver::SegmentWxStatus::Compliant) {
+            wx_str = ANSI_COLOR_GREEN "COMPLIANT" ANSI_COLOR_RESET;
+        } else if (machoMit.segment_wx_status == ropweaver::SegmentWxStatus::InitViolation) {
+            wx_str = "\033[31mINIT_VIOLATION\033[0m";
+        } else if (machoMit.segment_wx_status == ropweaver::SegmentWxStatus::MaxprotPermissive) {
+            wx_str = "\033[33mMAXPROT_PERMISSIVE\033[0m";
+        } else {
+            wx_str = "\033[33mUNKNOWN\033[0m";
+        }
+
+        std::string canary_str;
+        if (machoMit.canary_status == ropweaver::CanaryStatus::SymbolDetected) {
+            canary_str = ANSI_COLOR_GREEN "SYMBOL_DETECTED" ANSI_COLOR_RESET;
+        } else if (machoMit.canary_status == ropweaver::CanaryStatus::NotDetected) {
+            canary_str = "\033[31mNOT_DETECTED\033[0m";
+        } else {
+            canary_str = "\033[33mUNKNOWN\033[0m";
+        }
+
+        std::string cs_str;
+        if (!machoMit.has_code_signature_cmd) {
+            cs_str = "\033[31mNOT_PRESENT\033[0m";
+        } else if (machoMit.superblob_header_valid) {
+            cs_str = ANSI_COLOR_GREEN "PRESENT(SuperBlob Valid, Unverified)" ANSI_COLOR_RESET;
+        } else if (machoMit.data_range_valid) {
+            cs_str = "\033[33mPRESENT(Data Valid, Invalid SuperBlob, Unverified)\033[0m";
+        } else {
+            cs_str = "\033[31mPRESENT(Malformed Range, Unverified)\033[0m";
+        }
+
+        std::cout << "[" << ANSI_COLOR_ORANGE << "*" << ANSI_COLOR_RESET << "] Mitigations (Mach-O):"
+                  << " Stack-NX=" << (machoMit.stack_nx ? ANSI_COLOR_GREEN "ENABLED" : "\033[31mDISABLED") << ANSI_COLOR_RESET
+                  << ", Heap-NX=" << ((machoMit.heap_nx == ropweaver::HeapNxStatus::ExplicitEnabled) ? ANSI_COLOR_GREEN "EXPLICIT_ENABLED" : "\033[33mUNKNOWN") << ANSI_COLOR_RESET
+                  << ", W^X=" << wx_str
+                  << ", PIE=" << (machoMit.pie ? ANSI_COLOR_GREEN "ENABLED" : "\033[31mDISABLED") << ANSI_COLOR_RESET
+                  << ", Canary=" << canary_str
+                  << ", CodeSignature=" << cs_str
+                  << ", RELRO=N/A"
+                  << std::endl;
     } else {
-        // ELF / Mach-O — keep existing terminology
+        // ELF — keep existing terminology
         protections["NX"]     = parser->isNxEnabled();
         protections["PIE"]    = parser->isPieEnabled();
         protections["Canary"] = parser->isCanaryEnabled();
@@ -165,7 +218,7 @@ int main(int argc, char* argv[]) {
     }
 
     std::cout << "[" << ANSI_COLOR_ORANGE << "*" << ANSI_COLOR_RESET << "] Searching for ROP gadgets..." << std::endl;
-    GadgetFinder gadget_finder(binaryCode, baseAddress, arch_to_use, options.filename, parser->getExecBufferMappings(), 10, inst_endian);
+    GadgetFinder gadget_finder(binaryCode, baseAddress, arch_to_use, options.filename, parser->getExecBufferMappings(), 10, inst_endian, parser->isRvcEnabled(), parser->getArmCodeRegions());
     try {
         gadget_finder.findGadgets();
     } catch (const std::exception& ex) {
@@ -179,6 +232,11 @@ int main(int argc, char* argv[]) {
     bool isAslr = (binaryType == "PE") ? parser->isPieEnabled() : parser->isPieEnabled();
     for (auto& g : gadgets) {
         g.preferred_va = g.address;
+        if (g.entry_address == 0 && g.address != 0) {
+            g.entry_address = (g.is_thumb && (g.architecture == "armv7" || g.architecture == "arm" || g.architecture == "thumb"))
+                                ? (g.address | 1ULL)
+                                : g.address;
+        }
         uint64_t fo = 0, rva = 0;
         if (parser->vaToOffsets(g.preferred_va, fo, rva)) {
             g.file_offset = fo;
@@ -196,11 +254,11 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    // --- Find /bin/sh address for auto-chain (ELF targets only) ---
+    // --- Find /bin/sh address for auto-chain (ELF and Mach-O targets) ---
     uint64_t binsh_addr = 0;
     ROPChain ropChain; // remains empty if building fails
 
-    if (options.autoChain && binaryType == "ELF") {
+    if (options.autoChain && (binaryType == "ELF" || binaryType == "Mach-O")) {
         try {
             MemoryRegion memRegion;
             memRegion.start = 0;
@@ -208,7 +266,7 @@ int main(int argc, char* argv[]) {
             memRegion.path = options.filename;
             std::vector<MemoryRegion> memRegions = { memRegion };
 
-            ChainBuilder tempBuilder({}, "", binaryType);
+            ChainBuilder tempBuilder(gadgets, arch_to_use, binaryType, parser.get());
             binsh_addr = tempBuilder.findBinShAddress(memRegions);
             if (binsh_addr != 0) {
                 std::cout << "[" << ANSI_COLOR_ORANGE << "*" << ANSI_COLOR_RESET << "] Found /bin/sh." << std::endl;
@@ -260,21 +318,16 @@ int main(int argc, char* argv[]) {
             std::cout << "    and dynamic resolution of Win32 APIs (e.g. VirtualProtect / WinExec)." << std::endl;
             std::cout << "    Discovered gadgets are exported in the report for manual chain development." << std::endl;
         } else {
-            if (binaryType == "Mach-O") {
-                std::cout << "[" << ANSI_COLOR_ORANGE << "*" << ANSI_COLOR_RESET 
-                          << "] Target is a macOS Mach-O binary (skipping Linux /bin/sh scan)." << std::endl;
-            } else if (binaryType == "ELF") {
-                std::cout << ANSI_COLOR_CYAN << "\n--- /bin/sh memory address ---" << ANSI_COLOR_RESET << std::endl;
-                if (binsh_addr != 0) {
-                    std::cout << "  " << ANSI_COLOR_GREEN << "0x" << std::hex << std::setw(16) << std::setfill('0')
-                              << binsh_addr << ANSI_COLOR_RESET << ": \"/bin/sh\"" << std::dec << std::endl;
-                } else {
-                    std::cerr << "[!] Warning: /bin/sh address not found, auto-chain may fail." << std::endl;
-                }
+            std::cout << ANSI_COLOR_CYAN << "\n--- /bin/sh memory address ---" << ANSI_COLOR_RESET << std::endl;
+            if (binsh_addr != 0) {
+                std::cout << "  " << ANSI_COLOR_GREEN << "0x" << std::hex << std::setw(16) << std::setfill('0')
+                          << binsh_addr << ANSI_COLOR_RESET << ": \"/bin/sh\"" << std::dec << std::endl;
+            } else {
+                std::cerr << "[!] Warning: /bin/sh address not found, auto-chain may fail." << std::endl;
             }
 
             std::cout << ANSI_COLOR_CYAN << "\n--- Building ROP Chain ---" << ANSI_COLOR_RESET << std::endl;
-            ChainBuilder builder(gadgets, arch_to_use, binaryType);
+            ChainBuilder builder(gadgets, arch_to_use, binaryType, parser.get());
 
             try {
                 if (options.binshAddress != 0) {
@@ -286,34 +339,33 @@ int main(int argc, char* argv[]) {
                     ropChain = builder.buildExecveChain(0);
                 }
 
-                std::cout << "[+] ROP chain created successfully:\n" << ropChain.to_string() << std::endl;
+                ChainValidationResult vres = ropChain.validate(arch_to_use, parser.get());
+                if (vres.valid) {
+                    std::cout << "[+] ROP chain created and validated successfully:\n" << ropChain.to_string() << std::endl;
+                } else {
+                    std::cout << "[!] Warning: Synthesized ROP chain failed semantic validation: " << vres.error_message << "\n" << ropChain.to_string() << std::endl;
+                }
             } catch (const std::runtime_error &e) {
                 std::cerr << "[x] " << e.what() << std::endl;
                 std::string targetBinary = options.filename.empty() ? "filename" : options.filename;
                 std::string targetBase = (options.filename.empty() || options.filename == "filename") ? "filename" : fs::path(options.filename).stem().string();
                 std::string targetSource = targetBase + ".c";
 
-                if (binaryType == "Mach-O") {
-                    std::cerr << "\n[i] macOS Mach-O Staging Strategy Note:\n";
-                    std::cerr << "    macOS x86_64 ROP chains require the BSD syscall class mask (RAX = 0x200003B),\n";
-                    std::cerr << "    and macOS ARM64 (Apple Silicon) enforces Pointer Authentication (PAC) and X16 register dispatch.\n";
+                if (binsh_addr == 0 && options.binshAddress == 0) {
+                    std::cerr << "[!] Reason: Could not find '/bin/sh' in binary memory sections.\n";
+                    std::cerr << "[i] How to fix: Provide the memory address manually:\n";
+                    std::cerr << "    ropweaver " << targetBinary << " -a --binsh-addr 0x<address>\n";
                 } else {
-                    if (binsh_addr == 0 && options.binshAddress == 0) {
-                        std::cerr << "[!] Reason: Could not find '/bin/sh' in binary memory sections.\n";
-                        std::cerr << "[i] How to fix: Provide the memory address manually:\n";
-                        std::cerr << "    ropweaver " << targetBinary << " -a --binsh-addr 0x<address>\n";
-                    } else {
-                        std::cerr << "\n[!] Why auto-chain failed:\n";
-                        std::cerr << "    Your CLI syntax is correct! However, automated ROP chain synthesis requires\n";
-                        std::cerr << "    specific machine instructions ('gadgets') to exist inside the compiled binary.\n";
-                        std::cerr << "    ROPWeaver cannot synthesize instructions that were not compiled into the binary.\n\n";
-                        std::cerr << "[i] How to perform successful auto-chaining:\n";
-                        std::cerr << "    1. Compile source code containing the required gadget sequence:\n";
-                        std::cerr << "       gcc -fno-stack-protector -O0 " << targetSource << " -o " << targetBinary << "\n";
-                        std::cerr << "    2. Run auto-chain (no --binsh-addr needed when /bin/sh is present):\n";
-                        std::cerr << "       ropweaver " << targetBinary << " -a\n\n";
-                        std::cerr << "    (Use '--list-gadgets' or '--suggest-gadgets' to inspect what gadgets exist in this binary)\n";
-                    }
+                    std::cerr << "\n[!] Why auto-chain failed:\n";
+                    std::cerr << "    Your CLI syntax is correct! However, automated ROP chain synthesis requires\n";
+                    std::cerr << "    specific machine instructions ('gadgets') to exist inside the compiled binary.\n";
+                    std::cerr << "    ROPWeaver cannot synthesize instructions that were not compiled into the binary.\n\n";
+                    std::cerr << "[i] How to perform successful auto-chaining:\n";
+                    std::cerr << "    1. Compile source code containing the required gadget sequence:\n";
+                    std::cerr << "       gcc -fno-stack-protector -O0 " << targetSource << " -o " << targetBinary << "\n";
+                    std::cerr << "    2. Run auto-chain (no --binsh-addr needed when /bin/sh is present):\n";
+                    std::cerr << "       ropweaver " << targetBinary << " -a\n\n";
+                    std::cerr << "    (Use '--list-gadgets' or '--suggest-gadgets' to inspect what gadgets exist in this binary)\n";
                 }
 
                 if (options.uploadReport) {
@@ -348,12 +400,20 @@ int main(int argc, char* argv[]) {
     // --- Payload Generation (writes reports/output.json and payload.bin) ---
     if (options.generatePayload || options.uploadReport) {
         PayloadGenerator payloadGen;
-        const size_t paddingSize = 104;
+        const size_t paddingSize = options.exploitOffset;
         std::cout << ANSI_COLOR_CYAN << "\n--- Generating Exploit Payload / Report ---" << ANSI_COLOR_RESET << std::endl;
+        std::cout << "[" << ANSI_COLOR_ORANGE << "*" << ANSI_COLOR_RESET << "] Exploit padding offset: "
+                  << paddingSize << " bytes"
+                  << (options.useCustomOffset ? " (user-configured)" : " (default)") << std::endl;
 
         payloadGen.generate(ropChain, paddingSize, options.filename, gadgets, arch_to_use, binaryType, protections, reportId, fileHash, parser.get());
 
-        if (options.generatePayload && ropChain.isSuccessful() && binaryType != "PE") {
+        ChainValidationResult mainVres;
+        if (ropChain.isSuccessful() && binaryType != "PE" && binaryType != "Mach-O") {
+            mainVres = ropChain.validate(arch_to_use, parser.get());
+        }
+
+        if (options.generatePayload && ropChain.isSuccessful() && mainVres.valid && binaryType != "PE" && binaryType != "Mach-O") {
             std::cout << ANSI_COLOR_GREEN << "\n[+] Exploit payload generated successfully!" << ANSI_COLOR_RESET << std::endl;
             std::cout << "[i] Delivery one-liner (PowerShell):\n";
             std::cout << "    cmd /c \"" << options.filename << " < payload.bin\"\n";
