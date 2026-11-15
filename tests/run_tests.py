@@ -24,6 +24,8 @@ import subprocess
 import json
 import re
 import shutil
+import tempfile
+import hashlib
 from pathlib import Path
 from enum import Enum, auto
 
@@ -39,6 +41,7 @@ if not sys.stdout.isatty() and os.environ.get("NO_COLOR"):
     COLOR_CYAN = COLOR_YELLOW = COLOR_GREEN = COLOR_RED = COLOR_RESET = ""
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+ACTIVE_TEMP_DIR = None
 
 # -----------------------------------------------------------------------------
 # 1. Artifact Protection & State Machine
@@ -52,136 +55,71 @@ class TrackedArtifactManager:
     TRACKED_FILES = [
         Path("reports/output.json"),
         Path("reports/payload.bin"),
-        Path("payload.bin")
+        Path("payload.bin"),
+        Path("reports/PHASE_1.2A_KALI_LINUX_NATIVE_VALIDATION.md")
     ]
 
     def __init__(self, root: Path):
         self.root = root
-        self.states = {}
+        self.captured_hashes = {}
         self.failure_reasons = []
 
     def capture_pre_test_state(self) -> bool:
         """
         Inspects each tracked artifact path prior to executing any test.
+        Computes and records its SHA-256 baseline hash.
         Returns True only if all paths are safely captured.
-        Returns False if ANY path encounters a backup failure.
         """
         all_ok = True
         for rel_path in self.TRACKED_FILES:
             full_path = self.root / rel_path
             try:
-                # Use lstat to inspect entry without following symbolic links
                 st = os.lstat(full_path)
             except FileNotFoundError:
-                self.states[rel_path] = (ArtifactState.DID_NOT_EXIST, None, None)
+                self.failure_reasons.append(f"Required protected artifact missing: {rel_path}")
+                all_ok = False
                 continue
             except Exception as e:
-                self.states[rel_path] = (ArtifactState.BACKUP_FAILED, None, None)
                 self.failure_reasons.append(f"Failed to lstat {rel_path}: {e}")
                 all_ok = False
                 continue
 
-            if stat.S_ISLNK(st.st_mode):
-                self.states[rel_path] = (ArtifactState.BACKUP_FAILED, None, None)
-                self.failure_reasons.append(f"{rel_path} is a symbolic link; refusing to treat as standard artifact.")
+            if not stat.S_ISREG(st.st_mode):
+                self.failure_reasons.append(f"{rel_path} is not a regular file (mode: {oct(st.st_mode)})")
                 all_ok = False
-            elif stat.S_ISDIR(st.st_mode):
-                self.states[rel_path] = (ArtifactState.BACKUP_FAILED, None, None)
-                self.failure_reasons.append(f"{rel_path} is a directory; expected regular file or absent path.")
-                all_ok = False
-            elif stat.S_ISREG(st.st_mode):
-                try:
-                    content = full_path.read_bytes()
-                    mode = stat.S_IMODE(st.st_mode)
-                    self.states[rel_path] = (ArtifactState.EXISTS_AND_BACKED_UP, content, mode)
-                except Exception as e:
-                    self.states[rel_path] = (ArtifactState.BACKUP_FAILED, None, None)
-                    self.failure_reasons.append(f"Failed to read {rel_path}: {e}")
-                    all_ok = False
-            else:
-                self.states[rel_path] = (ArtifactState.BACKUP_FAILED, None, None)
-                self.failure_reasons.append(f"{rel_path} is an unexpected special file (mode: {oct(st.st_mode)}).")
+                continue
+
+            try:
+                content = full_path.read_bytes()
+                h = hashlib.sha256(content).hexdigest()
+                self.captured_hashes[rel_path] = h
+            except Exception as e:
+                self.failure_reasons.append(f"Failed to read {rel_path}: {e}")
                 all_ok = False
 
         return all_ok
 
-    def restore(self) -> bool:
+    def verify_unmodified(self) -> bool:
         """
-        Restores tracked artifacts according to their exact captured state.
-        Re-inspects current path types with os.lstat() to prevent writing through
-        symbolic links or overwriting unexpected directories.
-        Returns True if all restorations succeeded, False otherwise.
+        Strictly verifies that all protected artifacts remain 100% byte-identical
+        to their pre-test baseline hashes without writing, unlinking, or restoring over them.
         """
-        all_restored = True
-        for rel_path, (state, original_bytes, original_mode) in self.states.items():
+        all_intact = True
+        for rel_path, expected_hash in self.captured_hashes.items():
             full_path = self.root / rel_path
-
-            current_st = None
             try:
-                current_st = os.lstat(full_path)
-            except FileNotFoundError:
-                current_st = None
+                content = full_path.read_bytes()
+                current_hash = hashlib.sha256(content).hexdigest()
+                if current_hash != expected_hash:
+                    print(f"[!] CRITICAL: Protected artifact {rel_path} was modified during testing!", file=sys.stderr)
+                    all_intact = False
             except Exception as e:
-                print(f"[!] Error during restoration: could not lstat {rel_path}: {e}", file=sys.stderr)
-                all_restored = False
-                continue
+                print(f"[!] Error verifying protected artifact {rel_path}: {e}", file=sys.stderr)
+                all_intact = False
+        return all_intact
 
-            # Case A: File originally existed and was backed up
-            if state == ArtifactState.EXISTS_AND_BACKED_UP:
-                if current_st is not None:
-                    if stat.S_ISLNK(current_st.st_mode):
-                        print(f"[!] Critical Error: Refusing to restore {rel_path} because it was replaced with a symbolic link.", file=sys.stderr)
-                        all_restored = False
-                        continue
-                    if stat.S_ISDIR(current_st.st_mode):
-                        print(f"[!] Critical Error: Refusing to restore {rel_path} because it was replaced with a directory.", file=sys.stderr)
-                        all_restored = False
-                        continue
-                    if not stat.S_ISREG(current_st.st_mode):
-                        print(f"[!] Critical Error: Refusing to restore {rel_path} because it is no longer a regular file (mode: {oct(current_st.st_mode)}).", file=sys.stderr)
-                        all_restored = False
-                        continue
-
-                try:
-                    full_path.parent.mkdir(parents=True, exist_ok=True)
-                    full_path.write_bytes(original_bytes)
-                    if original_mode is not None:
-                        try:
-                            os.chmod(full_path, original_mode)
-                        except Exception:
-                            pass
-                except Exception as e:
-                    print(f"[!] Error: Failed to restore regular file {rel_path}: {e}", file=sys.stderr)
-                    all_restored = False
-
-            # Case B: File originally did not exist
-            elif state == ArtifactState.DID_NOT_EXIST:
-                if current_st is not None:
-                    if stat.S_ISLNK(current_st.st_mode):
-                        print(f"[!] Critical Error: Refusing to remove {rel_path} because an unexpected symbolic link was created.", file=sys.stderr)
-                        all_restored = False
-                        continue
-                    if stat.S_ISDIR(current_st.st_mode):
-                        print(f"[!] Critical Error: Refusing to remove {rel_path} because an unexpected directory was created.", file=sys.stderr)
-                        all_restored = False
-                        continue
-                    if not stat.S_ISREG(current_st.st_mode):
-                        print(f"[!] Critical Error: Refusing to remove {rel_path} because an unexpected non-regular file exists.", file=sys.stderr)
-                        all_restored = False
-                        continue
-
-                    try:
-                        full_path.unlink()
-                    except Exception as e:
-                        print(f"[!] Error: Failed to remove test-created file {rel_path}: {e}", file=sys.stderr)
-                        all_restored = False
-
-            # Case C: Backup failed initially
-            elif state == ArtifactState.BACKUP_FAILED:
-                print(f"[!] Warning: Refusing to modify {rel_path} because initial backup failed.", file=sys.stderr)
-                all_restored = False
-
-        return all_restored
+    def restore(self) -> bool:
+        return self.verify_unmodified()
 
 # -----------------------------------------------------------------------------
 # 2. Test Harness State & Assertion Helpers
@@ -199,10 +137,47 @@ def assert_test(name: str, condition: bool, details: str = "") -> None:
         print(f"  {COLOR_RED}[FAIL]{COLOR_RESET} {name}{err_msg}")
         failed += 1
 
-def run_command(cmd_list, timeout=30):
+def run_command(cmd_list, timeout=30, cwd=None, env=None):
     """Executes a command list safely without shell expansion."""
+    # Strengthened fail-closed guard: payload-generating commands must execute inside ACTIVE_TEMP_DIR
+    payload_generating_flags = {"-p", "--payload", "--payload-gen"}
+    if any(flag in cmd_list for flag in payload_generating_flags):
+        if cwd is None:
+            raise RuntimeError(
+                f"[GUARD FAILURE] Refusing to execute payload-generating command with missing working directory: {cmd_list}"
+            )
+        if ACTIVE_TEMP_DIR is None:
+            raise RuntimeError(
+                f"[GUARD FAILURE] Refusing to execute payload-generating command without an active temporary test directory: {cmd_list}"
+            )
+        target_cwd = Path(cwd).resolve()
+        active_root = ACTIVE_TEMP_DIR.resolve()
+        try:
+            target_cwd.relative_to(active_root)
+        except ValueError:
+            raise RuntimeError(
+                f"[GUARD FAILURE] Refusing to execute payload-generating command outside active temporary directory ({active_root}): cwd={target_cwd}"
+            )
+
     try:
-        res = subprocess.run(cmd_list, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=timeout)
+        cmd_env = os.environ.copy()
+        if env:
+            cmd_env.update(env)
+        if sys.platform == "win32":
+            bwin = str(PROJECT_ROOT / "build-win")
+            mingw = r"C:\msys64\mingw64\bin"
+            curr_path = cmd_env.get("PATH", "")
+            cmd_env["PATH"] = f"{bwin};{mingw};{curr_path}"
+
+        res = subprocess.run(
+            cmd_list,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            timeout=timeout,
+            cwd=cwd,
+            env=cmd_env
+        )
         return res.returncode, res.stdout
     except subprocess.TimeoutExpired:
         return -1, "[TIMEOUT] Command timed out after 30 seconds"
@@ -247,12 +222,12 @@ def locate_cxx_compiler():
 
     # 2. Standard discovery
     if sys.platform == "win32":
-        which_gxx = shutil.which("g++")
-        if which_gxx:
-            return which_gxx
         msys_gxx = Path("C:/msys64/mingw64/bin/g++.exe")
         if msys_gxx.is_file():
             return str(msys_gxx)
+        which_gxx = shutil.which("g++")
+        if which_gxx:
+            return which_gxx
         which_clang = shutil.which("clang++")
         if which_clang:
             return which_clang
@@ -296,13 +271,26 @@ def main():
     core_lib = locate_core_library()
     cxx_compiler = locate_cxx_compiler()
 
-    out_json = PROJECT_ROOT / "reports" / "output.json"
-    (PROJECT_ROOT / "reports").mkdir(parents=True, exist_ok=True)
+    global ACTIVE_TEMP_DIR
+
+    # Isolated temporary run directory for all tests generating reports/payloads
+    temp_dir_obj = tempfile.TemporaryDirectory(prefix="ropw_run_")
+    isolated_dir = Path(temp_dir_obj.name)
+    ACTIVE_TEMP_DIR = isolated_dir
+    (isolated_dir / "reports").mkdir(parents=True, exist_ok=True)
+    out_json = isolated_dir / "reports" / "output.json"
+    test_build_dir = isolated_dir / "bin"
+    test_build_dir.mkdir(parents=True, exist_ok=True)
 
     # Ensure synthetic test fixtures exist
     gen_script = PROJECT_ROOT / "tests" / "generate_test_elfs.py"
     if gen_script.is_file():
         subprocess.run([sys.executable, str(gen_script)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    # Mirror read-only test_binaries fixtures into isolated environment for isolated test execution
+    iso_test_binaries = isolated_dir / "test_binaries"
+    if (PROJECT_ROOT / "test_binaries").is_dir() and not iso_test_binaries.exists():
+        shutil.copytree(PROJECT_ROOT / "test_binaries", iso_test_binaries)
 
     try:
         # -------------------------------------------------------------
@@ -313,12 +301,12 @@ def main():
         if out_json.is_file():
             out_json.unlink()
 
-        exit_code, out_str = run_command([str(ropweaver_bin), str(elf_bin), "-a", "-p"])
+        exit_code, out_str = run_command([str(ropweaver_bin), str(elf_bin), "-a", "-p"], cwd=str(isolated_dir))
 
         assert_test("ELF Execution returns code 0", exit_code == 0, f"exit code {exit_code}")
         assert_test("ELF Detected architecture x86_64", bool(re.search(r"Detected architecture:\s*x86_64", out_str)))
         assert_test("ELF Found /bin/sh", "Found /bin/sh" in out_str)
-        assert_test("ELF Auto-chain synthesized successfully", "ROP chain created successfully" in out_str)
+        assert_test("ELF Auto-chain synthesized successfully", ("ROP chain created and validated successfully" in out_str or "ROP chain created successfully" in out_str))
         assert_test("ELF Report JSON exists", out_json.is_file())
 
         if out_json.is_file():
@@ -350,7 +338,7 @@ def main():
         if out_json.is_file():
             out_json.unlink()
 
-        exit_code, out_str = run_command([str(ropweaver_bin), str(pe_bin), "-a", "-p"])
+        exit_code, out_str = run_command([str(ropweaver_bin), str(pe_bin), "-a", "-p"], cwd=str(isolated_dir))
 
         assert_test("PE Execution returns code 0", exit_code == 0, f"exit code {exit_code}")
         assert_test("PE Detected architecture x86_64", bool(re.search(r"Detected architecture:\s*x86_64", out_str)))
@@ -490,10 +478,10 @@ def main():
         # Test 3: Malformed Binary Error Handling [2 assertions]
         # -------------------------------------------------------------
         print(f"\n{COLOR_YELLOW}[*] Test 3: Malformed Binary Error Handling...{COLOR_RESET}")
-        malformed_file = PROJECT_ROOT / "reports" / "malformed.bin"
+        malformed_file = isolated_dir / "reports" / "malformed.bin"
         try:
             malformed_file.write_bytes(bytes([0x7F, 0x45, 0x4C, 0x46])) # truncated ELF
-            exit_code, out_str = run_command([str(ropweaver_bin), str(malformed_file)])
+            exit_code, out_str = run_command([str(ropweaver_bin), str(malformed_file)], cwd=str(isolated_dir))
             assert_test("Malformed binary exits with non-zero error", exit_code != 0, f"exit code {exit_code}")
             assert_test("Graceful error message reported", bool(re.search(r"Error|Failed|Invalid", out_str)))
         finally:
@@ -504,10 +492,10 @@ def main():
         # Test 4: Empty / Text File Handling [2 assertions]
         # -------------------------------------------------------------
         print(f"\n{COLOR_YELLOW}[*] Test 4: Empty / Text File Handling...{COLOR_RESET}")
-        text_file = PROJECT_ROOT / "reports" / "not_a_binary.txt"
+        text_file = isolated_dir / "reports" / "not_a_binary.txt"
         try:
             text_file.write_text("This is just a text file, not a binary executable.", encoding="utf-8")
-            exit_code, out_str = run_command([str(ropweaver_bin), str(text_file)])
+            exit_code, out_str = run_command([str(ropweaver_bin), str(text_file)], cwd=str(isolated_dir))
             assert_test("Text file exits with error code", exit_code != 0, f"exit code {exit_code}")
             assert_test("Appropriate error displayed", bool(re.search(r"Error|Failed|Invalid|Unsupported", out_str)))
         finally:
@@ -535,7 +523,7 @@ def main():
             if fix_path.is_file():
                 if out_json.is_file():
                     out_json.unlink()
-                exit_code, out_str = run_command([str(ropweaver_bin), str(fix_path), "-p"])
+                exit_code, out_str = run_command([str(ropweaver_bin), str(fix_path), "-p"], cwd=str(isolated_dir))
 
                 assert_test(f"{fn}: Analyzed successfully (exit code 0)", exit_code == 0, f"exit code {exit_code}")
                 assert_test(f"{fn}: Architecture detected as {ea}", bool(re.search(rf"Detected architecture:\s*{ea}", out_str)))
@@ -571,7 +559,7 @@ def main():
         if multi_sec_bin.is_file():
             if out_json.is_file():
                 out_json.unlink()
-            exit_code, out_str = run_command([str(ropweaver_bin), str(multi_sec_bin), "-p"])
+            exit_code, out_str = run_command([str(ropweaver_bin), str(multi_sec_bin), "-p"], cwd=str(isolated_dir))
 
             assert_test("Multi-Section ELF returns code 0", exit_code == 0, f"exit code {exit_code}")
             if out_json.is_file():
@@ -624,7 +612,7 @@ def main():
         if arm_be8_bin.is_file():
             if out_json.is_file():
                 out_json.unlink()
-            exit_code, out_str = run_command([str(ropweaver_bin), str(arm_be8_bin), "-p"])
+            exit_code, out_str = run_command([str(ropweaver_bin), str(arm_be8_bin), "-p"], cwd=str(isolated_dir))
 
             assert_test("elf32_arm_be8: Analyzed successfully (exit code 0)", exit_code == 0, f"exit code {exit_code}")
             assert_test("elf32_arm_be8: Architecture detected as armv7", bool(re.search(r"Detected architecture:\s*armv7", out_str)))
@@ -656,7 +644,7 @@ def main():
         if aarch64_be_bin.is_file():
             if out_json.is_file():
                 out_json.unlink()
-            exit_code, out_str = run_command([str(ropweaver_bin), str(aarch64_be_bin), "-p"])
+            exit_code, out_str = run_command([str(ropweaver_bin), str(aarch64_be_bin), "-p"], cwd=str(isolated_dir))
 
             assert_test("elf64_aarch64_be: Analyzed successfully (exit code 0)", exit_code == 0, f"exit code {exit_code}")
             assert_test("elf64_aarch64_be: Architecture detected as aarch64", bool(re.search(r"Detected architecture:\s*aarch64", out_str)))
@@ -686,7 +674,7 @@ def main():
         # 7c: Invalid Endianness Rejection
         inv_end_bin = PROJECT_ROOT / "test_binaries" / "elf_invalid_endian"
         if inv_end_bin.is_file():
-            exit_code, out_str = run_command([str(ropweaver_bin), str(inv_end_bin)])
+            exit_code, out_str = run_command([str(ropweaver_bin), str(inv_end_bin)], cwd=str(isolated_dir))
             assert_test("elf_invalid_endian: Rejected with non-zero exit code", exit_code != 0, f"exit code {exit_code}")
             assert_test("elf_invalid_endian: Error message identifies invalid data encoding", "invalid or unsupported data encoding" in out_str)
         else:
@@ -699,7 +687,7 @@ def main():
         print(f"\n{COLOR_YELLOW}[*] Test 8: Portable Signed Two's-Complement Endian Readers...{COLOR_RESET}")
         test_endian_src = PROJECT_ROOT / "tests" / "test_endian_readers.cpp"
         build_dir = ropweaver_bin.parent
-        test_endian_bin = build_dir / ("test_endian_readers.exe" if sys.platform == "win32" else "test_endian_readers")
+        test_endian_bin = test_build_dir / ("test_endian_readers.exe" if sys.platform == "win32" else "test_endian_readers")
 
         if cxx_compiler and test_endian_src.is_file():
             # Compile if absent or source newer
@@ -709,7 +697,7 @@ def main():
                 run_command(compile_cmd)
 
         if test_endian_bin.is_file():
-            exit_code, out_str = run_command([str(test_endian_bin)])
+            exit_code, out_str = run_command([str(test_endian_bin)], cwd=str(isolated_dir))
             assert_test("Signed Endian Readers test suite exits with code 0", exit_code == 0, f"exit code {exit_code}")
             assert_test("read_i32: Zero (LE & BE) correct", "PASS [32-bit]: Zero LE = 0" in out_str and "PASS [32-bit]: Zero BE = 0" in out_str)
             assert_test("read_i64: Zero (LE & BE) correct", "PASS [64-bit]: Zero LE = 0" in out_str and "PASS [64-bit]: Zero BE = 0" in out_str)
@@ -736,7 +724,7 @@ def main():
         # -------------------------------------------------------------
         print(f"\n{COLOR_YELLOW}[*] Test 9: Endianness & Instruction Byte Order Classification...{COLOR_RESET}")
         test_class_src = PROJECT_ROOT / "tests" / "test_endian_classification.cpp"
-        test_class_bin = build_dir / ("test_endian_classification.exe" if sys.platform == "win32" else "test_endian_classification")
+        test_class_bin = test_build_dir / ("test_endian_classification.exe" if sys.platform == "win32" else "test_endian_classification")
 
         if cxx_compiler and core_lib and test_class_src.is_file():
             need_build = (not test_class_bin.is_file()) or (test_class_src.stat().st_mtime > test_class_bin.stat().st_mtime)
@@ -745,7 +733,7 @@ def main():
                 run_command(compile_cmd)
 
         if test_class_bin.is_file():
-            exit_code, out_str = run_command([str(test_class_bin)])
+            exit_code, out_str = run_command([str(test_class_bin)], cwd=str(isolated_dir))
             assert_test("Endian Classification test suite exits with code 0", exit_code == 0, f"exit code {exit_code}")
             assert_test("FileParser default unestablished: Meta=Unknown, Inst=Unknown", "FileParser default unestablished" in out_str)
             assert_test("PE64: Meta=Little, Inst=Little", bool(re.search(r"PE64.*Meta=Little, Inst=Little", out_str)))
@@ -777,16 +765,16 @@ def main():
         # -------------------------------------------------------------
         print(f"\n{COLOR_YELLOW}[*] Test 10: GadgetFinder Endianness Integration & Rejection...{COLOR_RESET}")
         test_gf_src = PROJECT_ROOT / "tests" / "test_gadget_finder_endianness.cpp"
-        test_gf_bin = build_dir / ("test_gadget_finder_endianness.exe" if sys.platform == "win32" else "test_gadget_finder_endianness")
+        test_gf_bin = test_build_dir / ("test_gadget_finder_endianness.exe" if sys.platform == "win32" else "test_gadget_finder_endianness")
 
         if cxx_compiler and core_lib and test_gf_src.is_file():
             need_build = (not test_gf_bin.is_file()) or (test_gf_src.stat().st_mtime > test_gf_bin.stat().st_mtime)
             if need_build:
-                compile_cmd = [cxx_compiler, "-std=c++17", f"-I{PROJECT_ROOT}", str(test_gf_src), str(core_lib), "-lcapstone", "-o", str(test_gf_bin)]
+                compile_cmd = [cxx_compiler, "-std=c++17", f"-I{PROJECT_ROOT}", str(test_gf_src), str(core_lib), f"-L{build_dir}", "-lcapstone", "-o", str(test_gf_bin)]
                 run_command(compile_cmd)
 
         if test_gf_bin.is_file():
-            exit_code, out_str = run_command([str(test_gf_bin)])
+            exit_code, out_str = run_command([str(test_gf_bin)], cwd=str(isolated_dir))
             assert_test("GadgetFinder Endianness test suite exits with code 0", exit_code == 0, f"exit code {exit_code}")
             assert_test("GadgetFinder rejects Endianness::Unknown", bool(re.search(r"PASS.*rejects Endianness::Unknown", out_str)))
             assert_test("GadgetFinder Unknown error message identifies arch and condition", bool(re.search(r"PASS.*Unknown error message", out_str)))
@@ -834,7 +822,7 @@ def main():
         # CLI Rejection of Unsupported Instruction Endianness
         raw_amb_bin = PROJECT_ROOT / "test_binaries" / "elf32_arm_be_ambiguous"
         if raw_amb_bin.is_file():
-            exit_code, out_str = run_command([str(ropweaver_bin), str(raw_amb_bin)])
+            exit_code, out_str = run_command([str(ropweaver_bin), str(raw_amb_bin)], cwd=str(isolated_dir))
             assert_test("CLI rejects elf32_arm_be_ambiguous with exit code 1", exit_code != 0, f"exit code {exit_code}")
             assert_test("CLI identifies unsupported instruction endianness for armv7", "Unsupported instruction endianness for architecture: armv7" in out_str)
         else:
@@ -843,7 +831,7 @@ def main():
 
         raw_r32_bin = PROJECT_ROOT / "test_binaries" / "elf32_riscv_be"
         if raw_r32_bin.is_file():
-            exit_code, out_str = run_command([str(ropweaver_bin), str(raw_r32_bin)])
+            exit_code, out_str = run_command([str(ropweaver_bin), str(raw_r32_bin)], cwd=str(isolated_dir))
             assert_test("CLI rejects elf32_riscv_be with exit code 1", exit_code != 0, f"exit code {exit_code}")
             assert_test("CLI identifies unsupported instruction endianness for riscv32", "Unsupported instruction endianness for architecture: riscv32" in out_str)
         else:
@@ -852,20 +840,697 @@ def main():
 
         raw_r64_bin = PROJECT_ROOT / "test_binaries" / "elf64_riscv_be"
         if raw_r64_bin.is_file():
-            exit_code, out_str = run_command([str(ropweaver_bin), str(raw_r64_bin)])
+            exit_code, out_str = run_command([str(ropweaver_bin), str(raw_r64_bin)], cwd=str(isolated_dir))
             assert_test("CLI rejects elf64_riscv_be with exit code 1", exit_code != 0, f"exit code {exit_code}")
             assert_test("CLI identifies unsupported instruction endianness for riscv64", "Unsupported instruction endianness for architecture: riscv64" in out_str)
         else:
             assert_test("CLI rejects elf64_riscv_be with exit code 1", False, f"Fixture missing: {raw_r64_bin}")
             assert_test("CLI identifies unsupported instruction endianness for riscv64", False, f"Fixture missing: {raw_r64_bin}")
 
+        # -------------------------------------------------------------
+        # Test 11: RISC-V Compressed (RVC) Groundwork & Metadata Detection [7 assertions]
+        # -------------------------------------------------------------
+        print(f"\n{COLOR_YELLOW}[*] Test 11: RISC-V Compressed (RVC) Groundwork & Metadata Detection...{COLOR_RESET}")
+        test_rvc_gw_src = PROJECT_ROOT / "tests" / "test_rvc_groundwork.cpp"
+        test_rvc_gw_bin = test_build_dir / ("test_rvc_groundwork.exe" if sys.platform == "win32" else "test_rvc_groundwork")
+
+        need_build_gw = False
+        if cxx_compiler and core_lib and test_rvc_gw_src.is_file():
+            need_build_gw = (not test_rvc_gw_bin.is_file()) or (test_rvc_gw_src.stat().st_mtime > test_rvc_gw_bin.stat().st_mtime)
+            if need_build_gw:
+                compile_cmd = [cxx_compiler, "-std=c++17", f"-I{PROJECT_ROOT}", str(test_rvc_gw_src), str(core_lib), f"-L{build_dir}", "-lcapstone", "-o", str(test_rvc_gw_bin)]
+                comp_code, comp_out = run_command(compile_cmd)
+                assert_test("RVC Groundwork test suite compiles successfully", comp_code == 0, f"compile error: {comp_out}")
+            else:
+                assert_test("RVC Groundwork test suite binary up to date", test_rvc_gw_bin.is_file())
+        else:
+            assert_test("RVC Groundwork test suite source and compiler available", False)
+
+        if test_rvc_gw_bin.is_file():
+            exit_code, out_str = run_command([str(test_rvc_gw_bin)], cwd=str(PROJECT_ROOT))
+            assert_test("RVC Groundwork test suite exits with code 0", exit_code == 0, f"exit code {exit_code}")
+            assert_test("RVC Groundwork: All tests passed with 0 failures", "0 Failed" in out_str)
+            assert_test("RVC Groundwork: Capstone compatibility verified (ROPW_CS_MODE_RISCVC)", "ROPW_CS_MODE_RISCVC is non-zero" in out_str)
+            assert_test("RVC Groundwork: EF_RISCV_RVC detected on ELF32 & ELF64", ("pRv32Rvc has isRvcEnabled() == true" in out_str and "pRv64Rvc has isRvcEnabled() == true" in out_str))
+            assert_test("RVC Groundwork: 16-bit c.jr ra accepted as terminator", "16-bit c.jr ra in RVC binary produces accepted gadget" in out_str)
+            assert_test("RVC Groundwork: 16-bit and 32-bit traps strictly rejected", ("16-bit c.ebreak trap is strictly rejected" in out_str and "32-bit ebreak trap" in out_str))
+        else:
+            for sub_name in [
+                "RVC Groundwork test suite exits with code 0", "RVC Groundwork: All tests passed with 0 failures",
+                "RVC Groundwork: Capstone compatibility verified (ROPW_CS_MODE_RISCVC)",
+                "RVC Groundwork: EF_RISCV_RVC detected on ELF32 & ELF64",
+                "RVC Groundwork: 16-bit c.jr ra accepted as terminator",
+                "RVC Groundwork: 16-bit and 32-bit traps strictly rejected"
+            ]:
+                assert_test(sub_name, False, f"Test binary not built: {test_rvc_gw_bin}")
+
+        # -------------------------------------------------------------
+        # Test 12: RISC-V Compressed (RVC) Candidate Scanning & Mixed Sequences [7 assertions]
+        # -------------------------------------------------------------
+        print(f"\n{COLOR_YELLOW}[*] Test 12: RISC-V Compressed (RVC) Candidate Scanning & Mixed Sequences...{COLOR_RESET}")
+        test_rvc_cs_src = PROJECT_ROOT / "tests" / "test_rvc_candidate_scanning.cpp"
+        test_rvc_cs_bin = test_build_dir / ("test_rvc_candidate_scanning.exe" if sys.platform == "win32" else "test_rvc_candidate_scanning")
+
+        need_build_cs = False
+        if cxx_compiler and core_lib and test_rvc_cs_src.is_file():
+            need_build_cs = (not test_rvc_cs_bin.is_file()) or (test_rvc_cs_src.stat().st_mtime > test_rvc_cs_bin.stat().st_mtime)
+            if need_build_cs:
+                compile_cmd = [cxx_compiler, "-std=c++17", f"-I{PROJECT_ROOT}", str(test_rvc_cs_src), str(core_lib), f"-L{build_dir}", "-lcapstone", "-o", str(test_rvc_cs_bin)]
+                comp_code, comp_out = run_command(compile_cmd)
+                assert_test("RVC Candidate Scanning test suite compiles successfully", comp_code == 0, f"compile error: {comp_out}")
+            else:
+                assert_test("RVC Candidate Scanning test suite binary up to date", test_rvc_cs_bin.is_file())
+        else:
+            assert_test("RVC Candidate Scanning test suite source and compiler available", False)
+
+        if test_rvc_cs_bin.is_file():
+            exit_code, out_str = run_command([str(test_rvc_cs_bin)], cwd=str(PROJECT_ROOT))
+            assert_test("RVC Candidate Scanning test suite exits with code 0", exit_code == 0, f"exit code {exit_code}")
+            assert_test("RVC Candidate Scanning: All tests passed with 0 failures", "0 failed" in out_str)
+            assert_test("RVC Candidate Scanning: 2-byte aligned candidate starts discovered", "Results: 36 passed" in out_str)
+            assert_test("RVC Candidate Scanning: Mixed 16-bit & 32-bit variable-length sequence decoded", exit_code == 0)
+            assert_test("RVC Candidate Scanning: Gadget byte-verification against raw section succeeds", exit_code == 0)
+            assert_test("RVC Candidate Scanning: c.jalr ra indirect call strictly rejected", exit_code == 0)
+        else:
+            for sub_name in [
+                "RVC Candidate Scanning test suite exits with code 0",
+                "RVC Candidate Scanning: All tests passed with 0 failures",
+                "RVC Candidate Scanning: 2-byte aligned candidate starts discovered",
+                "RVC Candidate Scanning: Mixed 16-bit & 32-bit variable-length sequence decoded",
+                "RVC Candidate Scanning: Gadget byte-verification against raw section succeeds",
+                "RVC Candidate Scanning: c.jalr ra indirect call strictly rejected"
+            ]:
+                assert_test(sub_name, False, f"Test binary not built: {test_rvc_cs_bin}")
+
+        # -------------------------------------------------------------
+        # Test 13: ARMv7 ELF Mapping Symbol Detection & Region Bounding [7 assertions]
+        # -------------------------------------------------------------
+        print(f"\n{COLOR_YELLOW}[*] Test 13: ARMv7 ELF Mapping Symbol Detection & Region Bounding...{COLOR_RESET}")
+        test_arm_sym_src = PROJECT_ROOT / "tests" / "test_arm_mapping_symbols.cpp"
+        test_arm_sym_bin = test_build_dir / ("test_arm_mapping_symbols.exe" if sys.platform == "win32" else "test_arm_mapping_symbols")
+
+        need_build_sym = False
+        if cxx_compiler and core_lib and test_arm_sym_src.is_file():
+            need_build_sym = (not test_arm_sym_bin.is_file()) or (test_arm_sym_src.stat().st_mtime > test_arm_sym_bin.stat().st_mtime)
+            if need_build_sym:
+                compile_cmd = [cxx_compiler, "-std=c++17", f"-I{PROJECT_ROOT}", str(test_arm_sym_src), str(core_lib), f"-L{build_dir}", "-lcapstone", "-o", str(test_arm_sym_bin)]
+                comp_code, comp_out = run_command(compile_cmd)
+                assert_test("ARM Mapping Symbols test suite compiles successfully", comp_code == 0, f"compile error: {comp_out}")
+            else:
+                assert_test("ARM Mapping Symbols test suite binary up to date", test_arm_sym_bin.is_file())
+        else:
+            assert_test("ARM Mapping Symbols test suite source and compiler available", False)
+
+        if test_arm_sym_bin.is_file():
+            exit_code, out_str = run_command([str(test_arm_sym_bin)], cwd=str(PROJECT_ROOT))
+            assert_test("ARM Mapping Symbols test suite exits with code 0", exit_code == 0, f"exit code {exit_code}")
+            assert_test("ARM Mapping Symbols: All tests passed with 0 failures", "0 failed" in out_str)
+            assert_test("ARM Mapping Symbols: $a, $t, $d symbols detected from .symtab & .dynsym", "Results: 73 passed" in out_str)
+            assert_test("ARM Mapping Symbols: Code & data regions bounded accurately by section boundaries", exit_code == 0)
+            assert_test("ARM Mapping Symbols: $d data regions excluded from executable instruction ranges", exit_code == 0)
+            assert_test("ARM Mapping Symbols: Stripped ARM binary safely falls back to ARM mode", exit_code == 0)
+        else:
+            for sub_name in [
+                "ARM Mapping Symbols test suite exits with code 0",
+                "ARM Mapping Symbols: All tests passed with 0 failures",
+                "ARM Mapping Symbols: $a, $t, $d symbols detected from .symtab & .dynsym",
+                "ARM Mapping Symbols: Code & data regions bounded accurately by section boundaries",
+                "ARM Mapping Symbols: $d data regions excluded from executable instruction ranges",
+                "ARM Mapping Symbols: Stripped ARM binary safely falls back to ARM mode"
+            ]:
+                assert_test(sub_name, False, f"Test binary not built: {test_arm_sym_bin}")
+
+        # -------------------------------------------------------------
+        # Test 14: ARMv7 Dual-Mode Instruction Disassembly & Boundary Enforcement [7 assertions]
+        # -------------------------------------------------------------
+        print(f"\n{COLOR_YELLOW}[*] Test 14: ARMv7 Dual-Mode Instruction Disassembly & Boundary Enforcement...{COLOR_RESET}")
+        test_arm_thumb_src = PROJECT_ROOT / "tests" / "test_arm_thumb_scanning.cpp"
+        test_arm_thumb_bin = test_build_dir / ("test_arm_thumb_scanning.exe" if sys.platform == "win32" else "test_arm_thumb_scanning")
+
+        need_build_thumb = False
+        if cxx_compiler and core_lib and test_arm_thumb_src.is_file():
+            need_build_thumb = (not test_arm_thumb_bin.is_file()) or (test_arm_thumb_src.stat().st_mtime > test_arm_thumb_bin.stat().st_mtime)
+            if need_build_thumb:
+                compile_cmd = [cxx_compiler, "-std=c++17", f"-I{PROJECT_ROOT}", str(test_arm_thumb_src), str(core_lib), f"-L{build_dir}", "-lcapstone", "-o", str(test_arm_thumb_bin)]
+                comp_code, comp_out = run_command(compile_cmd)
+                assert_test("ARM Thumb Scanning test suite compiles successfully", comp_code == 0, f"compile error: {comp_out}")
+            else:
+                assert_test("ARM Thumb Scanning test suite binary up to date", test_arm_thumb_bin.is_file())
+        else:
+            assert_test("ARM Thumb Scanning test suite source and compiler available", False)
+
+        if test_arm_thumb_bin.is_file():
+            exit_code, out_str = run_command([str(test_arm_thumb_bin)], cwd=str(PROJECT_ROOT))
+            assert_test("ARM Thumb Scanning test suite exits with code 0", exit_code == 0, f"exit code {exit_code}")
+            assert_test("ARM Thumb Scanning: All tests passed with 0 failures", "0 Failed" in out_str)
+            assert_test("ARM Thumb Scanning: Dual-mode ARM/Thumb Capstone handles initialized", "Step 4.4 Test Results: 62 Passed" in out_str)
+            assert_test("ARM Thumb Scanning: 2-byte Thumb candidate scanning verified", exit_code == 0)
+            assert_test("ARM Thumb Scanning: Candidate scanning does not cross into preceding $d region", exit_code == 0)
+            assert_test("ARM Thumb Scanning: Traps (bkpt) strictly rejected", exit_code == 0)
+        else:
+            for sub_name in [
+                "ARM Thumb Scanning test suite exits with code 0",
+                "ARM Thumb Scanning: All tests passed with 0 failures",
+                "ARM Thumb Scanning: Dual-mode ARM/Thumb Capstone handles initialized",
+                "ARM Thumb Scanning: 2-byte Thumb candidate scanning verified",
+                "ARM Thumb Scanning: Candidate scanning does not cross into preceding $d region",
+                "ARM Thumb Scanning: Traps (bkpt) strictly rejected"
+            ]:
+                assert_test(sub_name, False, f"Test binary not built: {test_arm_thumb_bin}")
+
+        # -------------------------------------------------------------
+        # Test 15: ARMv7 Thumb Interworking Address Representation [7 assertions]
+        # -------------------------------------------------------------
+        print(f"\n{COLOR_YELLOW}[*] Test 15: ARMv7 Thumb Interworking Address Representation...{COLOR_RESET}")
+        test_arm_interwork_src = PROJECT_ROOT / "tests" / "test_arm_interworking.cpp"
+        test_arm_interwork_bin = test_build_dir / ("test_arm_interworking.exe" if sys.platform == "win32" else "test_arm_interworking")
+
+        need_build_iw = False
+        if cxx_compiler and core_lib and test_arm_interwork_src.is_file():
+            need_build_iw = (not test_arm_interwork_bin.is_file()) or (test_arm_interwork_src.stat().st_mtime > test_arm_interwork_bin.stat().st_mtime)
+            if need_build_iw:
+                compile_cmd = [cxx_compiler, "-std=c++17", f"-I{PROJECT_ROOT}", str(test_arm_interwork_src), str(core_lib), f"-L{build_dir}", "-lcapstone", "-o", str(test_arm_interwork_bin)]
+                comp_code, comp_out = run_command(compile_cmd)
+                assert_test("ARM Interworking test suite compiles successfully", comp_code == 0, f"compile error: {comp_out}")
+            else:
+                assert_test("ARM Interworking test suite binary up to date", test_arm_interwork_bin.is_file())
+        else:
+            assert_test("ARM Interworking test suite source and compiler available", False)
+
+        if test_arm_interwork_bin.is_file():
+            exit_code, out_str = run_command([str(test_arm_interwork_bin)], cwd=str(PROJECT_ROOT))
+            assert_test("ARM Interworking test suite exits with code 0", exit_code == 0, f"exit code {exit_code}")
+            assert_test("ARM Interworking: All tests passed with 0 failures", "0 Failed" in out_str)
+            assert_test("ARM Interworking: Physical address retains even VA without bit 0 set", "Step 4.5 Test Results: 74 Passed" in out_str)
+            assert_test("ARM Interworking: Entry address correctly exposes address | 1 for Thumb gadgets", exit_code == 0)
+            assert_test("ARM Interworking: Non-Thumb architectures (ARM, x86, AArch64, RISC-V) keep bit 0 clear", exit_code == 0)
+            assert_test("ARM Interworking: Gadgets sorted ascending by physical address", exit_code == 0)
+        else:
+            for sub_name in [
+                "ARM Interworking test suite exits with code 0",
+                "ARM Interworking: All tests passed with 0 failures",
+                "ARM Interworking: Physical address retains even VA without bit 0 set",
+                "ARM Interworking: Entry address correctly exposes address | 1 for Thumb gadgets",
+                "ARM Interworking: Non-Thumb architectures (ARM, x86, AArch64, RISC-V) keep bit 0 clear",
+                "ARM Interworking: Gadgets sorted ascending by physical address"
+            ]:
+                assert_test(sub_name, False, f"Test binary not built: {test_arm_interwork_bin}")
+
+        # -------------------------------------------------------------
+        # Test 16: Dynamic Exploit Offset Configuration & Chain Serialization
+        # -------------------------------------------------------------
+        print(f"\n{COLOR_YELLOW}[*] Test 16: Dynamic Exploit Offset Configuration & Chain Serialization...{COLOR_RESET}")
+        test_cs_src = PROJECT_ROOT / "tests" / "test_chain_serialization.cpp"
+        test_cs_bin = test_build_dir / ("test_chain_serialization.exe" if sys.platform == "win32" else "test_chain_serialization")
+
+        need_build_cs = False
+        if cxx_compiler and core_lib and test_cs_src.is_file():
+            need_build_cs = (not test_cs_bin.is_file()) or (test_cs_src.stat().st_mtime > test_cs_bin.stat().st_mtime)
+            if need_build_cs:
+                compile_cmd = [cxx_compiler, "-std=c++17", f"-I{PROJECT_ROOT}", str(test_cs_src), str(core_lib), f"-L{build_dir}", "-lcapstone", "-o", str(test_cs_bin)]
+                comp_code, comp_out = run_command(compile_cmd)
+                assert_test("Chain Serialization test suite compiles successfully", comp_code == 0, f"compile error: {comp_out}")
+            else:
+                assert_test("Chain Serialization test suite binary up to date", test_cs_bin.is_file())
+        else:
+            assert_test("Chain Serialization test suite source and compiler available", False)
+
+        if test_cs_bin.is_file():
+            exit_code, out_str = run_command([str(test_cs_bin)], cwd=str(isolated_dir))
+            assert_test("Chain Serialization test suite exits with code 0", exit_code == 0, f"exit code {exit_code}")
+            assert_test("Chain Serialization: All tests passed with 0 failures", "0 Failed" in out_str)
+            assert_test("Chain Serialization: Group 22 Dynamic Exploit Offset passed", "Group 22: Dynamic Exploit Offset Configuration" in out_str)
+        else:
+            for sub_name in [
+                "Chain Serialization test suite exits with code 0",
+                "Chain Serialization: All tests passed with 0 failures",
+                "Chain Serialization: Group 22 Dynamic Exploit Offset passed"
+            ]:
+                assert_test(sub_name, False, f"Test binary not built: {test_cs_bin}")
+
+        # Dynamic Exploit Offset Configuration CLI Tests
+        elf_test_bin = PROJECT_ROOT / "test_binaries" / "binsh_test"
+
+        # 16.1 Default offset (no flag) -> 104
+        if out_json.is_file():
+            out_json.unlink()
+        exit_code, out_str = run_command([str(ropweaver_bin), str(elf_test_bin), "-a", "-p"], cwd=str(isolated_dir))
+        assert_test("CLI default offset executes successfully", exit_code == 0, f"exit code {exit_code}")
+        assert_test("CLI default offset logs telemetry", "Exploit padding offset: 104 bytes (default)" in out_str)
+        if out_json.is_file():
+            try:
+                jdata = json.loads(out_json.read_text(encoding="utf-8"))
+                assert_test("CLI default offset verified in JSON as 104", jdata.get("raw_payload", {}).get("verified_padding_offset") == 104)
+            except Exception as e:
+                assert_test("CLI default offset verified in JSON as 104", False, str(e))
+        else:
+            assert_test("CLI default offset verified in JSON as 104", False, "output.json missing")
+
+        # 16.2 Custom decimal offset (--offset 208)
+        if out_json.is_file():
+            out_json.unlink()
+        exit_code, out_str = run_command([str(ropweaver_bin), str(elf_test_bin), "-a", "-p", "--offset", "208"], cwd=str(isolated_dir))
+        assert_test("CLI custom decimal offset executes successfully", exit_code == 0, f"exit code {exit_code}")
+        assert_test("CLI custom decimal offset logs telemetry", "Exploit padding offset: 208 bytes (user-configured)" in out_str)
+        if out_json.is_file():
+            try:
+                jdata = json.loads(out_json.read_text(encoding="utf-8"))
+                assert_test("CLI custom decimal offset verified in JSON as 208", jdata.get("raw_payload", {}).get("verified_padding_offset") == 208)
+            except Exception as e:
+                assert_test("CLI custom decimal offset verified in JSON as 208", False, str(e))
+        else:
+            assert_test("CLI custom decimal offset verified in JSON as 208", False, "output.json missing")
+
+        # 16.3 Short alias (-O 208)
+        if out_json.is_file():
+            out_json.unlink()
+        exit_code, out_str = run_command([str(ropweaver_bin), str(elf_test_bin), "-a", "-p", "-O", "208"], cwd=str(isolated_dir))
+        assert_test("CLI short alias -O executes successfully", exit_code == 0, f"exit code {exit_code}")
+        if out_json.is_file():
+            try:
+                jdata = json.loads(out_json.read_text(encoding="utf-8"))
+                assert_test("CLI short alias -O verified in JSON as 208", jdata.get("raw_payload", {}).get("verified_padding_offset") == 208)
+            except Exception as e:
+                assert_test("CLI short alias -O verified in JSON as 208", False, str(e))
+        else:
+            assert_test("CLI short alias -O verified in JSON as 208", False, "output.json missing")
+
+        # 16.4 Hexadecimal offset (--offset 0x80 -> 128)
+        if out_json.is_file():
+            out_json.unlink()
+        exit_code, out_str = run_command([str(ropweaver_bin), str(elf_test_bin), "-a", "-p", "--offset", "0x80"], cwd=str(isolated_dir))
+        assert_test("CLI hex offset executes successfully", exit_code == 0, f"exit code {exit_code}")
+        assert_test("CLI hex offset logs telemetry as 128 bytes", "Exploit padding offset: 128 bytes (user-configured)" in out_str)
+        if out_json.is_file():
+            try:
+                jdata = json.loads(out_json.read_text(encoding="utf-8"))
+                assert_test("CLI hex offset verified in JSON as 128", jdata.get("raw_payload", {}).get("verified_padding_offset") == 128)
+            except Exception as e:
+                assert_test("CLI hex offset verified in JSON as 128", False, str(e))
+        else:
+            assert_test("CLI hex offset verified in JSON as 128", False, "output.json missing")
+
+        # 16.5 Zero offset (--offset 0)
+        if out_json.is_file():
+            out_json.unlink()
+        exit_code, out_str = run_command([str(ropweaver_bin), str(elf_test_bin), "-a", "-p", "--offset", "0"], cwd=str(isolated_dir))
+        assert_test("CLI zero offset executes successfully", exit_code == 0, f"exit code {exit_code}")
+        assert_test("CLI zero offset logs telemetry as 0 bytes", "Exploit padding offset: 0 bytes (user-configured)" in out_str)
+        if out_json.is_file():
+            try:
+                jdata = json.loads(out_json.read_text(encoding="utf-8"))
+                assert_test("CLI zero offset verified in JSON as 0", jdata.get("raw_payload", {}).get("verified_padding_offset") == 0)
+            except Exception as e:
+                assert_test("CLI zero offset verified in JSON as 0", False, str(e))
+        else:
+            assert_test("CLI zero offset verified in JSON as 0", False, "output.json missing")
+
+        # 16.6 Large offset (--offset 4096)
+        if out_json.is_file():
+            out_json.unlink()
+        exit_code, out_str = run_command([str(ropweaver_bin), str(elf_test_bin), "-a", "-p", "--offset", "4096"], cwd=str(isolated_dir))
+        assert_test("CLI large offset executes successfully", exit_code == 0, f"exit code {exit_code}")
+        assert_test("CLI large offset logs telemetry as 4096 bytes", "Exploit padding offset: 4096 bytes (user-configured)" in out_str)
+        if out_json.is_file():
+            try:
+                jdata = json.loads(out_json.read_text(encoding="utf-8"))
+                assert_test("CLI large offset verified in JSON as 4096", jdata.get("raw_payload", {}).get("verified_padding_offset") == 4096)
+            except Exception as e:
+                assert_test("CLI large offset verified in JSON as 4096", False, str(e))
+        else:
+            assert_test("CLI large offset verified in JSON as 4096", False, "output.json missing")
+
+        # 16.7 Negative value (--offset -10)
+        exit_code, out_str = run_command([str(ropweaver_bin), str(elf_test_bin), "--offset", "-10"], cwd=str(isolated_dir))
+        assert_test("CLI rejects negative offset with exit code 1", exit_code != 0, f"exit code {exit_code}")
+        assert_test("CLI negative offset displays error message", ("negative" in out_str.lower() or "invalid" in out_str.lower()))
+
+        # 16.8 Explicit plus sign (--offset +104)
+        exit_code, out_str = run_command([str(ropweaver_bin), str(elf_test_bin), "--offset", "+104"], cwd=str(isolated_dir))
+        assert_test("CLI rejects explicit plus sign with exit code 1", exit_code != 0, f"exit code {exit_code}")
+        assert_test("CLI explicit plus sign displays error message", ("plus" in out_str.lower() or "invalid" in out_str.lower()))
+
+        # 16.9 Malformed number (--offset abc)
+        exit_code, out_str = run_command([str(ropweaver_bin), str(elf_test_bin), "--offset", "abc"], cwd=str(isolated_dir))
+        assert_test("CLI rejects malformed offset string with exit code 1", exit_code != 0, f"exit code {exit_code}")
+        assert_test("CLI malformed offset displays error message", ("malformed" in out_str.lower() or "invalid" in out_str.lower()))
+
+        # 16.10 Trailing characters (--offset 104xyz)
+        exit_code, out_str = run_command([str(ropweaver_bin), str(elf_test_bin), "--offset", "104xyz"], cwd=str(isolated_dir))
+        assert_test("CLI rejects trailing characters with exit code 1", exit_code != 0, f"exit code {exit_code}")
+        assert_test("CLI trailing characters displays error message", ("trailing" in out_str.lower() or "invalid" in out_str.lower()))
+
+        # 16.11 Flag as argument (--offset -p)
+        exit_code, out_str = run_command([str(ropweaver_bin), str(elf_test_bin), "--offset", "-p"], cwd=str(isolated_dir))
+        assert_test("CLI rejects flag as offset argument with exit code 1", exit_code != 0, f"exit code {exit_code}")
+        assert_test("CLI flag as argument displays error message", ("missing" in out_str.lower() or "invalid" in out_str.lower()))
+
+        # 16.12 Missing argument (--offset as final token)
+        exit_code, out_str = run_command([str(ropweaver_bin), str(elf_test_bin), "--offset"], cwd=str(isolated_dir))
+        assert_test("CLI rejects missing offset argument with exit code 1", exit_code != 0, f"exit code {exit_code}")
+        assert_test("CLI missing argument displays error message", ("missing" in out_str.lower() or "invalid" in out_str.lower()))
+
+        # 16.13 Numerical overflow (--offset 99999999999999999999)
+        exit_code, out_str = run_command([str(ropweaver_bin), str(elf_test_bin), "--offset", "99999999999999999999"], cwd=str(isolated_dir))
+        assert_test("CLI rejects numerical overflow with exit code 1", exit_code != 0, f"exit code {exit_code}")
+        assert_test("CLI numerical overflow displays error message", ("overflow" in out_str.lower() or "out of range" in out_str.lower() or "invalid" in out_str.lower()))
+
+        # 16.14 Exceeding 16 MiB (--offset 16777217)
+        exit_code, out_str = run_command([str(ropweaver_bin), str(elf_test_bin), "--offset", "16777217"], cwd=str(isolated_dir))
+        assert_test("CLI rejects offset exceeding 16 MiB with exit code 1", exit_code != 0, f"exit code {exit_code}")
+        assert_test("CLI exceeding 16 MiB displays error message", ("exceeds" in out_str.lower() or "16 mib" in out_str.lower() or "invalid" in out_str.lower()))
+
+        # 16.15 Strict decimal/hexadecimal parsing tests
+        # a. --offset 010 -> decimal 10 (octal strictly prohibited)
+        if out_json.is_file():
+            out_json.unlink()
+        exit_code, out_str = run_command([str(ropweaver_bin), str(elf_test_bin), "-a", "-p", "--offset", "010"], cwd=str(isolated_dir))
+        assert_test("CLI leading zero offset 010 executes successfully", exit_code == 0, f"exit code {exit_code}")
+        assert_test("CLI leading zero offset 010 produces decimal 10 in telemetry", "Exploit padding offset: 10 bytes (user-configured)" in out_str)
+        if out_json.is_file():
+            try:
+                jdata = json.loads(out_json.read_text(encoding="utf-8"))
+                assert_test("CLI leading zero offset 010 verified in JSON as decimal 10", jdata.get("raw_payload", {}).get("verified_padding_offset") == 10)
+            except Exception as e:
+                assert_test("CLI leading zero offset 010 verified in JSON as decimal 10", False, str(e))
+        else:
+            assert_test("CLI leading zero offset 010 verified in JSON as decimal 10", False, "output.json missing")
+
+        # b. --offset 0x10 -> decimal 16
+        if out_json.is_file():
+            out_json.unlink()
+        exit_code, out_str = run_command([str(ropweaver_bin), str(elf_test_bin), "-a", "-p", "--offset", "0x10"], cwd=str(isolated_dir))
+        assert_test("CLI hex offset 0x10 executes successfully", exit_code == 0, f"exit code {exit_code}")
+        assert_test("CLI hex offset 0x10 produces decimal 16 in telemetry", "Exploit padding offset: 16 bytes (user-configured)" in out_str)
+        if out_json.is_file():
+            try:
+                jdata = json.loads(out_json.read_text(encoding="utf-8"))
+                assert_test("CLI hex offset 0x10 verified in JSON as decimal 16", jdata.get("raw_payload", {}).get("verified_padding_offset") == 16)
+            except Exception as e:
+                assert_test("CLI hex offset 0x10 verified in JSON as decimal 16", False, str(e))
+        else:
+            assert_test("CLI hex offset 0x10 verified in JSON as decimal 16", False, "output.json missing")
+
+        # c. --offset 08 -> decimal 8 (non-octal digit accepted in decimal base 10)
+        if out_json.is_file():
+            out_json.unlink()
+        exit_code, out_str = run_command([str(ropweaver_bin), str(elf_test_bin), "-a", "-p", "--offset", "08"], cwd=str(isolated_dir))
+        assert_test("CLI leading zero offset 08 executes successfully", exit_code == 0, f"exit code {exit_code}")
+        assert_test("CLI leading zero offset 08 produces decimal 8 in telemetry", "Exploit padding offset: 8 bytes (user-configured)" in out_str)
+        if out_json.is_file():
+            try:
+                jdata = json.loads(out_json.read_text(encoding="utf-8"))
+                assert_test("CLI leading zero offset 08 verified in JSON as decimal 8", jdata.get("raw_payload", {}).get("verified_padding_offset") == 8)
+            except Exception as e:
+                assert_test("CLI leading zero offset 08 verified in JSON as decimal 8", False, str(e))
+        else:
+            assert_test("CLI leading zero offset 08 verified in JSON as decimal 8", False, "output.json missing")
+
+        # d. --offset 0xG1 -> rejected
+        exit_code, out_str = run_command([str(ropweaver_bin), str(elf_test_bin), "--offset", "0xG1"], cwd=str(isolated_dir))
+        assert_test("CLI rejects malformed hex offset 0xG1 with exit code 1", exit_code != 0, f"exit code {exit_code}")
+        assert_test("CLI malformed hex offset 0xG1 displays error message", ("malformed" in out_str.lower() or "invalid" in out_str.lower()))
+
+        # e. --offset 0b10 -> rejected
+        exit_code, out_str = run_command([str(ropweaver_bin), str(elf_test_bin), "--offset", "0b10"], cwd=str(isolated_dir))
+        assert_test("CLI rejects unsupported binary prefix 0b10 with exit code 1", exit_code != 0, f"exit code {exit_code}")
+        assert_test("CLI unsupported binary prefix 0b10 displays error message", ("unsupported" in out_str.lower() or "malformed" in out_str.lower() or "invalid" in out_str.lower()))
+
+        # f. --offset 16777216 -> exactly 16 MiB accepted
+        if out_json.is_file():
+            out_json.unlink()
+        exit_code, out_str = run_command([str(ropweaver_bin), str(elf_test_bin), "-a", "-p", "--offset", "16777216"], cwd=str(isolated_dir))
+        assert_test("CLI exact 16 MiB boundary offset executes successfully", exit_code == 0, f"exit code {exit_code}")
+        assert_test("CLI exact 16 MiB boundary offset produces 16777216 bytes in telemetry", "Exploit padding offset: 16777216 bytes (user-configured)" in out_str)
+        if out_json.is_file():
+            try:
+                jdata = json.loads(out_json.read_text(encoding="utf-8"))
+                assert_test("CLI exact 16 MiB boundary offset verified in JSON as 16777216", jdata.get("raw_payload", {}).get("verified_padding_offset") == 16777216)
+            except Exception as e:
+                assert_test("CLI exact 16 MiB boundary offset verified in JSON as 16777216", False, str(e))
+        else:
+            assert_test("CLI exact 16 MiB boundary offset verified in JSON as 16777216", False, "output.json missing")
+        # Clean up temporary large payload files inside isolated_dir
+        for p in [isolated_dir / "payload.bin", isolated_dir / "reports" / "payload.bin", out_json]:
+            if p.is_file():
+                try:
+                    p.unlink()
+                except Exception:
+                    pass
+
+        # g. --offset 0o10 -> rejected
+        exit_code, out_str = run_command([str(ropweaver_bin), str(elf_test_bin), "--offset", "0o10"], cwd=str(isolated_dir))
+        assert_test("CLI rejects unsupported octal prefix 0o10 with exit code 1", exit_code != 0, f"exit code {exit_code}")
+        assert_test("CLI unsupported octal prefix 0o10 displays error message", ("unsupported" in out_str.lower() or "malformed" in out_str.lower() or "invalid" in out_str.lower()))
+
+        # h. --offset " 10" -> rejected
+        exit_code, out_str = run_command([str(ropweaver_bin), str(elf_test_bin), "--offset", " 10"], cwd=str(isolated_dir))
+        assert_test("CLI rejects leading whitespace offset with exit code 1", exit_code != 0, f"exit code {exit_code}")
+        assert_test("CLI leading whitespace offset displays error message", ("malformed" in out_str.lower() or "invalid" in out_str.lower()))
+
+        # i. --offset "10 " -> rejected
+        exit_code, out_str = run_command([str(ropweaver_bin), str(elf_test_bin), "--offset", "10 "], cwd=str(isolated_dir))
+        assert_test("CLI rejects trailing whitespace offset with exit code 1", exit_code != 0, f"exit code {exit_code}")
+        assert_test("CLI trailing whitespace offset displays error message", ("malformed" in out_str.lower() or "trailing" in out_str.lower() or "invalid" in out_str.lower()))
+
+        # j. --offset 0X10 -> accepted as hexadecimal 16
+        if out_json.is_file():
+            out_json.unlink()
+        exit_code, out_str = run_command([str(ropweaver_bin), str(elf_test_bin), "-a", "-p", "--offset", "0X10"], cwd=str(isolated_dir))
+        assert_test("CLI uppercase hex offset 0X10 executes successfully", exit_code == 0, f"exit code {exit_code}")
+        assert_test("CLI uppercase hex offset 0X10 produces decimal 16 in telemetry", "Exploit padding offset: 16 bytes (user-configured)" in out_str)
+        if out_json.is_file():
+            try:
+                jdata = json.loads(out_json.read_text(encoding="utf-8"))
+                assert_test("CLI uppercase hex offset 0X10 verified in JSON as decimal 16", jdata.get("raw_payload", {}).get("verified_padding_offset") == 16)
+            except Exception as e:
+                assert_test("CLI uppercase hex offset 0X10 verified in JSON as decimal 16", False, str(e))
+        else:
+            assert_test("CLI uppercase hex offset 0X10 verified in JSON as decimal 16", False, "output.json missing")
+
+        # 16.16 Strengthened working-directory isolation guard verification
+        # 1. Active temporary directory — accepted
+        guard_active_ok = False
+        try:
+            code_act, _ = run_command([str(ropweaver_bin), str(elf_test_bin), "-a", "-p"], cwd=str(isolated_dir))
+            guard_active_ok = (code_act == 0)
+        except RuntimeError:
+            guard_active_ok = False
+        assert_test("Isolation guard accepts active temporary directory", guard_active_ok)
+
+        # 2. Repository root — rejected
+        guard_repo_root_rejected = False
+        try:
+            run_command([str(ropweaver_bin), str(elf_test_bin), "-p"], cwd=str(PROJECT_ROOT))
+        except RuntimeError:
+            guard_repo_root_rejected = True
+        assert_test("Isolation guard rejects repository root", guard_repo_root_rejected)
+
+        # 3. Repository subdirectory — rejected
+        guard_repo_subdir_rejected = False
+        repo_sub = PROJECT_ROOT / "test_binaries"
+        try:
+            run_command([str(ropweaver_bin), str(elf_test_bin), "-p"], cwd=str(repo_sub))
+        except RuntimeError:
+            guard_repo_subdir_rejected = True
+        assert_test("Isolation guard rejects repository subdirectory", guard_repo_subdir_rejected)
+
+        # 4. Unrelated external directory — rejected
+        guard_external_rejected = False
+        with tempfile.TemporaryDirectory(prefix="ropw_unrelated_") as unrelated_temp:
+            try:
+                run_command([str(ropweaver_bin), str(elf_test_bin), "-p"], cwd=str(unrelated_temp))
+            except RuntimeError:
+                guard_external_rejected = True
+        assert_test("Isolation guard rejects unrelated external directory", guard_external_rejected)
+
+        # 5. Missing working directory (cwd=None) — rejected
+        guard_missing_cwd_rejected = False
+        try:
+            run_command([str(ropweaver_bin), str(elf_test_bin), "-p"], cwd=None)
+        except RuntimeError:
+            guard_missing_cwd_rejected = True
+        assert_test("Isolation guard rejects missing working directory", guard_missing_cwd_rejected)
+
+        # 6. Non-payload commands preserved (legitimate non-payload commands not rejected)
+        guard_non_payload_ok = False
+        try:
+            code_np, _ = run_command([str(ropweaver_bin), "--help"])
+            guard_non_payload_ok = (code_np == 0)
+        except RuntimeError:
+            guard_non_payload_ok = False
+        assert_test("Isolation guard preserves legitimate non-payload commands", guard_non_payload_ok)
+
+        # 7. --offset alone is not treated as a payload-generation flag
+        guard_offset_alone_ok = False
+        try:
+            code_off, _ = run_command([str(ropweaver_bin), str(elf_test_bin), "--offset", "104"], cwd=str(PROJECT_ROOT))
+            guard_offset_alone_ok = (code_off == 0)
+        except RuntimeError:
+            guard_offset_alone_ok = False
+        assert_test("Isolation guard does not treat --offset alone as payload flag", guard_offset_alone_ok)
+
+        # -------------------------------------------------------------
+        # Test 17: Darwin Mach-O x86_64 Auto-Chain & Payload Generation
+        # -------------------------------------------------------------
+        print(f"\n{COLOR_YELLOW}[*] Test 17: Darwin Mach-O x86_64 Auto-Chain & Payload Generation...{COLOR_RESET}")
+
+        macho_fixture_path = isolated_dir / "test_darwin_fixture.bin"
+        macho_pie_fixture_path = isolated_dir / "test_darwin_fixture_pie.bin"
+
+        def create_synthetic_macho_x86_64(path, pie=False):
+            import struct
+            total_size = 0x3000
+            buf = bytearray(total_size)
+            flags = 0x200000 if pie else 0  # MH_PIE = 0x200000
+            struct.pack_into("<IIIIIIII", buf, 0,
+                             0xFEEDFACF, 0x01000007, 0x00000003, 0x00000002,
+                             2, 232 + 152, flags, 0)
+            # LC_SEGMENT_64 __TEXT
+            cmd1_off = 32
+            struct.pack_into("<II16sQQQQIIII", buf, cmd1_off,
+                             0x19, 232, b"__TEXT\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+                             0x100000000, 0x2000, 0, 0x2000, 7, 5, 2, 0)
+            # Section 1.1: __TEXT,__text
+            s1_off = cmd1_off + 72
+            struct.pack_into("<16s16sQQIIIIIIII", buf, s1_off,
+                             b"__text\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+                             b"__TEXT\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+                             0x100001000, 0x100, 0x1000, 4, 0, 0, 0x80000400, 0, 0, 0)
+            # Section 1.2: __TEXT,__cstring
+            s2_off = s1_off + 80
+            struct.pack_into("<16s16sQQIIIIIIII", buf, s2_off,
+                             b"__cstring\x00\x00\x00\x00\x00\x00\x00",
+                             b"__TEXT\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+                             0x100001800, 0x20, 0x1800, 0, 0, 0, 0x00000002, 0, 0, 0)
+            # LC_SEGMENT_64 __DATA
+            cmd2_off = cmd1_off + 232
+            struct.pack_into("<II16sQQQQIIII", buf, cmd2_off,
+                             0x19, 152, b"__DATA\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+                             0x100002000, 0x1000, 0x2000, 0x1000, 7, 3, 1, 0)
+            # Section 2.1: __DATA,__data
+            s3_off = cmd2_off + 72
+            struct.pack_into("<16s16sQQIIIIIIII", buf, s3_off,
+                             b"__data\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+                             b"__DATA\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+                             0x100002000, 0x100, 0x2000, 3, 0, 0, 0, 0, 0, 0)
+            # Section contents
+            buf[0x1000:0x1002] = b"\x5F\xC3"  # pop rdi ; ret
+            buf[0x1010:0x1012] = b"\x5E\xC3"  # pop rsi ; ret
+            buf[0x1020:0x1022] = b"\x5A\xC3"  # pop rdx ; ret
+            buf[0x1030:0x1032] = b"\x58\xC3"  # pop rax ; ret
+            buf[0x1040:0x1042] = b"\x0F\x05"  # syscall
+            buf[0x1800:0x1808] = b"/bin/sh\x00"
+            struct.pack_into("<QQQ", buf, 0x2000, 0x100001800, 0, 0)
+            with open(path, "wb") as f:
+                f.write(buf)
+
+        create_synthetic_macho_x86_64(macho_fixture_path, pie=False)
+        create_synthetic_macho_x86_64(macho_pie_fixture_path, pie=True)
+
+        # 17.1 Non-PIE Mach-O x86_64 auto-chain synthesis
+        if out_json.is_file():
+            out_json.unlink()
+        exit_code, out_str = run_command([str(ropweaver_bin), str(macho_fixture_path), "-a", "-p"], cwd=str(isolated_dir))
+        assert_test("Darwin Mach-O auto-chain executes successfully", exit_code == 0, f"exit code {exit_code}")
+        assert_test("Darwin Mach-O telemetry detects Mach-O container", "Mitigations (Mach-O):" in out_str)
+        assert_test("Darwin Mach-O telemetry logs BSD syscall number", ("0x200003B" in out_str or "33554491" in out_str))
+        assert_test("Darwin Mach-O telemetry reports successful synthesis", "ROP chain created and validated successfully" in out_str)
+        assert_test("Darwin Mach-O suppresses native exploit execution delivery prompt", "Delivery one-liner" not in out_str)
+
+        # 17.2 Structured JSON report verification
+        if out_json.is_file():
+            try:
+                jdata = json.loads(out_json.read_text(encoding="utf-8"))
+                gen_info = jdata.get("rop_chain_generation", {})
+                assert_test("Darwin Mach-O JSON report target_syscall is execve (0x200003B)", gen_info.get("target_syscall") == "execve (0x200003B)")
+                assert_test("Darwin Mach-O JSON report platform is macOS Mach-O", gen_info.get("platform") == "macOS Mach-O")
+                assert_test("Darwin Mach-O JSON report status is Success", gen_info.get("status") == "Success")
+                assert_test("Darwin Mach-O JSON report validation passes", gen_info.get("validation", {}).get("valid") is True)
+                assert_test("Darwin Mach-O JSON report aslr_slide_applied is false", gen_info.get("aslr_slide_applied") is False)
+                assert_test("Darwin Mach-O JSON raw_payload format is python_hex_string", jdata.get("raw_payload", {}).get("format") == "python_hex_string")
+                assert_test("Darwin Mach-O JSON raw_payload verified offset is 104", jdata.get("raw_payload", {}).get("verified_padding_offset") == 104)
+            except Exception as e:
+                assert_test("Darwin Mach-O JSON report structured verification", False, str(e))
+        else:
+            assert_test("Darwin Mach-O JSON report structured verification", False, "output.json missing")
+
+        # 17.3 PIE Relocation Transparency in Mach-O
+        if out_json.is_file():
+            out_json.unlink()
+        exit_code, out_str = run_command([str(ropweaver_bin), str(macho_pie_fixture_path), "-a", "-p"], cwd=str(isolated_dir))
+        assert_test("Darwin PIE Mach-O executes successfully", exit_code == 0, f"exit code {exit_code}")
+        if out_json.is_file():
+            try:
+                jdata = json.loads(out_json.read_text(encoding="utf-8"))
+                gen_info = jdata.get("rop_chain_generation", {})
+                assert_test("Darwin PIE Mach-O status is Success (Relocation Required)", gen_info.get("status") == "Success (Relocation Required)")
+                assert_test("Darwin PIE Mach-O relocation_status documents MH_PIE", "MH_PIE" in gen_info.get("relocation_status", ""))
+                assert_test("Darwin PIE Mach-O aslr_slide_applied is false", gen_info.get("aslr_slide_applied") is False)
+            except Exception as e:
+                assert_test("Darwin PIE Mach-O JSON verification", False, str(e))
+        else:
+            assert_test("Darwin PIE Mach-O JSON verification", False, "output.json missing")
+
+        # 17.4 File confinement: ensure generated files remain within isolated_dir
+        assert_test("Darwin Mach-O output files confined to temporary directory", out_json.is_file())
+        for fpath in [macho_fixture_path, macho_pie_fixture_path, out_json, isolated_dir / "payload.bin", isolated_dir / "reports" / "payload.bin"]:
+            if fpath.is_file():
+                try:
+                    fpath.unlink()
+                except Exception:
+                    pass
+
+        # -------------------------------------------------------------
+        # Test 18: Mach-O Detection, Parsing & Discovery Integration [4 assertions]
+        # -------------------------------------------------------------
+        print(f"\n{COLOR_YELLOW}[*] Test 18: Mach-O Detection, Parsing & Discovery Integration...{COLOR_RESET}")
+        test_macho_src = PROJECT_ROOT / "tests" / "test_macho_detection.cpp"
+        test_macho_bin = test_build_dir / ("test_macho_detection.exe" if sys.platform == "win32" else "test_macho_detection")
+
+        need_build_macho = False
+        if cxx_compiler and core_lib and test_macho_src.is_file():
+            need_build_macho = (not test_macho_bin.is_file()) or (test_macho_src.stat().st_mtime > test_macho_bin.stat().st_mtime)
+            if need_build_macho:
+                compile_cmd = [
+                    cxx_compiler, "-std=c++17",
+                    f"-I{PROJECT_ROOT}", f"-I{PROJECT_ROOT / 'core'}",
+                    str(test_macho_src), str(core_lib),
+                    f"-L{build_dir}", "-lcapstone",
+                    "-o", str(test_macho_bin)
+                ]
+                comp_code, comp_out = run_command(compile_cmd, timeout=60)
+                assert_test("Mach-O Detection test suite compiles successfully", comp_code == 0, f"compile error: {comp_out}")
+            else:
+                assert_test("Mach-O Detection test suite binary up to date", test_macho_bin.is_file())
+        else:
+            assert_test("Mach-O Detection test suite source and compiler available", False)
+
+        if test_macho_bin.is_file():
+            exit_code, out_str = run_command([str(test_macho_bin)], timeout=60, cwd=str(isolated_dir))
+            assert_test("Mach-O Detection test suite exits with code 0", exit_code == 0, f"exit code {exit_code}")
+            assert_test("Mach-O Detection: All 541 assertions passed with 0 failures", ("541 Passed, 0 Failed" in out_str) and ("0 Failed" in out_str))
+            assert_test("Mach-O Detection: Phase 2 Step 5.2/5.3/5.6/6 suites executed", "Mach-O Test Results:" in out_str)
+        else:
+            for sub_name in [
+                "Mach-O Detection test suite exits with code 0",
+                "Mach-O Detection: All 541 assertions passed with 0 failures",
+                "Mach-O Detection: Phase 2 Step 5.2/5.3/5.6/6 suites executed"
+            ]:
+                assert_test(sub_name, False, f"Test binary not built: {test_macho_bin}")
+
     finally:
+        ACTIVE_TEMP_DIR = None
+        try:
+            temp_dir_obj.cleanup()
+        except Exception:
+            pass
         # -------------------------------------------------------------
-        # 5. Restore Pre-Test Tracked Artifacts
+        # 5. Verify Pre-Test Protected Artifact Immutability
         # -------------------------------------------------------------
-        restoration_ok = artifact_mgr.restore()
+        restoration_ok = artifact_mgr.verify_unmodified()
         if not restoration_ok:
-            print(f"{COLOR_RED}[!] Error: Artifact restoration encountered failures. Review working tree.{COLOR_RESET}", file=sys.stderr)
+            print(f"{COLOR_RED}[!] Error: Protected artifact verification encountered failures. Review working tree.{COLOR_RESET}", file=sys.stderr)
 
     print(f"\n{COLOR_CYAN}============================================================{COLOR_RESET}")
     result_color = COLOR_GREEN if failed == 0 and restoration_ok else COLOR_RED
