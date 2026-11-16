@@ -388,7 +388,7 @@ int main(int argc, char* argv[]) {
     std::string base = basename_noext(options.filename);
     std::string fileHash = Utils::computeFileSHA256(options.filename);
     std::string hashShort = (fileHash.size() >= 12) ? fileHash.substr(0, 12) : base;
-    std::string reportId = "ROPW-" + base + "_" + hashShort + "_v1.2.4";
+    std::string reportId = "ROPW-" + base + "_" + hashShort + "_" + ROPWEAVER_VERSION;
 
     // Deterministic Firestore document ID (safe characters only)
     std::string reportDocId = base + "_" + ((fileHash.size() >= 16) ? fileHash.substr(0, 16) : base);

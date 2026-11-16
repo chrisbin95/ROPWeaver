@@ -183,9 +183,11 @@ ROPWeaver/
 
 ### ⚡ Option A: Pre-compiled Release Packages & Launchers (Fastest)
 
-Download ready-to-run releases from [`web-react/public/`](web-react/public/) or the web dashboard:
+Current product release: **v1.6.3** (Source & CLI).
 
-| Platform | Package | Description | Quick Execution |
+Pre-compiled standalone packages currently available in the repository represent validated **v1.2.4** distribution archives. Track release updates and future binary packages on [GitHub Releases](https://github.com/chrisbin95/ROPWeaver/releases).
+
+| Platform | Package (v1.2.4 Distribution) | Description | Quick Execution |
 | :--- | :--- | :--- | :--- |
 | **Windows x64** | `ropweaver-windows-x64.exe` | Zero-dependency standalone launcher with embedded runtime | `.\ropweaver-windows-x64.exe target.exe --list-gadgets` |
 | **Windows x64** | `ropweaver-v1.2.4-win64.zip` | Complete portable bundle with runtime DLLs & sample targets | `.\ropweaver.exe target.exe --list-gadgets` |

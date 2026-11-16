@@ -2,7 +2,7 @@
 setlocal EnableDelayedExpansion
 
 echo ================================================================================
-echo               ROPWeaver Multi-Platform Release Packager (v1.2.4)
+echo               ROPWeaver Multi-Platform Release Packager (v1.6.3)
 echo ================================================================================
 
 set SCRIPT_DIR=%~dp0
@@ -31,11 +31,11 @@ echo [*] Synchronizing platform launchers across build directories...
 call "%ROOT_DIR%\tools\linux_launcher\build_launcher.bat"
 call "%ROOT_DIR%\tools\macos_launcher\build_launcher.bat"
 
-:: 2. Package Windows ZIP Distribution (v1.2.4)
+:: 2. Package Windows ZIP Distribution (v1.6.3)
 echo.
-echo [*] Step 2: Packaging ropweaver-v1.2.4-win64.zip...
+echo [*] Step 2: Packaging ropweaver-v1.6.3-win64.zip...
 set WIN_STAGE=%TEMP%\rop_win_stage_%RANDOM%
-set WIN_PKG=%WIN_STAGE%\ropweaver-v1.2.4-win64
+set WIN_PKG=%WIN_STAGE%\ropweaver-v1.6.3-win64
 if exist "%WIN_STAGE%" rd /s /q "%WIN_STAGE%"
 mkdir "%WIN_PKG%\config" 2>nul
 mkdir "%WIN_PKG%\samples" 2>nul
@@ -56,9 +56,9 @@ if exist "%ROOT_DIR%\build-win\test" (
 
 (
 echo ================================================================================
-echo                     ROPWeaver v1.2.4 for Windows (x86_64)
+echo                     ROPWeaver v1.6.3 for Windows (x86_64)
 echo             Academic Research Tool - Oxford Brookes University
-echo                        Build Identifier: 6e110c2
+echo                        Build Identifier: 1.6.3
 echo ================================================================================
 echo.
 echo Quick Start:
@@ -72,10 +72,9 @@ echo Documentation ^& Online Explorer:
 echo   Visit: https://ropweaver.io/ or local web explorer interface.
 ) > "%WIN_PKG%\README.txt"
 
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference = 'SilentlyContinue'; Compress-Archive -Path '%WIN_PKG%' -DestinationPath '%PUBLIC_DIR%\ropweaver-v1.2.4-win64.zip' -Force"
-copy /y "%PUBLIC_DIR%\ropweaver-v1.2.4-win64.zip" "%PUBLIC_DIR%\ropweaver-v1.2.3-win64.zip" >nul
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference = 'SilentlyContinue'; Compress-Archive -Path '%WIN_PKG%' -DestinationPath '%PUBLIC_DIR%\ropweaver-v1.6.3-win64.zip' -Force"
 rd /s /q "%WIN_STAGE%" 2>nul
-echo [+] Updated: %PUBLIC_DIR%\ropweaver-v1.2.4-win64.zip (and v1.2.3 compatibility copy)
+echo [+] Updated: %PUBLIC_DIR%\ropweaver-v1.6.3-win64.zip
 
 :: 3. Rebuild Windows Standalone Launcher with embedded zip
 echo.
@@ -88,9 +87,9 @@ if errorlevel 1 (
 
 :: 4. Package Linux Distribution (tar.gz)
 echo.
-echo [*] Step 4: Packaging ropweaver-v1.2.4-linux-x86_64.tar.gz...
+echo [*] Step 4: Packaging ropweaver-v1.6.3-linux-x86_64.tar.gz...
 set LINUX_STAGE=%TEMP%\rop_linux_stage_%RANDOM%
-set LINUX_PKG=%LINUX_STAGE%\ropweaver-v1.2.4-linux-x86_64
+set LINUX_PKG=%LINUX_STAGE%\ropweaver-v1.6.3-linux-x86_64
 if exist "%LINUX_STAGE%" rd /s /q "%LINUX_STAGE%"
 mkdir "%LINUX_PKG%\bin" 2>nul
 mkdir "%LINUX_PKG%\samples" 2>nul
@@ -107,9 +106,9 @@ copy /y "%ROOT_DIR%\tools\linux_launcher\launcher.sh" "%LINUX_PKG%\install.sh" >
 
 (
 echo ================================================================================
-echo                     ROPWeaver v1.2.4 for Linux (x86_64)
+echo                     ROPWeaver v1.6.3 for Linux (x86_64)
 echo             Academic Research Tool - Oxford Brookes University
-echo                        Build Identifier: 6e110c2
+echo                        Build Identifier: 1.6.3
 echo ================================================================================
 echo.
 echo Requirements:
@@ -122,14 +121,13 @@ echo   ./bin/ropweaver samples/binsh_test --list-gadgets
 echo   ./bin/ropweaver samples/binsh_test --auto-chain
 ) > "%LINUX_PKG%\README.txt"
 
-tar -czf "%PUBLIC_DIR%\ropweaver-v1.2.4-linux-x86_64.tar.gz" -C "%LINUX_STAGE%" ropweaver-v1.2.4-linux-x86_64
-copy /y "%PUBLIC_DIR%\ropweaver-v1.2.4-linux-x86_64.tar.gz" "%PUBLIC_DIR%\ropweaver-v1.2.3-linux-x86_64.tar.gz" >nul
+tar -czf "%PUBLIC_DIR%\ropweaver-v1.6.3-linux-x86_64.tar.gz" -C "%LINUX_STAGE%" ropweaver-v1.6.3-linux-x86_64
 rd /s /q "%LINUX_STAGE%" 2>nul
-echo [+] Updated: %PUBLIC_DIR%\ropweaver-v1.2.4-linux-x86_64.tar.gz (and v1.2.3 compatibility copy)
+echo [+] Updated: %PUBLIC_DIR%\ropweaver-v1.6.3-linux-x86_64.tar.gz
 
-:: 5. Package Debian Package (ropweaver_1.2.4_amd64.deb)
+:: 5. Package Debian Package (ropweaver_1.6.3_amd64.deb)
 echo.
-echo [*] Step 5: Packaging ropweaver_1.2.4_amd64.deb...
+echo [*] Step 5: Packaging ropweaver_1.6.3_amd64.deb...
 set DEB_STAGE=%TEMP%\rop_deb_stage_%RANDOM%
 if exist "%DEB_STAGE%" rd /s /q "%DEB_STAGE%"
 mkdir "%DEB_STAGE%\usr\local\bin" 2>nul
@@ -138,7 +136,7 @@ cd /d "%DEB_STAGE%"
 echo.>> debian-binary
 (
     echo Package: ropweaver
-    echo Version: 1.2.4
+    echo Version: 1.6.3
     echo Section: utils
     echo Priority: optional
     echo Architecture: amd64
@@ -156,18 +154,17 @@ if exist "%ROOT_DIR%\build-linux\ropweaver" (
 )
 
 tar -czf data.tar.gz usr/local/bin/ropweaver
-ar rcs "%PUBLIC_DIR%\ropweaver_1.2.4_amd64.deb" debian-binary control.tar.gz data.tar.gz
-copy /y "%PUBLIC_DIR%\ropweaver_1.2.4_amd64.deb" "%PUBLIC_DIR%\ropweaver_1.2.3_amd64.deb" >nul
+ar rcs "%PUBLIC_DIR%\ropweaver_1.6.3_amd64.deb" debian-binary control.tar.gz data.tar.gz
 cd /d "%ROOT_DIR%"
 rd /s /q "%DEB_STAGE%" 2>nul
-echo [+] Updated: %PUBLIC_DIR%\ropweaver_1.2.4_amd64.deb (and v1.2.3 compatibility copy)
+echo [+] Updated: %PUBLIC_DIR%\ropweaver_1.6.3_amd64.deb
 
 :: 6. Package macOS Distributions (Apple Silicon & Intel)
 echo.
 echo [*] Step 6: Packaging macOS Distributions (darwin-arm64 and darwin-x86_64)...
 set MAC_STAGE=%TEMP%\rop_mac_stage_%RANDOM%
-set MAC_ARM=%MAC_STAGE%\ropweaver-v1.2.4-darwin-arm64
-set MAC_X64=%MAC_STAGE%\ropweaver-v1.2.4-darwin-x86_64
+set MAC_ARM=%MAC_STAGE%\ropweaver-v1.6.3-darwin-arm64
+set MAC_X64=%MAC_STAGE%\ropweaver-v1.6.3-darwin-x86_64
 if exist "%MAC_STAGE%" rd /s /q "%MAC_STAGE%"
 mkdir "%MAC_ARM%\bin" 2>nul
 mkdir "%MAC_ARM%\build-mac" 2>nul
@@ -184,9 +181,9 @@ copy /y "%ROOT_DIR%\build-mac\*" "%MAC_X64%\build-mac\" >nul 2>nul
 
 (
 echo ================================================================================
-echo                     ROPWeaver v1.2.4 for macOS (arm64 / Apple Silicon)
+echo                     ROPWeaver v1.6.3 for macOS (arm64 / Apple Silicon)
 echo             Academic Research Tool - Oxford Brookes University
-echo                        Build Identifier: 6e110c2
+echo                        Build Identifier: 1.6.3
 echo ================================================================================
 echo.
 echo Requirements:
@@ -211,9 +208,9 @@ echo   and released via GitHub Actions: .github/workflows/build-macos.yml
 
 (
 echo ================================================================================
-echo                     ROPWeaver v1.2.4 for macOS (x86_64 / Intel)
+echo                     ROPWeaver v1.6.3 for macOS (x86_64 / Intel)
 echo             Academic Research Tool - Oxford Brookes University
-echo                        Build Identifier: 6e110c2
+echo                        Build Identifier: 1.6.3
 echo ================================================================================
 echo.
 echo Requirements:
@@ -236,15 +233,12 @@ echo   Native Mach-O binaries for Apple Silicon and Intel are continuously built
 echo   and released via GitHub Actions: .github/workflows/build-macos.yml
 ) > "%MAC_X64%\README.txt"
 
-tar -czf "%PUBLIC_DIR%\ropweaver-v1.2.4-darwin-arm64.tar.gz" -C "%MAC_STAGE%" ropweaver-v1.2.4-darwin-arm64
-copy /y "%PUBLIC_DIR%\ropweaver-v1.2.4-darwin-arm64.tar.gz" "%PUBLIC_DIR%\ropweaver-v1.2.3-darwin-arm64.tar.gz" >nul
-
-tar -czf "%PUBLIC_DIR%\ropweaver-v1.2.4-darwin-x86_64.tar.gz" -C "%MAC_STAGE%" ropweaver-v1.2.4-darwin-x86_64
-copy /y "%PUBLIC_DIR%\ropweaver-v1.2.4-darwin-x86_64.tar.gz" "%PUBLIC_DIR%\ropweaver-v1.2.3-darwin-x86_64.tar.gz" >nul
+tar -czf "%PUBLIC_DIR%\ropweaver-v1.6.3-darwin-arm64.tar.gz" -C "%MAC_STAGE%" ropweaver-v1.6.3-darwin-arm64
+tar -czf "%PUBLIC_DIR%\ropweaver-v1.6.3-darwin-x86_64.tar.gz" -C "%MAC_STAGE%" ropweaver-v1.6.3-darwin-x86_64
 
 rd /s /q "%MAC_STAGE%" 2>nul
-echo [+] Updated: %PUBLIC_DIR%\ropweaver-v1.2.4-darwin-arm64.tar.gz (and v1.2.3 compatibility copy)
-echo [+] Updated: %PUBLIC_DIR%\ropweaver-v1.2.4-darwin-x86_64.tar.gz (and v1.2.3 compatibility copy)
+echo [+] Updated: %PUBLIC_DIR%\ropweaver-v1.6.3-darwin-arm64.tar.gz
+echo [+] Updated: %PUBLIC_DIR%\ropweaver-v1.6.3-darwin-x86_64.tar.gz
 
 :: 7. Compute SHA-256 Checksums
 echo.

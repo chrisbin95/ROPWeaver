@@ -104,7 +104,7 @@ void PayloadGenerator::generate(const ROPChain& chain, size_t paddingSize, const
         
         report["tool_version"] = ROPWEAVER_VERSION_FULL;
         report["build_id"] = ROPWEAVER_BUILD_ID;
-        report["commit_hash"] = ROPWEAVER_BUILD_ID;
+        report["commit_hash"] = ROPWEAVER_COMMIT_HASH;
         report["build_date"] = ROPWEAVER_BUILD_DATE;
         report["architecture"] = architecture;
         report["file_type"] = fileType;

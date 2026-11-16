@@ -10,7 +10,7 @@ import os
 import platform
 import subprocess
 
-VERSION = "v1.2.4"
+VERSION = "v1.6.3"
 
 def find_binary(script_dir, root_dir):
     system = platform.system().lower()
@@ -24,6 +24,7 @@ def find_binary(script_dir, root_dir):
             os.path.join(root_dir, "build-win", "ropweaver.exe"),
             os.path.join(root_dir, "tools", "windows_launcher", "ropweaver-windows-x64.exe"),
             os.path.join(root_dir, "build-win", "launcher", "ropweaver-standalone.exe"),
+            os.path.join(os.environ.get("LOCALAPPDATA", ""), "ROPWeaver", "app-v1.6.3", "ropweaver.exe"),
             os.path.join(os.environ.get("LOCALAPPDATA", ""), "ROPWeaver", "app-v1.2.4", "ropweaver.exe"),
             os.path.join(os.environ.get("LOCALAPPDATA", ""), "ROPWeaver", "app-v1.2.3-r6", "ropweaver.exe"),
         ])

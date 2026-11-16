@@ -134,10 +134,12 @@ export default function DownloadPage({ onNavigateTab }) {
   return (
     <div className="download-page fade-in">
       <div className="explorer-hero">
-        <span className="hero-terminal-tag mono">&gt; ropweaver official_releases</span>
+        <span className="hero-terminal-tag mono">&gt; ropweaver official_releases // product_v1.6.3</span>
         <h1 className="hero-title">Download ROPWeaver</h1>
         <p className="hero-subtitle">
-          Get the high-performance binary gadget analyzer and automated ROP synthesizer for your native system.
+          Current product release: <strong className="text-accent-cyan">v1.6.3</strong>.
+          The downloadable packages below provide validated <span className="mono">v1.2.4</span> legacy distributions.
+          Track upcoming binary builds and full changelogs on <a href="https://github.com/chrisbin95/ROPWeaver/releases" target="_blank" rel="noopener noreferrer" className="text-accent-green" style={{ textDecoration: 'underline' }}>GitHub Releases</a>.
         </p>
       </div>
 
@@ -215,7 +217,7 @@ export default function DownloadPage({ onNavigateTab }) {
             <div style={{ minWidth: 0, flex: 1 }}>
               <h2 className="spotlight-os-name mono">{active.fullName}</h2>
               <span className="spotlight-meta mono text-xs text-muted">
-                Version: <strong className="text-accent-cyan">{active.version}</strong> &bull; Architecture: {active.arch} &bull; Released: {active.releaseDate}
+                Archive: <strong className="text-accent-cyan">{active.version}</strong> (Pre-compiled) &bull; Target: <strong className="text-accent-green">v1.6.3</strong> &bull; Architecture: {active.arch} &bull; Released: {active.releaseDate}
               </span>
             </div>
           </div>
