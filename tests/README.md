@@ -24,3 +24,7 @@ chmod +x tests/run_tests.sh
 ./tests/run_tests.sh
 ```
 
+## License
+
+Licensed under the MIT License. See the root [`LICENSE`](../LICENSE) for details.
+

@@ -3,7 +3,7 @@
 [![React](https://img.shields.io/badge/React-18-61dafb.svg)](https://react.dev/)
 [![Vite](https://img.shields.io/badge/Vite-6.0-646cff.svg)](https://vitejs.dev/)
 [![Firebase](https://img.shields.io/badge/Firebase-Firestore-ffca28.svg)](https://firebase.google.com/)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](../LICENSE)
 
 A modern, high-performance, responsive React web interface for **ROPWeaver** (Automated Return-Oriented Programming Exploit Synthesizer & Binary Gadget Analysis Framework).
 
@@ -171,4 +171,4 @@ const firebaseConfig = {
 
 ## 📄 License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License. See the root [`LICENSE`](../LICENSE) file for details.

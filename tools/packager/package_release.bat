@@ -22,8 +22,17 @@ echo [*] Step 1: Compiling latest Windows binary (build-win)...
 cd /d "%ROOT_DIR%\build-win"
 mingw32-make -j%NUMBER_OF_PROCESSORS%
 if errorlevel 1 (
-    echo [!] Warning: Windows make returned error. Continuing with existing binary...
+    echo [!] FATAL: Windows compilation failed. Aborting packaging.
+    exit /b 1
 )
+
+:: Verify compiled binary version reports v1.6.3
+"%ROOT_DIR%\build-win\ropweaver.exe" --version | findstr /c:"v1.6.3" >nul
+if errorlevel 1 (
+    echo [!] FATAL: Compiled executable does not report v1.6.3. Aborting.
+    exit /b 1
+)
+echo [*] Verified compiled executable reports v1.6.3.
 
 :: Synchronize launchers across build directories
 echo.
@@ -43,6 +52,8 @@ mkdir "%WIN_PKG%\samples" 2>nul
 copy /y "%ROOT_DIR%\build-win\ropweaver.exe" "%WIN_PKG%\" >nul
 copy /y "%ROOT_DIR%\build-win\*.dll" "%WIN_PKG%\" >nul
 copy /y "%ROOT_DIR%\build-win\curl-ca-bundle.crt" "%WIN_PKG%\" >nul 2>nul
+copy /y "%ROOT_DIR%\LICENSE" "%WIN_PKG%\" >nul 2>nul
+copy /y "%ROOT_DIR%\THIRD_PARTY_NOTICES.txt" "%WIN_PKG%\" >nul 2>nul
 if exist "%ROOT_DIR%\config\firebase_config.json" (
     copy /y "%ROOT_DIR%\config\firebase_config.json" "%WIN_PKG%\" >nul
     copy /y "%ROOT_DIR%\config\firebase_config.json" "%WIN_PKG%\config\" >nul
@@ -50,31 +61,37 @@ if exist "%ROOT_DIR%\config\firebase_config.json" (
 if exist "%ROOT_DIR%\test_binaries\classic_bof.exe" (
     copy /y "%ROOT_DIR%\test_binaries\classic_bof.exe" "%WIN_PKG%\samples\" >nul
 )
-if exist "%ROOT_DIR%\build-win\test" (
-    copy /y "%ROOT_DIR%\build-win\test" "%WIN_PKG%\samples\" >nul
-)
 
-(
-echo ================================================================================
-echo                     ROPWeaver v1.6.3 for Windows (x86_64)
-echo             Academic Research Tool - Oxford Brookes University
-echo                        Build Identifier: 1.6.3
-echo ================================================================================
-echo.
-echo Quick Start:
-echo   1. Open PowerShell or Command Prompt in this folder.
-echo   2. Run ropweaver on a target binary:
-echo      .\ropweaver.exe samples\classic_bof.exe --list-gadgets
-echo      .\ropweaver.exe samples\classic_bof.exe --suggest-gadgets
-echo      .\ropweaver.exe samples\classic_bof.exe --auto-chain
-echo.
-echo Documentation ^& Online Explorer:
-echo   Visit: https://ropweaver.io/ or local web explorer interface.
-) > "%WIN_PKG%\README.txt"
+> "%WIN_PKG%\README.txt" echo ================================================================================
+>> "%WIN_PKG%\README.txt" echo                     ROPWeaver v1.6.3 for Windows (x86_64)
+>> "%WIN_PKG%\README.txt" echo             Academic Research Tool - Oxford Brookes University
+>> "%WIN_PKG%\README.txt" echo                        Build Identifier: 1.6.3
+>> "%WIN_PKG%\README.txt" echo ================================================================================
+>> "%WIN_PKG%\README.txt" echo.
+>> "%WIN_PKG%\README.txt" echo Quick Start:
+>> "%WIN_PKG%\README.txt" echo   1. Open PowerShell or Command Prompt in this folder.
+>> "%WIN_PKG%\README.txt" echo   2. Run ropweaver on a target binary:
+>> "%WIN_PKG%\README.txt" echo      .\ropweaver.exe samples\classic_bof.exe --list-gadgets
+>> "%WIN_PKG%\README.txt" echo      .\ropweaver.exe samples\classic_bof.exe --suggest-gadgets
+>> "%WIN_PKG%\README.txt" echo      .\ropweaver.exe samples\classic_bof.exe --auto-chain
+>> "%WIN_PKG%\README.txt" echo.
+>> "%WIN_PKG%\README.txt" echo Documentation ^& Online Explorer:
+>> "%WIN_PKG%\README.txt" echo   Visit: https://ropweaver.io/ or local web explorer interface.
+>> "%WIN_PKG%\README.txt" echo.
+>> "%WIN_PKG%\README.txt" echo License ^& Third-Party Notices:
+>> "%WIN_PKG%\README.txt" echo   ROPWeaver is licensed under the MIT License (see LICENSE).
+>> "%WIN_PKG%\README.txt" echo   This distribution bundles required third-party components (including
+>> "%WIN_PKG%\README.txt" echo   Capstone, libcurl, OpenSSL, zlib, and MinGW/GCC runtimes).
+>> "%WIN_PKG%\README.txt" echo   See THIRD_PARTY_NOTICES.txt for complete upstream notices and licenses.
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference = 'SilentlyContinue'; Compress-Archive -Path '%WIN_PKG%' -DestinationPath '%PUBLIC_DIR%\ropweaver-v1.6.3-win64.zip' -Force"
 rd /s /q "%WIN_STAGE%" 2>nul
 echo [+] Updated: %PUBLIC_DIR%\ropweaver-v1.6.3-win64.zip
+
+if "%1"=="--win-only" (
+    echo [*] --win-only specified. Windows packaging complete.
+    exit /b 0
+)
 
 :: 3. Rebuild Windows Standalone Launcher with embedded zip
 echo.
@@ -103,6 +120,8 @@ if exist "%ROOT_DIR%\build-linux\binsh_test" (
     copy /y "%ROOT_DIR%\build-linux\binsh_test" "%LINUX_PKG%\samples\" >nul
 )
 copy /y "%ROOT_DIR%\tools\linux_launcher\launcher.sh" "%LINUX_PKG%\install.sh" >nul
+copy /y "%ROOT_DIR%\LICENSE" "%LINUX_PKG%\" >nul 2>nul
+copy /y "%ROOT_DIR%\THIRD_PARTY_NOTICES.txt" "%LINUX_PKG%\" >nul 2>nul
 
 (
 echo ================================================================================
@@ -131,6 +150,7 @@ echo [*] Step 5: Packaging ropweaver_1.6.3_amd64.deb...
 set DEB_STAGE=%TEMP%\rop_deb_stage_%RANDOM%
 if exist "%DEB_STAGE%" rd /s /q "%DEB_STAGE%"
 mkdir "%DEB_STAGE%\usr\local\bin" 2>nul
+mkdir "%DEB_STAGE%\usr\share\doc\ropweaver" 2>nul
 cd /d "%DEB_STAGE%"
 <nul set /p="2.0" > debian-binary
 echo.>> debian-binary
@@ -152,8 +172,11 @@ if exist "%ROOT_DIR%\build-linux\ropweaver" (
 ) else if exist "%ROOT_DIR%\build\ropweaver" (
     copy /y "%ROOT_DIR%\build\ropweaver" "%DEB_STAGE%\usr\local\bin\ropweaver" >nul
 )
+if exist "%ROOT_DIR%\debian\copyright" (
+    copy /y "%ROOT_DIR%\debian\copyright" "%DEB_STAGE%\usr\share\doc\ropweaver\copyright" >nul
+)
 
-tar -czf data.tar.gz usr/local/bin/ropweaver
+tar -czf data.tar.gz usr
 ar rcs "%PUBLIC_DIR%\ropweaver_1.6.3_amd64.deb" debian-binary control.tar.gz data.tar.gz
 cd /d "%ROOT_DIR%"
 rd /s /q "%DEB_STAGE%" 2>nul
@@ -174,10 +197,14 @@ mkdir "%MAC_X64%\build-mac" 2>nul
 copy /y "%ROOT_DIR%\tools\macos_launcher\launcher.sh" "%MAC_ARM%\bin\ropweaver" >nul
 copy /y "%ROOT_DIR%\tools\macos_launcher\launcher.sh" "%MAC_ARM%\install.sh" >nul
 copy /y "%ROOT_DIR%\build-mac\*" "%MAC_ARM%\build-mac\" >nul 2>nul
+copy /y "%ROOT_DIR%\LICENSE" "%MAC_ARM%\" >nul 2>nul
+copy /y "%ROOT_DIR%\THIRD_PARTY_NOTICES.txt" "%MAC_ARM%\" >nul 2>nul
 
 copy /y "%ROOT_DIR%\tools\macos_launcher\launcher.sh" "%MAC_X64%\bin\ropweaver" >nul
 copy /y "%ROOT_DIR%\tools\macos_launcher\launcher.sh" "%MAC_X64%\install.sh" >nul
 copy /y "%ROOT_DIR%\build-mac\*" "%MAC_X64%\build-mac\" >nul 2>nul
+copy /y "%ROOT_DIR%\LICENSE" "%MAC_X64%\" >nul 2>nul
+copy /y "%ROOT_DIR%\THIRD_PARTY_NOTICES.txt" "%MAC_X64%\" >nul 2>nul
 
 (
 echo ================================================================================

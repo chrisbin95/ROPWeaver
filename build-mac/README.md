@@ -28,3 +28,7 @@ make -j$(sysctl -n hw.ncpu)
 ```bash
 ./ropweaver <target_binary> --auto-chain --suggest-gadgets
 ```
+
+## License
+
+Licensed under the MIT License. See the root [`LICENSE`](../LICENSE) for details.

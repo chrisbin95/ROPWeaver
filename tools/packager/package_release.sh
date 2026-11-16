@@ -29,6 +29,12 @@ if [ -f "$ROOT_DIR/build-linux/binsh_test" ]; then
 fi
 
 cp "$ROOT_DIR/tools/linux_launcher/launcher.sh" "$PKG_LINUX/install.sh"
+if [ -f "$ROOT_DIR/LICENSE" ]; then
+    cp "$ROOT_DIR/LICENSE" "$PKG_LINUX/"
+fi
+if [ -f "$ROOT_DIR/THIRD_PARTY_NOTICES.txt" ]; then
+    cp "$ROOT_DIR/THIRD_PARTY_NOTICES.txt" "$PKG_LINUX/"
+fi
 cat << 'EOF' > "$PKG_LINUX/README.txt"
 ================================================================================
                     ROPWeaver v1.6.3 for Linux (x86_64)
@@ -49,10 +55,15 @@ if command -v ar >/dev/null 2>&1; then
     echo "[*] Packaging Debian package (ropweaver_1.6.3_amd64.deb)..."
     STAGE_DEB="$(mktemp -d)"
     mkdir -p "$STAGE_DEB/usr/local/bin"
+    mkdir -p "$STAGE_DEB/usr/share/doc/ropweaver"
     if [ -f "$ROOT_DIR/build-linux/ropweaver" ]; then
         cp "$ROOT_DIR/build-linux/ropweaver" "$STAGE_DEB/usr/local/bin/"
     elif [ -f "$ROOT_DIR/build/ropweaver" ]; then
         cp "$ROOT_DIR/build/ropweaver" "$STAGE_DEB/usr/local/bin/"
+    fi
+    if [ -f "$ROOT_DIR/debian/copyright" ]; then
+        cp "$ROOT_DIR/debian/copyright" "$STAGE_DEB/usr/share/doc/ropweaver/copyright"
+        chmod 0644 "$STAGE_DEB/usr/share/doc/ropweaver/copyright"
     fi
     echo "2.0" > "$STAGE_DEB/debian-binary"
     cat << 'EOF' > "$STAGE_DEB/control"
@@ -66,7 +77,7 @@ Description: Advanced Binary ROP Gadget Finder & Automated Chain Synthesizer
  High-performance ROP gadget discovery, register tracking, and automated
  execve chain generation for binary exploitation analysis.
 EOF
-    (cd "$STAGE_DEB" && tar -czf control.tar.gz control && tar -czf data.tar.gz usr/local/bin/ropweaver && ar rcs "$PUBLIC_DIR/ropweaver_1.6.3_amd64.deb" debian-binary control.tar.gz data.tar.gz)
+    (cd "$STAGE_DEB" && tar -czf control.tar.gz control && tar -czf data.tar.gz usr && ar rcs "$PUBLIC_DIR/ropweaver_1.6.3_amd64.deb" debian-binary control.tar.gz data.tar.gz)
     rm -rf "$STAGE_DEB"
     echo "[+] Created: $PUBLIC_DIR/ropweaver_1.6.3_amd64.deb"
 fi
@@ -82,6 +93,14 @@ cp "$ROOT_DIR/tools/macos_launcher/launcher.sh" "$PKG_ARM/bin/ropweaver"
 cp "$ROOT_DIR/tools/macos_launcher/launcher.sh" "$PKG_ARM/install.sh"
 cp "$ROOT_DIR/tools/macos_launcher/launcher.sh" "$PKG_X64/bin/ropweaver"
 cp "$ROOT_DIR/tools/macos_launcher/launcher.sh" "$PKG_X64/install.sh"
+if [ -f "$ROOT_DIR/LICENSE" ]; then
+    cp "$ROOT_DIR/LICENSE" "$PKG_ARM/"
+    cp "$ROOT_DIR/LICENSE" "$PKG_X64/"
+fi
+if [ -f "$ROOT_DIR/THIRD_PARTY_NOTICES.txt" ]; then
+    cp "$ROOT_DIR/THIRD_PARTY_NOTICES.txt" "$PKG_ARM/"
+    cp "$ROOT_DIR/THIRD_PARTY_NOTICES.txt" "$PKG_X64/"
+fi
 
 tar -czf "$PUBLIC_DIR/ropweaver-v1.6.3-darwin-arm64.tar.gz" -C "$STAGE_MAC" ropweaver-v1.6.3-darwin-arm64
 tar -czf "$PUBLIC_DIR/ropweaver-v1.6.3-darwin-x86_64.tar.gz" -C "$STAGE_MAC" ropweaver-v1.6.3-darwin-x86_64

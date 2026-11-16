@@ -19,3 +19,7 @@ chmod +x tools/packager/package_release.sh
 ```
 
 All distribution artifacts are placed directly into `web-react/public/` for download.
+
+## License
+
+Licensed under the MIT License. See the root [`LICENSE`](../../LICENSE) for details.

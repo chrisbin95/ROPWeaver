@@ -12,3 +12,7 @@ chmod +x ropweaver
 # On Windows:
 .\ropweaver.bat <binary> --auto-chain
 ```
+
+## License
+
+Licensed under the MIT License. See the root [`LICENSE`](../../LICENSE) for details.

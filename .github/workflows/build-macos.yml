@@ -108,6 +108,8 @@ jobs:
           chmod +x "${PKG_DIR}/bin/ropweaver"
           cp tools/macos_launcher/launcher.sh "${PKG_DIR}/install.sh"
           chmod +x "${PKG_DIR}/install.sh"
+          cp LICENSE "${PKG_DIR}/" 2>/dev/null || true
+          cp THIRD_PARTY_NOTICES.txt "${PKG_DIR}/" 2>/dev/null || true
 
           # Copy sample test binary if available
           if [ -f "test_binaries/test" ]; then
@@ -183,53 +185,3 @@ jobs:
         with:
           name: ${{ matrix.pkg_name }}
           path: ${{ matrix.pkg_name }}.tar.gz
-
-  commit-releases:
-    name: Commit & Update Public Release Archives
-    needs: build-macos
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          ref: main
-
-      - name: Download arm64 Archive
-        uses: actions/download-artifact@v4
-        with:
-          name: ropweaver-v1.6.3-darwin-arm64
-          path: ./arm64
-
-      - name: Download x86_64 Archive
-        uses: actions/download-artifact@v4
-        with:
-          name: ropweaver-v1.6.3-darwin-x86_64
-          path: ./x86_64
-
-      - name: Update web-react/public Packages
-        run: |
-          mkdir -p web-react/public
-          cp ./arm64/ropweaver-v1.6.3-darwin-arm64.tar.gz web-react/public/ropweaver-v1.6.3-darwin-arm64.tar.gz
-          cp ./x86_64/ropweaver-v1.6.3-darwin-x86_64.tar.gz web-react/public/ropweaver-v1.6.3-darwin-x86_64.tar.gz
-
-          echo "Updated macOS release packages in web-react/public/:"
-          ls -lh web-react/public/ropweaver-*-darwin-*.tar.gz
-          shasum -a 256 web-react/public/ropweaver-*-darwin-*.tar.gz
-
-      - name: Commit & Push to Repository
-        run: |
-          git config user.name "Chrisbin Thomas"
-          git config user.email "80977531+chrisbin95@users.noreply.github.com"
-          # Strictly stage ONLY the macOS packages to prevent touching or overwriting other platform archives
-          git add \
-            web-react/public/ropweaver-v1.6.3-darwin-arm64.tar.gz \
-            web-react/public/ropweaver-v1.6.3-darwin-x86_64.tar.gz
-          if git diff --staged --quiet; then
-            echo "No changes to commit."
-          else
-            git commit -m "ci: update macOS native Mach-O release archives (v1.6.3 arm64 & x86_64) [skip ci]"
-            git push origin main
-          fi

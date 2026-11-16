@@ -62,17 +62,15 @@ export default function DownloadPage({ onNavigateTab }) {
         filename: 'ropweaver-windows-x64.exe',
         url: '/ropweaver-windows-x64.exe',
         size: '9.4 MB',
-        label: 'Download Standalone Executable (.exe)'
+        label: 'Download Standalone Executable (v1.2.4 Legacy .exe)'
       },
       secondaryDownload: {
         filename: 'ropweaver-v1.2.4-win64.zip',
         url: '/ropweaver-v1.2.4-win64.zip',
         size: '9.3 MB',
-        label: 'Download Complete Portable Bundle (.zip with DLLs & Samples)'
+        label: 'Download Complete Portable Bundle (v1.2.4 Legacy .zip with DLLs & Samples)'
       },
       sha256: '5746CFE87826C3E26FBA9D9E54260C1FDE487BE848F5A34B2204FCEF810CF1D3',
-      quickInstallCmd: 'irm https://ropweaver.io/install.ps1 | iex',
-      packageManager: 'winget install ROPWeaver.ROPWeaver',
       requirements: 'Windows 10 build 19041+ or Windows 11, x64 architecture (Zero external dependencies)',
       verifyCmd: '.\\ropweaver-windows-x64.exe --version'
     },
@@ -87,17 +85,15 @@ export default function DownloadPage({ onNavigateTab }) {
         filename: 'ropweaver-v1.2.4-linux-x86_64.tar.gz',
         url: '/ropweaver-v1.2.4-linux-x86_64.tar.gz',
         size: '285 KB',
-        label: 'Download Binary Archive (.tar.gz with ELF executable)'
+        label: 'Download Binary Archive (v1.2.4 Legacy .tar.gz with ELF executable)'
       },
       secondaryDownload: {
         filename: 'ropweaver_1.2.4_amd64.deb',
         url: '/ropweaver_1.2.4_amd64.deb',
         size: '282 KB',
-        label: 'Download Debian / Ubuntu Package (.deb)'
+        label: 'Download Debian / Ubuntu Package (v1.2.4 Legacy .deb)'
       },
       sha256: '15B259F6E104C4D02E4D5AC78D0F45D80788F50B4867F5935BF875C2336FC661',
-      quickInstallCmd: 'curl -fsSL https://ropweaver.io/install.sh | bash',
-      packageManager: 'yay -S ropweaver-bin   # Arch Linux AUR',
       requirements: 'GLIBC 2.31+, Capstone Engine, Linux Kernel 5.4+ (x86_64 or ARM64)',
       verifyCmd: 'ropweaver --version'
     },
@@ -112,17 +108,15 @@ export default function DownloadPage({ onNavigateTab }) {
         filename: 'ropweaver-v1.2.4-darwin-arm64.tar.gz',
         url: '/ropweaver-v1.2.4-darwin-arm64.tar.gz',
         size: '235 KB',
-        label: 'Download Apple Silicon Archive (arm64)'
+        label: 'Download Apple Silicon Archive (v1.2.4 Legacy arm64)'
       },
       secondaryDownload: {
         filename: 'ropweaver-v1.2.4-darwin-x86_64.tar.gz',
         url: '/ropweaver-v1.2.4-darwin-x86_64.tar.gz',
         size: '249 KB',
-        label: 'Download Intel x86_64 Archive'
+        label: 'Download Intel x86_64 Archive (v1.2.4 Legacy)'
       },
       sha256: '7BF02144D115F436E8127083135913E1EE8971AD1CC800EFEA885634F96428CF',
-      quickInstallCmd: 'brew install ropweaver/tap/ropweaver',
-      packageManager: 'brew tap ropweaver/tap && brew install ropweaver',
       requirements: 'macOS 12.0 Monterey or later, Terminal with zsh/bash',
       verifyCmd: 'ropweaver --version'
     }
@@ -217,7 +211,7 @@ export default function DownloadPage({ onNavigateTab }) {
             <div style={{ minWidth: 0, flex: 1 }}>
               <h2 className="spotlight-os-name mono">{active.fullName}</h2>
               <span className="spotlight-meta mono text-xs text-muted">
-                Archive: <strong className="text-accent-cyan">{active.version}</strong> (Pre-compiled) &bull; Target: <strong className="text-accent-green">v1.6.3</strong> &bull; Architecture: {active.arch} &bull; Released: {active.releaseDate}
+                Archive: <strong className="text-accent-cyan">{active.version} (Legacy)</strong> &bull; Target Product: <strong className="text-accent-green">v1.6.3</strong> &bull; Architecture: {active.arch} &bull; Released: {active.releaseDate}
               </span>
             </div>
           </div>
@@ -253,42 +247,15 @@ export default function DownloadPage({ onNavigateTab }) {
           )}
         </div>
 
-        {/* Quick Command Line Install */}
+        {/* Package Manager & Automated Install Notice */}
         <div className="command-install-box">
           <div className="cmd-header">
             <Terminal size={14} className="text-accent-cyan" />
-            <span className="mono text-xs font-bold text-accent-cyan">AUTOMATED TERMINAL ONE-LINER:</span>
+            <span className="mono text-xs font-bold text-accent-cyan">PACKAGE MANAGERS &amp; AUTOMATED SCRIPTS:</span>
           </div>
-          <div className="cmd-input-row mono text-xs">
-            <code>{active.quickInstallCmd}</code>
-            <button
-              onClick={() => handleCopy(active.quickInstallCmd, 'install-cmd')}
-              className="copy-mini-btn"
-              title="Copy terminal command"
-            >
-              {copiedItem === 'install-cmd' ? <Check size={14} className="text-accent-green" /> : <Copy size={14} />}
-              <span>{copiedItem === 'install-cmd' ? 'COPIED' : 'COPY'}</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Package Manager Command */}
-        <div className="command-install-box" style={{ marginTop: '0.75rem' }}>
-          <div className="cmd-header">
-            <Package size={14} className="text-accent-orange" />
-            <span className="mono text-xs font-bold text-accent-orange">PACKAGE MANAGER:</span>
-          </div>
-          <div className="cmd-input-row mono text-xs">
-            <code>{active.packageManager}</code>
-            <button
-              onClick={() => handleCopy(active.packageManager, 'pkg-cmd')}
-              className="copy-mini-btn"
-              title="Copy package command"
-            >
-              {copiedItem === 'pkg-cmd' ? <Check size={14} className="text-accent-green" /> : <Copy size={14} />}
-              <span>{copiedItem === 'pkg-cmd' ? 'COPIED' : 'COPY'}</span>
-            </button>
-          </div>
+          <p className="mono text-xs text-muted" style={{ margin: '0.4rem 0 0', lineHeight: '1.5' }}>
+            Automated terminal installers and package manager packages (winget, Homebrew, AUR) are <strong className="text-accent-orange">unavailable / coming soon</strong> in a future release. Please download the verified legacy distribution archives above or compile from source.
+          </p>
         </div>
 
         {/* SHA-256 Checksum */}

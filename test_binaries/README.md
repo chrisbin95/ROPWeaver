@@ -20,4 +20,9 @@ arm-linux-gnueabi-gcc -no-pie -fno-stack-protector -o sample_armv7.elf test.c
 ### RISC-V ELF
 ```bash
 riscv64-unknown-elf-gcc -o sample_riscv.elf test.c
+```
+
+## License
+
+Part of the ROPWeaver project, licensed under the MIT License. See the root [`LICENSE`](../LICENSE) for details.
 

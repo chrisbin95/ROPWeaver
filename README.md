@@ -6,7 +6,7 @@
 [![Architectures](https://img.shields.io/badge/ISA-x86%20%7C%20x86__64%20%7C%20ARMv7%20%7C%20AArch64%20%7C%20RISC--V-00d2ff.svg)](#multi-architecture-support)
 [![Binary Formats](https://img.shields.io/badge/Formats-ELF%20%7C%20PE%20%7C%20Mach--O%20%7C%20RAW-ff9900.svg)](#binary-format-parsers)
 [![Cloud Registry](https://img.shields.io/badge/Cloud-Firebase%20Firestore-ffca28.svg)](#cloud-telemetry--web-explorer)
-[![License](https://img.shields.io/badge/License-MIT%20%2F%20Academic-9d4edd.svg)](#license)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 > **Oxford Brookes University • Master of Science Dissertation Research**  
 > **Course:** COMP7039 (Faculty of Technology, Design and Environment)  
@@ -402,4 +402,4 @@ ROPWeaver is strictly designed for **academic cybersecurity research, defensive 
 
 ## 📄 License
 
-This project is licensed under the **MIT License** for academic and research purposes. See `LICENSE` for details.
+This project is licensed under the **MIT License**. See [`LICENSE`](LICENSE) for the full license text. Both commercial and non-commercial uses are permitted under the terms of the MIT License.

@@ -49,11 +49,18 @@ jobs:
           DEB_STAGE=$(mktemp -d)
           mkdir -p "${DEB_STAGE}/DEBIAN"
           mkdir -p "${DEB_STAGE}/usr/local/bin"
+          mkdir -p "${DEB_STAGE}/usr/share/doc/ropweaver"
           mkdir -p "${DEB_STAGE}/etc/ropweaver"
 
           # Copy binary with explicit executable mode
           cp build/ropweaver "${DEB_STAGE}/usr/local/bin/ropweaver"
           chmod 0755 "${DEB_STAGE}/usr/local/bin/ropweaver"
+
+          # Copy copyright documentation
+          if [ -f debian/copyright ]; then
+            cp debian/copyright "${DEB_STAGE}/usr/share/doc/ropweaver/copyright"
+            chmod 0644 "${DEB_STAGE}/usr/share/doc/ropweaver/copyright"
+          fi
 
           # Copy config
           if [ -f config/firebase_config.json ]; then
@@ -100,6 +107,8 @@ jobs:
             cp config/firebase_config.json "${PKG_DIR}/config/" 2>/dev/null || true
           fi
           cp README.md "${PKG_DIR}/" 2>/dev/null || true
+          cp LICENSE "${PKG_DIR}/" 2>/dev/null || true
+          cp THIRD_PARTY_NOTICES.txt "${PKG_DIR}/" 2>/dev/null || true
 
           tar -czvf "ropweaver-v1.6.3-linux-x86_64.tar.gz" "${PKG_DIR}"
           echo "[+] Created ropweaver-v1.6.3-linux-x86_64.tar.gz"

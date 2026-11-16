@@ -20,3 +20,7 @@ chmod +x build_launcher.sh
 # OR
 ./launcher.sh <binary> --auto-chain
 ```
+
+## License
+
+Licensed under the MIT License. See the root [`LICENSE`](../../LICENSE) for details.
