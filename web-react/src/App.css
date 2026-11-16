@@ -1384,6 +1384,8 @@
   font-size: 1.75rem;
   font-weight: 700;
   color: #ffffff;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .binary-meta-grid {
@@ -2093,6 +2095,13 @@
 /* ========================================================
    RESPONSIVE DESIGN (MEDIA QUERIES)
    ======================================================== */
+@media (max-width: 1199px) {
+  .protections-grid-detailed {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.6rem;
+  }
+}
+
 @media (max-width: 900px) {
   .hero-title {
     font-size: 2.15rem;
@@ -2105,6 +2114,10 @@
   }
   .breakdown-grid {
     grid-template-columns: 1fr;
+  }
+  .protections-grid-detailed {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem;
   }
 }
 
@@ -3129,18 +3142,51 @@
 
 .protections-grid-detailed {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 0.75rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .mitigation-chip {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.5rem 0.75rem;
-  background: rgba(0, 0, 0, 0.35);
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 0.3rem;
+  padding: 0.55rem 0.75rem;
+  background: rgba(16, 21, 34, 0.75);
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-subtle);
+  min-width: 0;
+  height: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.mitigation-chip:hover {
+  background: rgba(22, 29, 47, 0.85);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.mitigation-chip .mitigation-name {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.25;
+  width: 100%;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.mitigation-chip .mitigation-state {
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  width: 100%;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  white-space: normal;
 }
 
 .mitigation-chip.on {
@@ -3775,13 +3821,31 @@
   .breakdown-grid,
   .binary-meta-grid,
   .specs-grid,
-  .protections-grid-detailed,
   .kpi-grid,
   .upload-options-grid {
     grid-template-columns: 1fr !important;
     gap: 0.85rem !important;
     width: 100% !important;
     box-sizing: border-box !important;
+  }
+
+  .protections-grid-detailed {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .mitigation-chip {
+    padding: 0.45rem 0.6rem !important;
+  }
+
+  .mitigation-chip .mitigation-name {
+    font-size: 0.7rem !important;
+  }
+
+  .mitigation-chip .mitigation-state {
+    font-size: 0.775rem !important;
   }
 
   .binary-meta-grid {
@@ -4482,9 +4546,21 @@
     font-size: 0.7rem !important;
   }
 
+  .protections-grid-detailed {
+    grid-template-columns: 1fr !important;
+    gap: 0.45rem !important;
+  }
+
   .mitigation-chip {
-    padding: 0.4rem 0.6rem !important;
-    font-size: 0.7rem !important;
+    padding: 0.4rem 0.55rem !important;
+  }
+
+  .mitigation-chip .mitigation-name {
+    font-size: 0.6875rem !important;
+  }
+
+  .mitigation-chip .mitigation-state {
+    font-size: 0.75rem !important;
   }
 
   .about-page {
@@ -4580,6 +4656,15 @@
   .badge {
     font-size: 0.6rem !important;
     padding: 1px 4px !important;
+  }
+
+  .protections-grid-detailed {
+    grid-template-columns: 1fr !important;
+    gap: 0.4rem !important;
+  }
+
+  .mitigation-chip {
+    padding: 0.35rem 0.5rem !important;
   }
 
   .category-gadget-row {
