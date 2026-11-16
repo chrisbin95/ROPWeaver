@@ -1,14 +1,22 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow read and write access to reports collection
-    match /reports/{document=**} {
-      allow read, write: if true;
+
+    // Allow public read-only access to reports collection; deny all writes
+    match /reports/{reportId} {
+      allow read: if true;
+      allow write: if false;
     }
-    
-    // Allow read and write access to gadgets collection
-    match /gadgets/{document=**} {
-      allow read, write: if true;
+
+    // Allow public read-only access to gadgets collection; deny all writes
+    match /gadgets/{gadgetId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Default deny for all other collections and document paths
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

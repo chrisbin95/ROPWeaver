@@ -477,8 +477,8 @@ bool FirebaseUploader::uploadToEndpointWithMethod(const std::string& endpoint,
             std::cerr << "[x] Firestore response: " << responseString << "\n";
         }
         if (httpCode == 403) {
-            std::cerr << "[!] Hint: 403 Forbidden indicates insufficient Firestore security permissions.\n"
-                      << "    Please verify that Firestore Rules allow writes to this collection (see config/firestore.rules).\n";
+            std::cerr << "[!] Note: 403 Forbidden indicates cloud write access is restricted by Firestore security policy.\n"
+                      << "    Local analysis reports and generated payloads remain intact.\n";
         }
     }
 
