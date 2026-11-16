@@ -3161,6 +3161,24 @@
   font-weight: 700;
 }
 
+.mitigation-chip.info {
+  border-left: 3px solid var(--accent-cyan);
+}
+
+.mitigation-chip.info .mitigation-state {
+  color: var(--accent-cyan);
+  font-weight: 700;
+}
+
+.mitigation-chip.na {
+  border-left: 3px solid var(--text-dim);
+}
+
+.mitigation-chip.na .mitigation-state {
+  color: var(--text-dim);
+  font-weight: 600;
+}
+
 .mitigation-none-banner {
   display: flex;
   align-items: flex-start;

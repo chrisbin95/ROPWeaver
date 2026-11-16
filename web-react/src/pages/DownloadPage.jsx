@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Check, Copy, Terminal, ShieldCheck, Laptop, Apple, Sparkles, Package, FileDown, ExternalLink, RefreshCw, BookOpen } from 'lucide-react';
+import { Download, Check, Copy, Terminal, ShieldCheck, Laptop, Apple, Sparkles, Package, ExternalLink, RefreshCw, BookOpen } from 'lucide-react';
 
 export default function DownloadPage({ onNavigateTab }) {
   // Reliable hardware/OS detection directly from browser environment (never cookies)
@@ -49,76 +49,112 @@ export default function DownloadPage({ onNavigateTab }) {
     setTimeout(() => setCopiedItem(null), 2000);
   };
 
-  // Download Catalog Data with actual packaged distribution artifacts
+  const RELEASE_PAGE_URL = 'https://github.com/chrisbin95/ROPWeaver/releases/tag/v1.6.3';
+  const DOWNLOAD_BASE_URL = 'https://github.com/chrisbin95/ROPWeaver/releases/download/v1.6.3';
+
+  // Download Catalog Data with actual published v1.6.3 distribution artifacts
   const downloads = {
     windows: {
       name: 'Windows',
       fullName: 'Windows 10 / 11 / Server (x64)',
-      version: 'v1.2.4',
+      version: 'v1.6.3',
       arch: 'x86_64 / AMD64',
       releaseDate: 'November 2026',
       icon: Laptop,
       primaryDownload: {
-        filename: 'ropweaver-windows-x64.exe',
-        url: '/ropweaver-windows-x64.exe',
-        size: '9.4 MB',
-        label: 'Download Standalone Executable (v1.2.4 Legacy .exe)'
+        filename: 'ropweaver-v1.6.3-win64.zip',
+        url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.3-win64.zip`,
+        size: '9.5 MB',
+        label: 'Download Complete Portable Bundle (.zip with DLLs & Samples)'
       },
-      secondaryDownload: {
-        filename: 'ropweaver-v1.2.4-win64.zip',
-        url: '/ropweaver-v1.2.4-win64.zip',
-        size: '9.3 MB',
-        label: 'Download Complete Portable Bundle (v1.2.4 Legacy .zip with DLLs & Samples)'
-      },
-      sha256: '5746CFE87826C3E26FBA9D9E54260C1FDE487BE848F5A34B2204FCEF810CF1D3',
-      requirements: 'Windows 10 build 19041+ or Windows 11, x64 architecture (Zero external dependencies)',
-      verifyCmd: '.\\ropweaver-windows-x64.exe --version'
+      secondaryDownload: null,
+      packages: [
+        {
+          name: 'Windows x86_64 ZIP Archive',
+          filename: 'ropweaver-v1.6.3-win64.zip',
+          url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.3-win64.zip`,
+          size: '9.5 MB',
+          sha256: 'd9acde6bfee97cd71630ad4d97f1e709a78131c98ddb2b397578ed9286941fd4'
+        }
+      ],
+      requirements: 'Windows 10 build 19041+ or Windows 11, x64 architecture (Complete portable bundle with runtime DLLs & samples)',
+      verifyCmd: '.\\ropweaver.exe --version'
     },
     linux: {
       name: 'Linux',
       fullName: 'Linux (Ubuntu, Debian, Kali, Arch, Fedora)',
-      version: 'v1.2.4',
-      arch: 'x86_64 / AArch64 (ARM64)',
+      version: 'v1.6.3',
+      arch: 'x86_64 / AMD64',
       releaseDate: 'November 2026',
       icon: Terminal,
       primaryDownload: {
-        filename: 'ropweaver-v1.2.4-linux-x86_64.tar.gz',
-        url: '/ropweaver-v1.2.4-linux-x86_64.tar.gz',
-        size: '285 KB',
-        label: 'Download Binary Archive (v1.2.4 Legacy .tar.gz with ELF executable)'
+        filename: 'ropweaver_1.6.3_amd64.deb',
+        url: `${DOWNLOAD_BASE_URL}/ropweaver_1.6.3_amd64.deb`,
+        size: '385 KB',
+        label: 'Download Debian / Ubuntu Package (.deb)'
       },
       secondaryDownload: {
-        filename: 'ropweaver_1.2.4_amd64.deb',
-        url: '/ropweaver_1.2.4_amd64.deb',
-        size: '282 KB',
-        label: 'Download Debian / Ubuntu Package (v1.2.4 Legacy .deb)'
+        filename: 'ropweaver-v1.6.3-linux-x86_64.tar.gz',
+        url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.3-linux-x86_64.tar.gz`,
+        size: '508 KB',
+        label: 'Download Standalone Binary Archive (.tar.gz with ELF executable)'
       },
-      sha256: '15B259F6E104C4D02E4D5AC78D0F45D80788F50B4867F5935BF875C2336FC661',
-      requirements: 'GLIBC 2.31+, Capstone Engine, Linux Kernel 5.4+ (x86_64 or ARM64)',
+      packages: [
+        {
+          name: 'Debian / Ubuntu Package (.deb)',
+          filename: 'ropweaver_1.6.3_amd64.deb',
+          url: `${DOWNLOAD_BASE_URL}/ropweaver_1.6.3_amd64.deb`,
+          size: '385 KB',
+          sha256: 'c2f21c8367ac0ccdac45e9edc33d0d2ebca460323a8628d09d3a38d6613024e8'
+        },
+        {
+          name: 'Standalone Linux x86_64 (.tar.gz)',
+          filename: 'ropweaver-v1.6.3-linux-x86_64.tar.gz',
+          url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.3-linux-x86_64.tar.gz`,
+          size: '508 KB',
+          sha256: 'e2ec7e636c2051343c7ff14f1aef0ef0e735226c635b4a120c9aadc6764acb10'
+        }
+      ],
+      requirements: 'GLIBC 2.31+, Capstone Engine, Linux Kernel 5.4+ (Ubuntu 20.04+, Debian 11+, Kali Linux x86_64)',
       verifyCmd: 'ropweaver --version'
     },
     macos: {
       name: 'macOS',
-      fullName: 'macOS Sonoma, Ventura & Monterey',
-      version: 'v1.2.4',
+      fullName: 'macOS (Apple Silicon & Intel)',
+      version: 'v1.6.3',
       arch: 'Apple Silicon (arm64) & Intel (x86_64)',
       releaseDate: 'November 2026',
       icon: Apple,
       primaryDownload: {
-        filename: 'ropweaver-v1.2.4-darwin-arm64.tar.gz',
-        url: '/ropweaver-v1.2.4-darwin-arm64.tar.gz',
-        size: '235 KB',
-        label: 'Download Apple Silicon Archive (v1.2.4 Legacy arm64)'
+        filename: 'ropweaver-v1.6.3-darwin-arm64.tar.gz',
+        url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.3-darwin-arm64.tar.gz`,
+        size: '371 KB',
+        label: 'Download Apple Silicon Archive (arm64 .tar.gz)'
       },
       secondaryDownload: {
-        filename: 'ropweaver-v1.2.4-darwin-x86_64.tar.gz',
-        url: '/ropweaver-v1.2.4-darwin-x86_64.tar.gz',
-        size: '249 KB',
-        label: 'Download Intel x86_64 Archive (v1.2.4 Legacy)'
+        filename: 'ropweaver-v1.6.3-darwin-x86_64.tar.gz',
+        url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.3-darwin-x86_64.tar.gz`,
+        size: '391 KB',
+        label: 'Download Intel x86_64 Archive (.tar.gz)'
       },
-      sha256: '7BF02144D115F436E8127083135913E1EE8971AD1CC800EFEA885634F96428CF',
-      requirements: 'macOS 12.0 Monterey or later, Terminal with zsh/bash',
-      verifyCmd: 'ropweaver --version'
+      packages: [
+        {
+          name: 'macOS Apple Silicon (arm64 .tar.gz)',
+          filename: 'ropweaver-v1.6.3-darwin-arm64.tar.gz',
+          url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.3-darwin-arm64.tar.gz`,
+          size: '371 KB',
+          sha256: '9e554516e393dc009daa0abfaebb6e79a322432d9c192800f65aedf4e7d596ae'
+        },
+        {
+          name: 'macOS Intel (x86_64 .tar.gz)',
+          filename: 'ropweaver-v1.6.3-darwin-x86_64.tar.gz',
+          url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.3-darwin-x86_64.tar.gz`,
+          size: '391 KB',
+          sha256: 'cbdee9879c5cb15274f8b6aeb768e193a8832ed7de0e14d02357282f9ae7e5a4'
+        }
+      ],
+      requirements: 'macOS 12.0 Monterey or later, Terminal with zsh/bash. Note: Core gadget discovery and chain synthesis engines validated on regression test beds; native macOS runtime testing has not been performed on live Apple hardware.',
+      verifyCmd: './ropweaver --version'
     }
   };
 
@@ -131,9 +167,19 @@ export default function DownloadPage({ onNavigateTab }) {
         <span className="hero-terminal-tag mono">&gt; ropweaver official_releases // product_v1.6.3</span>
         <h1 className="hero-title">Download ROPWeaver</h1>
         <p className="hero-subtitle">
-          Current product release: <strong className="text-accent-cyan">v1.6.3</strong>.
-          The downloadable packages below provide validated <span className="mono">v1.2.4</span> legacy distributions.
-          Track upcoming binary builds and full changelogs on <a href="https://github.com/chrisbin95/ROPWeaver/releases" target="_blank" rel="noopener noreferrer" className="text-accent-green" style={{ textDecoration: 'underline' }}>GitHub Releases</a>.
+          Official release: <strong className="text-accent-cyan">v1.6.3</strong>.
+          Download verified cross-platform release archives for Windows, Linux, and macOS below.
+          View complete release notes, changelogs, and corresponding source archives on the official{' '}
+          <a
+            href={RELEASE_PAGE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-accent-green"
+            style={{ textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+          >
+            <span>GitHub Release v1.6.3</span>
+            <ExternalLink size={12} />
+          </a>.
         </p>
       </div>
 
@@ -211,7 +257,7 @@ export default function DownloadPage({ onNavigateTab }) {
             <div style={{ minWidth: 0, flex: 1 }}>
               <h2 className="spotlight-os-name mono">{active.fullName}</h2>
               <span className="spotlight-meta mono text-xs text-muted">
-                Archive: <strong className="text-accent-cyan">{active.version} (Legacy)</strong> &bull; Target Product: <strong className="text-accent-green">v1.6.3</strong> &bull; Architecture: {active.arch} &bull; Released: {active.releaseDate}
+                Version: <strong className="text-accent-cyan">{active.version}</strong> &bull; Architecture: <strong className="text-accent-green">{active.arch}</strong> &bull; Released: {active.releaseDate}
               </span>
             </div>
           </div>
@@ -222,8 +268,9 @@ export default function DownloadPage({ onNavigateTab }) {
         <div className="download-buttons-group">
           <a
             href={active.primaryDownload.url}
-            download={active.primaryDownload.filename}
             className="btn btn-primary btn-large mono"
+            target="_blank"
+            rel="noopener noreferrer"
           >
             <Download size={20} />
             <div className="btn-large-text">
@@ -235,8 +282,9 @@ export default function DownloadPage({ onNavigateTab }) {
           {active.secondaryDownload && (
             <a
               href={active.secondaryDownload.url}
-              download={active.secondaryDownload.filename}
               className="btn btn-secondary btn-large mono"
+              target="_blank"
+              rel="noopener noreferrer"
             >
               <Package size={20} />
               <div className="btn-large-text">
@@ -254,29 +302,34 @@ export default function DownloadPage({ onNavigateTab }) {
             <span className="mono text-xs font-bold text-accent-cyan">PACKAGE MANAGERS &amp; AUTOMATED SCRIPTS:</span>
           </div>
           <p className="mono text-xs text-muted" style={{ margin: '0.4rem 0 0', lineHeight: '1.5' }}>
-            Automated terminal installers and package manager packages (winget, Homebrew, AUR) are <strong className="text-accent-orange">unavailable / coming soon</strong> in a future release. Please download the verified legacy distribution archives above or compile from source.
+            Automated terminal installers and package manager packages (winget, Homebrew, AUR) are <strong className="text-accent-orange">unavailable / coming soon</strong> in a future release. Please download the verified official v1.6.3 release archives above or compile from source.
           </p>
         </div>
 
-        {/* SHA-256 Checksum */}
-        <div className="checksum-row mono text-xs">
-          <div className="checksum-left">
-            <div className="checksum-label-row">
-              <ShieldCheck size={14} className="text-accent-green" style={{ flexShrink: 0 }} />
-              <span className="text-dim">SHA-256 DIGEST:</span>
+        {/* SHA-256 Checksums */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
+          {active.packages.map((pkg) => (
+            <div key={pkg.filename} className="checksum-row mono text-xs" style={{ marginTop: 0 }}>
+              <div className="checksum-left">
+                <div className="checksum-label-row">
+                  <ShieldCheck size={14} className="text-accent-green" style={{ flexShrink: 0 }} />
+                  <span className="text-dim">{pkg.filename}:</span>
+                </div>
+                <span className="checksum-hash text-muted" title={pkg.sha256}>
+                  {pkg.sha256}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleCopy(pkg.sha256, pkg.filename)}
+                className="copy-mini-btn"
+                title={`Copy SHA-256 hash for ${pkg.filename}`}
+              >
+                {copiedItem === pkg.filename ? <Check size={12} className="text-accent-green" /> : <Copy size={12} />}
+                <span>{copiedItem === pkg.filename ? 'COPIED' : 'COPY'}</span>
+              </button>
             </div>
-            <span className="checksum-hash text-muted" title={active.sha256}>
-              {active.sha256}
-            </span>
-          </div>
-          <button
-            onClick={() => handleCopy(active.sha256, 'checksum')}
-            className="copy-mini-btn"
-            title="Copy SHA-256 hash"
-          >
-            {copiedItem === 'checksum' ? <Check size={12} className="text-accent-green" /> : <Copy size={12} />}
-            <span>{copiedItem === 'checksum' ? 'COPIED' : 'COPY'}</span>
-          </button>
+          ))}
         </div>
 
         {/* Verification Note */}
@@ -289,11 +342,20 @@ export default function DownloadPage({ onNavigateTab }) {
       {/* Instructions & Links */}
       <div className="download-footer-grid">
         <div className="download-info-card">
-          <h4 className="mono font-bold text-accent-cyan text-sm">Offline Air-Gapped Mode</h4>
+          <h4 className="mono font-bold text-accent-cyan text-sm">Official GitHub Release &amp; Sources</h4>
           <p className="text-muted text-xs" style={{ marginTop: '0.5rem', lineHeight: '1.6' }}>
-            ROPWeaver operates completely offline by default. Disassembly, gadget discovery, and ROP chain synthesis occur strictly in memory. 
-            Firestore cloud publishing is opt-in via the <code>--upload-report</code> flag.
+            All binary packages, SHA-256 digests, and exact corresponding source archives for bundled LGPL/GPL components (libiconv, libidn2, gettext, libunistring, GCC runtime) are published on GitHub.
           </p>
+          <a
+            href={RELEASE_PAGE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-outline-cyan btn-xs mono"
+            style={{ marginTop: '0.75rem', width: '100%', justifyContent: 'center' }}
+          >
+            <ExternalLink size={13} />
+            <span>View GitHub Release v1.6.3 &rarr;</span>
+          </a>
         </div>
 
         <div className="download-info-card">

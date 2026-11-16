@@ -3,6 +3,7 @@ import {
   Shield, ChevronDown, ChevronUp, Copy, Check, Terminal, 
   ExternalLink, Code2, Cpu, Eye, FileCode
 } from 'lucide-react';
+import { detectBinaryFormat, getNormalizedMitigations } from '../utils/mitigationHelper';
 
 export default function ReportCard({ report, index, onSelectReportId, onOpenDetail }) {
   const [showGadgets, setShowGadgets] = useState(false);
@@ -37,7 +38,8 @@ export default function ReportCard({ report, index, onSelectReportId, onOpenDeta
   const binPath = getBinaryName();
   const binName = binPath.split(/[/\\]/).pop();
   const arch = getArch();
-  const format = getFormat();
+  const format = detectBinaryFormat(report);
+  const normalizedMitigations = getNormalizedMitigations(report);
   const reportId = report.report_id || report.id || 'ROPW-N/A';
   const date = report.report_date || (report.timestamp && report.timestamp.toDate ? report.timestamp.toDate().toLocaleString() : 'N/A');
 
@@ -47,8 +49,6 @@ export default function ReportCard({ report, index, onSelectReportId, onOpenDeta
     notes: report.rop_chain_generation.chain_notes || 'Attempted ROP chain generation.'
   } : null);
 
-  const rawProts = report.protections || (report.binary_analysis && report.binary_analysis.hardening_features);
-  const hasMitigations = rawProts && Object.keys(rawProts).length > 0;
 
   const chainSteps = report.rop_chain || (report.rop_chain_details && report.rop_chain_details.chain_steps) || [];
   const gadgetsList = report.gadgets || [];
@@ -138,38 +138,12 @@ export default function ReportCard({ report, index, onSelectReportId, onOpenDeta
           <Shield size={13} className="text-accent-green" /> MITIGATIONS:
         </span>
         <div className="badges-group">
-          {hasMitigations ? (
-            format === 'PE' || report.file_type === 'PE' ? (
-              <>
-                <span className={`badge ${(rawProts.NX_COMPAT?.static_indicator === 'COMPATIBLE' || rawProts.NX) ? 'badge-on' : 'badge-off'}`}>
-                  NX_COMPAT: {rawProts.NX_COMPAT?.static_indicator || (rawProts.NX ? 'COMPATIBLE' : 'OFF')}
-                </span>
-                <span className={`badge ${(rawProts.DYNAMIC_BASE?.static_indicator === 'COMPATIBLE' || rawProts.PIE) ? 'badge-on' : 'badge-off'}`}>
-                  DYNAMIC_BASE: {rawProts.DYNAMIC_BASE?.static_indicator || (rawProts.PIE ? 'COMPATIBLE' : 'OFF')}
-                </span>
-                <span className={`badge ${rawProts.GS_COOKIE?.static_indicator === 'PRESENT' ? 'badge-on' : 'badge-off'}`}>
-                  GS-Cookie: {rawProts.GS_COOKIE?.static_indicator || 'NOT_DETECTED'}
-                </span>
-                <span className="badge badge-info">
-                  CET: {rawProts.CET_COMPAT?.static_indicator || 'UNKNOWN'}
-                </span>
-              </>
-            ) : (
-              <>
-                <span className={`badge ${rawProts.NX || rawProts.nx_enabled ? 'badge-on' : 'badge-off'}`}>
-                  NX: {rawProts.NX || rawProts.nx_enabled ? 'ON' : 'OFF'}
-                </span>
-                <span className={`badge ${rawProts.PIE || rawProts.pie_enabled ? 'badge-on' : 'badge-off'}`}>
-                  PIE: {rawProts.PIE || rawProts.pie_enabled ? 'ON' : 'OFF'}
-                </span>
-                <span className={`badge ${rawProts.Canary || rawProts.canary_enabled ? 'badge-on' : 'badge-off'}`}>
-                  Canary: {rawProts.Canary || rawProts.canary_enabled ? 'ON' : 'OFF'}
-                </span>
-                <span className="badge badge-warning">
-                  RELRO: {rawProts.RELRO || (rawProts.relro_full ? 'Full' : rawProts.relro_partial ? 'Partial' : 'None')}
-                </span>
-              </>
-            )
+          {normalizedMitigations.hasMitigations ? (
+            normalizedMitigations.summaryBadges.map((b) => (
+              <span key={b.id} className={`badge ${b.status}`} title={b.title}>
+                {b.label}: {b.value}
+              </span>
+            ))
           ) : (
             <span className="badge badge-none mono">
               None (All Protections Disabled / RAW)

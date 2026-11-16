@@ -4,6 +4,7 @@ import {
   FileText, Shield, Cpu, Hash, Calendar, Layers, ExternalLink 
 } from 'lucide-react';
 import { db, collection, getDocs } from '../firebase/config';
+import { detectBinaryFormat, getNormalizedMitigations } from '../utils/mitigationHelper';
 
 // Helper to categorize any gadget list into standard ROP groups
 function categorizeGadgetList(gadgets) {
@@ -204,11 +205,11 @@ export default function BinaryDetailPage({
   const handleDownloadReportText = () => {
     const name = report?.target_binary?.filename || binaryName || 'report';
     const arch = report?.architecture || 'x86_64';
-    const format = report?.file_type || 'ELF';
+    const format = detectBinaryFormat(report);
     const hash = report?.target_binary?.hash || report?.target_binary?.sha256 || binaryHash || 'N/A';
     const date = report?.report_date || 'N/A';
     const id = report?.report_id || report?.id || 'N/A';
-    const prots = report?.protections || {};
+    const normalizedMitigations = getNormalizedMitigations(report);
     const chainDetails = report?.rop_chain_details || [];
     const rawPayload = report?.raw_payload || {};
 
@@ -227,10 +228,10 @@ export default function BinaryDetailPage({
 
     txt += `[2] BINARY HARDENING & MITIGATIONS\n`;
     txt += `--------------------------------------------------------------------------------\n`;
-    txt += `NX (No-Execute Stack):    ${prots.NX || prots.nx_enabled ? 'ENABLED (ON)' : 'DISABLED (OFF)'}\n`;
-    txt += `PIE (Position-Indep):     ${prots.PIE || prots.pie_enabled ? 'ENABLED (ON)' : 'DISABLED (OFF)'}\n`;
-    txt += `Stack Canary Protection:  ${prots.Canary || prots.canary_enabled ? 'ENABLED (ON)' : 'DISABLED (OFF)'}\n`;
-    txt += `RELRO (Read-Only GOT):    ${prots.RELRO || 'None'}\n\n`;
+    normalizedMitigations.textReportLines.forEach(line => {
+      txt += `${line}\n`;
+    });
+    txt += `\n`;
 
     if (Array.isArray(chainDetails) && chainDetails.length > 0) {
       txt += `[3] EXPLOIT ROP CHAIN STEPS\n`;
@@ -316,7 +317,8 @@ export default function BinaryDetailPage({
   const finalName = report?.target_binary?.filename || report?.["file name"] || report?.binary_name || binaryName || 'p1';
   const cleanBaseName = finalName.split(/[/\\]/).pop();
   const finalArch = report?.architecture || (report?.binary_analysis && report.binary_analysis.architecture) || (gadgets[0]?.architecture) || 'x86_64';
-  const finalFormat = report?.file_type || report?.format || (report?.binary_analysis && report.binary_analysis.format) || 'ELF';
+  const finalFormat = detectBinaryFormat(report);
+  const normalizedMitigations = getNormalizedMitigations(report);
   const finalHash = report?.target_binary?.hash || report?.target_binary?.sha256 || report?.hash || binaryHash || '3c54b2579e5d25e951162f220b0917c8';
   
   let finalDate = '2026-10-10 20:08:57 UTC';
@@ -336,8 +338,6 @@ export default function BinaryDetailPage({
 
   const baseAddress = report?.base_address || report?.target_binary?.base_address || '0x004003c0';
   const totalCount = gadgets.length > 0 ? gadgets.length : (cleanBaseName === 'p1' ? 13008 : 23);
-  const prots = report?.protections || (report?.binary_analysis && report.binary_analysis.hardening_features) || {};
-  const hasMitigations = prots && Object.keys(prots).length > 0;
   const chainDetails = report?.rop_chain_details || report?.rop_chain || [];
   const rawPayload = report?.raw_payload || null;
 
@@ -429,21 +429,12 @@ export default function BinaryDetailPage({
             <Shield size={13} className="text-accent-green" /> MITIGATIONS:
           </span>
           <div className="badges-group">
-            {hasMitigations ? (
-              <>
-                <span className={`badge ${prots.NX || prots.nx_enabled ? 'badge-on' : 'badge-off'}`}>
-                  NX: {prots.NX || prots.nx_enabled ? 'ON' : 'OFF'}
+            {normalizedMitigations.hasMitigations ? (
+              normalizedMitigations.summaryBadges.map((b) => (
+                <span key={b.id} className={`badge ${b.status}`} title={b.title}>
+                  {b.label}: {b.value}
                 </span>
-                <span className={`badge ${prots.PIE || prots.pie_enabled ? 'badge-on' : 'badge-off'}`}>
-                  PIE: {prots.PIE || prots.pie_enabled ? 'ON' : 'OFF'}
-                </span>
-                <span className={`badge ${prots.Canary || prots.canary_enabled ? 'badge-on' : 'badge-off'}`}>
-                  Canary: {prots.Canary || prots.canary_enabled ? 'ON' : 'OFF'}
-                </span>
-                <span className="badge badge-warning">
-                  RELRO: {prots.RELRO || 'None'}
-                </span>
-              </>
+              ))
             ) : (
               <span className="badge badge-none mono">
                 None (All Protections Disabled / RAW)
@@ -451,6 +442,18 @@ export default function BinaryDetailPage({
             )}
           </div>
         </div>
+
+        {/* Detailed Hardening Audit Grid */}
+        {normalizedMitigations.hasMitigations && normalizedMitigations.detailedChips.length > 0 && (
+          <div className="protections-grid-detailed mono text-xs" style={{ marginTop: '0.85rem' }}>
+            {normalizedMitigations.detailedChips.map((chip) => (
+              <div key={chip.id} className={`mitigation-chip ${chip.status}`} title={chip.description}>
+                <span className="mitigation-name">{chip.name}:</span>
+                <span className="mitigation-state">{chip.state}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Exploit ROP Chain Steps (If Available) */}

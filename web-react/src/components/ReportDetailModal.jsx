@@ -3,6 +3,7 @@ import {
   X, Terminal, Shield, Check, Copy, Download, Code2, 
   Cpu, FileCode, Layers, ArrowRight, Sparkles, AlertCircle, FileText
 } from 'lucide-react';
+import { detectBinaryFormat, getNormalizedMitigations } from '../utils/mitigationHelper';
 
 export default function ReportDetailModal({ report, index, onClose }) {
   const [copiedField, setCopiedField] = useState(null);
@@ -53,21 +54,15 @@ export default function ReportDetailModal({ report, index, onClose }) {
   };
 
   const arch = getArch();
-  const format = getFormat();
+  const format = detectBinaryFormat(report);
+  const normalizedMitigations = getNormalizedMitigations(report);
   const reportId = report.report_id || report.id || 'ROPW-N/A';
   const date = report.report_date || (report.timestamp && report.timestamp.toDate ? report.timestamp.toDate().toLocaleString() : new Date().toISOString());
   const toolVersion = report.tool_version || 'ROPWeaver_v1.6.3';
 
   // Mitigations
   const rawProts = report.protections || (report.binary_analysis && report.binary_analysis.hardening_features);
-  const hasMitigations = rawProts && Object.keys(rawProts).length > 0;
-
-  const prots = hasMitigations ? {
-    nx: rawProts.NX ?? rawProts.nx_enabled ?? false,
-    pie: rawProts.PIE ?? rawProts.pie_enabled ?? false,
-    canary: rawProts.Canary ?? rawProts.canary_enabled ?? false,
-    relro: rawProts.RELRO || (rawProts.relro_full ? 'Full' : rawProts.relro_partial ? 'Partial' : 'None')
-  } : null;
+  const hasMitigations = normalizedMitigations.hasMitigations;
 
   // Chain details
   const chainGen = report.rop_chain_generation || {};
@@ -245,61 +240,22 @@ sys.stdout.buffer.write(payload)
             </h3>
 
             <div className="protections-detailed-box">
-              {hasMitigations ? (
-                format === 'PE' || format.includes('PE') || report.file_type === 'PE' ? (
-                  <div className="protections-grid-detailed mono text-xs">
-                    <div className={`mitigation-chip ${(rawProts.NX_COMPAT?.static_indicator === 'COMPATIBLE' || rawProts.NX) ? 'on' : 'off'}`}>
-                      <span className="mitigation-name">NX_COMPAT (DEP Opt-In):</span>
-                      <span className="mitigation-state">{rawProts.NX_COMPAT?.static_indicator || 'COMPATIBLE'}</span>
+              {normalizedMitigations.hasMitigations ? (
+                <div className="protections-grid-detailed mono text-xs">
+                  {normalizedMitigations.detailedChips.map((chip) => (
+                    <div key={chip.id} className={`mitigation-chip ${chip.status}`} title={chip.description}>
+                      <span className="mitigation-name">{chip.name}:</span>
+                      <span className="mitigation-state">{chip.state}</span>
                     </div>
-                    <div className={`mitigation-chip ${(rawProts.DYNAMIC_BASE?.static_indicator === 'COMPATIBLE' || rawProts.PIE) ? 'on' : 'off'}`}>
-                      <span className="mitigation-name">DYNAMIC_BASE (ASLR Opt-In):</span>
-                      <span className="mitigation-state">{rawProts.DYNAMIC_BASE?.static_indicator || 'COMPATIBLE'}</span>
-                    </div>
-                    <div className={`mitigation-chip ${rawProts.HIGH_ENTROPY_VA?.static_indicator === 'COMPATIBLE' ? 'on' : 'off'}`}>
-                      <span className="mitigation-name">HIGH_ENTROPY_VA (64-bit ASLR):</span>
-                      <span className="mitigation-state">{rawProts.HIGH_ENTROPY_VA?.static_indicator || 'COMPATIBLE'}</span>
-                    </div>
-                    <div className="mitigation-chip off">
-                      <span className="mitigation-name">CET_COMPAT (Shadow Stack):</span>
-                      <span className="mitigation-state">{rawProts.CET_COMPAT?.static_indicator || 'UNKNOWN'}</span>
-                    </div>
-                    <div className={`mitigation-chip ${rawProts.GS_COOKIE?.static_indicator === 'PRESENT' ? 'on' : 'off'}`}>
-                      <span className="mitigation-name">GS Security Cookie:</span>
-                      <span className="mitigation-state">{rawProts.GS_COOKIE?.static_indicator || 'NOT_DETECTED'}</span>
-                    </div>
-                    <div className="mitigation-chip off">
-                      <span className="mitigation-name">RELRO:</span>
-                      <span className="mitigation-state">N/A (PE format)</span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="protections-grid-detailed mono text-xs">
-                    <div className={`mitigation-chip ${prots.nx ? 'on' : 'off'}`}>
-                      <span className="mitigation-name">NX / DEP (No-Execute Stack):</span>
-                      <span className="mitigation-state">{prots.nx ? 'ENABLED' : 'DISABLED'}</span>
-                    </div>
-                    <div className={`mitigation-chip ${prots.pie ? 'on' : 'off'}`}>
-                      <span className="mitigation-name">PIE (Position Independent Executable):</span>
-                      <span className="mitigation-state">{prots.pie ? 'ENABLED' : 'DISABLED'}</span>
-                    </div>
-                    <div className={`mitigation-chip ${prots.canary ? 'on' : 'off'}`}>
-                      <span className="mitigation-name">Stack Canary (SSP Guard):</span>
-                      <span className="mitigation-state">{prots.canary ? 'ENABLED' : 'DISABLED'}</span>
-                    </div>
-                    <div className={`mitigation-chip ${prots.relro !== 'None' ? 'on' : 'off'}`}>
-                      <span className="mitigation-name">RELRO (Relocation Read-Only):</span>
-                      <span className="mitigation-state">{prots.relro}</span>
-                    </div>
-                  </div>
-                )
+                  ))}
+                </div>
               ) : (
                 <div className="mitigation-none-banner mono text-xs">
                   <AlertCircle size={16} className="text-accent-orange" />
                   <div className="none-text-wrap">
                     <span className="none-title text-accent-orange font-bold">MITIGATIONS: NONE DETECTED</span>
                     <p className="none-desc text-muted">
-                      No security mitigations (NX, PIE, Canary, RELRO) were enforced on this binary. The stack permits direct control transfer and virtual addresses remain static.
+                      No security mitigations were enforced on this binary. The stack permits direct control transfer and virtual addresses remain static.
                     </p>
                   </div>
                 </div>
