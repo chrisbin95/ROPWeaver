@@ -15,8 +15,13 @@ const expectedReleaseUrl = 'https://github.com/chrisbin95/ROPWeaver/releases/tag
 assert.ok(content.includes(expectedBaseUrl), 'Must contain exact v1.6.3 download base URL');
 assert.ok(content.includes(expectedReleaseUrl), 'Must contain exact v1.6.3 release page URL');
 
-// 2. Verify all five release assets and SHA-256 digests
+// 2. Verify all six distribution options and SHA-256 digests
 const expectedAssets = [
+  {
+    name: 'Windows Standalone Executable',
+    file: 'ropweaver-windows-x64.exe',
+    sha256: '53baa53a2c1c3c22e6d49a21bbbf89ba1838a19fe465666a61aa978ee6ffd02f'
+  },
   {
     name: 'Windows x86_64 ZIP',
     file: 'ropweaver-v1.6.3-win64.zip',
@@ -50,10 +55,10 @@ expectedAssets.forEach(asset => {
   console.log(`  [OK] ${asset.name} (${asset.file}) -> ${asset.sha256}`);
 });
 
-// 3. Verify absence of obsolete v1.2.4 download URLs
+// 3. Verify absence of obsolete legacy download URLs
+assert.ok(!content.includes('/ropweaver-v1.2.3'), 'Obsolete v1.2.3 archive URL must not be present');
 assert.ok(!content.includes('/ropweaver-v1.2.4'), 'Obsolete v1.2.4 archive URL must not be present');
-assert.ok(!content.includes('ropweaver-windows-x64.exe'), 'Obsolete standalone exe must not be present');
-console.log('  [OK] No obsolete v1.2.4 or standalone exe download URLs present.');
+console.log('  [OK] No obsolete v1.2.3 or v1.2.4 archive download URLs present.');
 
 // 4. Verify macOS testing limitation wording
 assert.ok(content.includes('native macOS runtime testing has not been performed on live Apple hardware'), 'macOS testing limitation must be accurately stated');

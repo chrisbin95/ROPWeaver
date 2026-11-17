@@ -183,18 +183,18 @@ ROPWeaver/
 
 ### ⚡ Option A: Pre-compiled Release Packages & Launchers (Fastest)
 
-Current product release: **v1.6.3** (Source & CLI).
+Current product release: **v1.6.3** (Source, CLI & Distribution Packages).
 
-Pre-compiled standalone packages currently available in the repository represent validated **v1.2.4** distribution archives. Track release updates and future binary packages on [GitHub Releases](https://github.com/chrisbin95/ROPWeaver/releases).
+Official pre-compiled release packages are published and available on [GitHub Releases v1.6.3](https://github.com/chrisbin95/ROPWeaver/releases/tag/v1.6.3).
 
-| Platform | Package (v1.2.4 Distribution) | Description | Quick Execution |
+| Platform | Package (v1.6.3 Distribution) | Description | Quick Execution |
 | :--- | :--- | :--- | :--- |
-| **Windows x64** | `ropweaver-windows-x64.exe` | Zero-dependency standalone launcher with embedded runtime | `.\ropweaver-windows-x64.exe target.exe --list-gadgets` |
-| **Windows x64** | `ropweaver-v1.2.4-win64.zip` | Complete portable bundle with runtime DLLs & sample targets | `.\ropweaver.exe target.exe --list-gadgets` |
-| **Debian / Ubuntu** | `ropweaver_1.2.4_amd64.deb` | Native `.deb` system installer package | `sudo dpkg -i ropweaver_1.2.4_amd64.deb`<br>`ropweaver target.elf --list-gadgets` |
-| **Linux x86_64** | `ropweaver-v1.2.4-linux-x86_64.tar.gz` | Linux ELF archive with launcher & sample targets | `tar -xzf ropweaver-v1.2.4-linux-x86_64.tar.gz`<br>`./bin/ropweaver target.elf --auto-chain` |
-| **macOS (Apple Silicon)** | `ropweaver-v1.2.4-darwin-arm64.tar.gz` | macOS ARM64 tarball with Homebrew auto-resolution | `tar -xzf ropweaver-v1.2.4-darwin-arm64.tar.gz`<br>`./bin/ropweaver target --list-gadgets` |
-| **macOS (Intel)** | `ropweaver-v1.2.4-darwin-x86_64.tar.gz` | macOS x86_64 tarball with Homebrew auto-resolution | `tar -xzf ropweaver-v1.2.4-darwin-x86_64.tar.gz`<br>`./bin/ropweaver target --list-gadgets` |
+| **Windows x64** | `ropweaver-windows-x64.exe` | Zero-dependency standalone launcher with embedded v1.6.3 runtime | `.\ropweaver-windows-x64.exe target.exe --list-gadgets` |
+| **Windows x64** | `ropweaver-v1.6.3-win64.zip` | Complete portable bundle with runtime DLLs & sample targets | `.\ropweaver.exe target.exe --list-gadgets` |
+| **Debian / Ubuntu** | `ropweaver_1.6.3_amd64.deb` | Native `.deb` system installer package | `sudo dpkg -i ropweaver_1.6.3_amd64.deb`<br>`ropweaver target.elf --list-gadgets` |
+| **Linux x86_64** | `ropweaver-v1.6.3-linux-x86_64.tar.gz` | Linux ELF archive with launcher & sample targets | `tar -xzf ropweaver-v1.6.3-linux-x86_64.tar.gz`<br>`./bin/ropweaver target.elf --auto-chain` |
+| **macOS (Apple Silicon)** | `ropweaver-v1.6.3-darwin-arm64.tar.gz` | macOS ARM64 tarball with Homebrew auto-resolution | `tar -xzf ropweaver-v1.6.3-darwin-arm64.tar.gz`<br>`./bin/ropweaver target --list-gadgets` |
+| **macOS (Intel)** | `ropweaver-v1.6.3-darwin-x86_64.tar.gz` | macOS x86_64 tarball with Homebrew auto-resolution | `tar -xzf ropweaver-v1.6.3-darwin-x86_64.tar.gz`<br>`./bin/ropweaver target --list-gadgets` |
 | **Any Platform** | `tools/universal_launcher/ropweaver_universal.py` | Cross-platform Python launcher (auto-detects OS & engine) | `python tools/universal_launcher/ropweaver_universal.py target --list-gadgets` |
 
 ---
