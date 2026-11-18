@@ -3,6 +3,7 @@ import { Search, Database, ArrowRight, Code, Filter, Sparkles, Terminal } from '
 import { db, collection, getDocs } from '../firebase/config';
 import GadgetItem from '../components/GadgetItem';
 import LazyList from '../components/LazyList';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 export default function SearchPage({ onSelectBinarySample, onSelectReportId, onSelectBinary }) {
   const [pattern, setPattern] = useState('');
@@ -271,10 +272,7 @@ export default function SearchPage({ onSelectBinarySample, onSelectReportId, onS
         </div>
 
         {loadingDatabases ? (
-          <div className="loading-state-card" style={{ padding: '2rem' }}>
-            <div className="cyber-spinner mini" style={{ margin: '0 auto 0.75rem' }}></div>
-            <span className="mono text-accent-cyan text-xs">QUERYING REGISTERED DATABASES FROM FIRESTORE...</span>
-          </div>
+          <LoadingSpinner asCard size="md" color="cyan" label="QUERYING REGISTERED DATABASES FROM FIRESTORE..." />
         ) : displayedDatabases.length === 0 ? (
           <div className="empty-recent-box mono text-xs text-dim" style={{ padding: '2rem', textAlign: 'center' }}>
             {pattern ? `No registered gadget databases found matching "${pattern}".` : 'No registered gadget databases found in cloud registry.'}

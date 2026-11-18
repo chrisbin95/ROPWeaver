@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, FileCode, CheckCircle2, AlertCircle, FileSearch, ArrowRight, Shield } from 'lucide-react';
 import { db, collection, getDocs } from '../firebase/config';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 export default function UploadPage({ onSelectBinarySample }) {
   const [file, setFile] = useState(null);
@@ -263,8 +264,7 @@ export default function UploadPage({ onSelectBinarySample }) {
       {/* Local Inspection Terminal Output */}
       {analyzing && (
         <div className="analysis-box mono text-xs fade-in">
-          <div className="cyber-spinner mini"></div>
-          <span className="text-accent-cyan">Parsing binary headers & validating instruction sections...</span>
+          <LoadingSpinner inline size="sm" color="cyan" label="Parsing binary headers & validating instruction sections..." />
         </div>
       )}
 
@@ -293,10 +293,7 @@ export default function UploadPage({ onSelectBinarySample }) {
         </div>
 
         {loadingRecent ? (
-          <div className="loading-state-card" style={{ padding: '2rem' }}>
-            <div className="cyber-spinner mini" style={{ margin: '0 auto 0.75rem' }}></div>
-            <span className="mono text-accent-cyan text-xs">QUERYING LIVE BINARIES FROM FIRESTORE...</span>
-          </div>
+          <LoadingSpinner asCard size="md" color="cyan" label="QUERYING LIVE BINARIES FROM FIRESTORE..." />
         ) : recentBinaries.length === 0 ? (
           <div className="empty-recent-box mono text-xs text-dim" style={{ padding: '2rem', textAlign: 'center' }}>
             No uploaded binaries found in cloud registry yet. Upload a binary above or using the CLI.

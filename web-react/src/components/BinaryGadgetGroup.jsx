@@ -56,7 +56,7 @@ function categorizeGadgetList(gadgets) {
   return result;
 }
 
-export default function BinaryGadgetGroup({ 
+function BinaryGadgetGroup({
   group, 
   index, 
   defaultExpanded = true,
@@ -276,9 +276,11 @@ export default function BinaryGadgetGroup({
                         return (
                           <div key={idx} className="category-gadget-row mono text-xs">
                             <button
+                              type="button"
                               onClick={() => handleCopy(item.addr, `addr-${uniqueKey}`)}
                               className="gadget-addr-copy"
                               title="Copy Address"
+                              aria-label={`Copy gadget address ${item.addr}`}
                             >
                               <span className="addr-text">{item.addr}</span>
                               {copiedKey === `addr-${uniqueKey}` ? (
@@ -291,9 +293,11 @@ export default function BinaryGadgetGroup({
                             <div className="gadget-instr-wrap">
                               <span className="instr-text text-accent-green">{item.instr}</span>
                               <button
+                                type="button"
                                 onClick={() => handleCopy(item.instr, `instr-${uniqueKey}`)}
                                 className="instr-copy-btn"
                                 title="Copy Instructions"
+                                aria-label="Copy Instructions"
                               >
                                 {copiedKey === `instr-${uniqueKey}` ? (
                                   <Check size={11} className="text-accent-green" />
@@ -329,9 +333,11 @@ export default function BinaryGadgetGroup({
                       <div key={idx} className="group-list-row mono text-xs">
                         <span className="row-index text-dim">#{(idx + 1).toString().padStart(2, '0')}</span>
                         <button
+                          type="button"
                           onClick={() => handleCopy(addr, `addr-${uniqueKey}`)}
                           className="gadget-addr-copy"
                           title="Copy Address"
+                          aria-label={`Copy gadget address ${addr}`}
                         >
                           <span className="addr-text">{addr}</span>
                           {copiedKey === `addr-${uniqueKey}` ? (
@@ -344,9 +350,11 @@ export default function BinaryGadgetGroup({
                         <div className="gadget-instr-wrap">
                           <span className="instr-text text-accent-green">{instr}</span>
                           <button
+                            type="button"
                             onClick={() => handleCopy(instr, `instr-${uniqueKey}`)}
                             className="instr-copy-btn"
                             title="Copy Instructions"
+                            aria-label="Copy Instructions"
                           >
                             {copiedKey === `instr-${uniqueKey}` ? (
                               <Check size={11} className="text-accent-green" />
@@ -367,3 +375,5 @@ export default function BinaryGadgetGroup({
     </div>
   );
 }
+
+export default React.memo(BinaryGadgetGroup);

@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { db, collection, getDocs } from '../firebase/config';
 import { detectBinaryFormat, getNormalizedMitigations } from '../utils/mitigationHelper';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 // Helper to categorize any gadget list into standard ROP groups
 function categorizeGadgetList(gadgets) {
@@ -516,10 +517,7 @@ export default function BinaryDetailPage({
         </div>
 
         {loading ? (
-          <div className="loading-state-card" style={{ padding: '2rem' }}>
-            <div className="cyber-spinner"></div>
-            <span className="mono text-accent-green">LOADING CLOUD GADGET DATABASE...</span>
-          </div>
+          <LoadingSpinner asCard size="lg" color="green" label="LOADING CLOUD GADGET DATABASE..." />
         ) : (
           <div className="categories-grid">
             {Object.entries(categorizedGadgets).map(([catName, list]) => {

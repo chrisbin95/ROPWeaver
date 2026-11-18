@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { detectBinaryFormat, getNormalizedMitigations } from '../utils/mitigationHelper';
 
-export default function ReportCard({ report, index, onSelectReportId, onOpenDetail }) {
+function ReportCard({ report, index, onSelectReportId, onOpenDetail }) {
   const [showGadgets, setShowGadgets] = useState(false);
   const [showPayload, setShowPayload] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
@@ -109,16 +109,23 @@ export default function ReportCard({ report, index, onSelectReportId, onOpenDeta
         </div>
 
         <div className="report-top-actions">
-          <div className="report-id-badge" onClick={handleCopyId} title="Click to copy Report ID">
+          <button
+            type="button"
+            className="report-id-badge"
+            onClick={handleCopyId}
+            title="Click to copy Report ID"
+            aria-label={`Copy report ID ${reportId}`}
+          >
             <span className="mono text-xs">{reportId}</span>
             {copiedId ? <Check size={13} className="text-accent-green" /> : <Copy size={13} className="text-dim" />}
-          </div>
+          </button>
 
           <button
             type="button"
             onClick={handleInspect}
             className="btn btn-outline-green btn-xs mono report-inspect-btn"
             title="View full comprehensive report"
+            aria-label={`Inspect detailed report for ${binName}`}
           >
             <Eye size={13} />
             <span>INSPECT REPORT</span>
@@ -293,3 +300,5 @@ export default function ReportCard({ report, index, onSelectReportId, onOpenDeta
     </div>
   );
 }
+
+export default React.memo(ReportCard);

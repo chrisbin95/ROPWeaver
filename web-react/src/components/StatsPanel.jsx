@@ -1,29 +1,40 @@
 import React from 'react';
-import { Cpu, FileCode2, Database, RefreshCw, Radio, Loader2 } from 'lucide-react';
+import { Cpu, FileCode2, Database, RefreshCw, Radio } from 'lucide-react';
+import LoadingSpinner from './LoadingSpinner';
 
 export default function StatsPanel({
   stats,
   recentBinaries,
   loading,
+  syncing = false,
   onRefresh,
   onSelectBinary,
-  onSelectArch
+  onSelectArch,
+  selectedArch = 'all',
+  selectedFormat = 'all',
+  onSelectFormat
 }) {
   return (
     <div className="stats-panel-card">
       <div className="stats-panel-header">
         <div className="stats-header-left">
           <Radio size={16} className="text-accent-green pulse-glow" />
-          <span className="mono stats-title">ropweaver &gt; cloud_telemetry</span>
+          <h2 className="mono stats-title">ropweaver &gt; cloud_telemetry</h2>
         </div>
         <button
+          type="button"
           onClick={onRefresh}
-          disabled={loading}
+          disabled={loading || syncing}
           className="btn btn-secondary btn-icon-only refresh-btn"
-          title="Refresh Firestore Metrics"
+          title={syncing ? "Syncing Firestore..." : "Refresh Firestore Metrics"}
+          aria-label={syncing ? "Syncing Firestore..." : "Refresh Firestore Metrics"}
         >
-          <RefreshCw size={14} className={loading ? 'spin' : ''} />
-          <span className="mono text-xs">SYNC</span>
+          {syncing ? (
+            <LoadingSpinner inline size="sm" color="cyan" srLabel="Syncing Firestore..." />
+          ) : (
+            <RefreshCw size={14} className={loading ? 'spin' : ''} />
+          )}
+          <span className="mono text-xs">{syncing ? 'SYNCING...' : 'SYNC'}</span>
         </button>
       </div>
 
@@ -35,9 +46,23 @@ export default function StatsPanel({
           </div>
           <div className="kpi-info">
             <span className="kpi-value mono">
-              {loading ? <Loader2 size={18} className="spin text-muted" /> : stats.totalReports}
+              {loading ? (
+                <LoadingSpinner inline size="sm" color="muted" srLabel="Loading exploit reports metric..." />
+              ) : stats.isCatalogTotalKnown === false || stats.totalReports === null ? (
+                `${stats.loadedReports ?? 0}`
+              ) : stats.isPartial ? (
+                `${stats.loadedReports} / ${stats.totalReports}`
+              ) : (
+                stats.totalReports
+              )}
             </span>
-            <span className="kpi-label">Exploit Reports</span>
+            <span className="kpi-label">
+              {stats.isCatalogTotalKnown === false || stats.totalReports === null
+                ? 'Exploit Reports (Loaded Sample)'
+                : stats.isPartial
+                ? 'Reports (Loaded / Catalog)'
+                : 'Exploit Reports'}
+            </span>
           </div>
         </div>
 
@@ -47,9 +72,17 @@ export default function StatsPanel({
           </div>
           <div className="kpi-info">
             <span className="kpi-value mono">
-              {loading ? <Loader2 size={18} className="spin text-muted" /> : stats.totalGadgets}
+              {loading ? (
+                <LoadingSpinner inline size="sm" color="muted" srLabel="Loading gadgets metric..." />
+              ) : stats.gadgetsLoaded === false ? (
+                'Deferred'
+              ) : (
+                stats.totalGadgets
+              )}
             </span>
-            <span className="kpi-label">Indexed Gadgets</span>
+            <span className="kpi-label">
+              {stats.gadgetsLoaded === false ? 'Gadgets (On-Demand)' : 'Indexed Gadgets (Loaded)'}
+            </span>
           </div>
         </div>
 
@@ -59,7 +92,11 @@ export default function StatsPanel({
           </div>
           <div className="kpi-info">
             <span className="kpi-value mono">
-              {loading ? <Loader2 size={18} className="spin text-muted" /> : recentBinaries.length}
+              {loading ? (
+                <LoadingSpinner inline size="sm" color="muted" srLabel="Loading target binaries metric..." />
+              ) : (
+                recentBinaries.length
+              )}
             </span>
             <span className="kpi-label">Target Binaries</span>
           </div>
@@ -70,32 +107,49 @@ export default function StatsPanel({
       <div className="breakdown-grid">
         {/* Architectures */}
         <div className="breakdown-col">
-          <span className="breakdown-header mono">&gt; by_architecture</span>
+          <span className="breakdown-header mono">&gt; by_architecture (loaded sample)</span>
           <div className="chips-row">
-            {Object.entries(stats.archCounts).map(([arch, count]) => (
-              <button
-                key={arch}
-                onClick={() => onSelectArch(arch)}
-                className={`stat-chip ${count > 0 ? 'stat-chip-active' : ''}`}
-                title={`Filter by ${arch}`}
-              >
-                <span className="stat-chip-name">{arch}</span>
-                <span className="stat-chip-badge mono">{count}</span>
-              </button>
-            ))}
+            {Object.entries(stats.archCounts).map(([arch, count]) => {
+              const isSelected = selectedArch === arch;
+              return (
+                <button
+                  key={arch}
+                  type="button"
+                  onClick={() => onSelectArch && onSelectArch(isSelected ? 'all' : arch)}
+                  className={`stat-chip ${count > 0 ? 'stat-chip-active' : ''} ${isSelected ? 'stat-chip-selected' : ''}`}
+                  title={isSelected ? `Clear ${arch} filter` : `Filter by ${arch}`}
+                  aria-pressed={isSelected}
+                  aria-label={`Filter by ${arch} architecture (${count} reports)`}
+                >
+                  <span className="stat-chip-name">{arch}</span>
+                  <span className="stat-chip-badge mono">{count}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {/* Binary Formats */}
         <div className="breakdown-col">
-          <span className="breakdown-header mono">&gt; by_binary_type</span>
+          <span className="breakdown-header mono">&gt; by_binary_type (loaded sample)</span>
           <div className="chips-row">
-            {Object.entries(stats.typeCounts).map(([type, count]) => (
-              <span key={type} className={`stat-chip ${count > 0 ? 'stat-chip-active' : ''}`}>
-                <span className="stat-chip-name">{type}</span>
-                <span className="stat-chip-badge mono">{count}</span>
-              </span>
-            ))}
+            {Object.entries(stats.typeCounts).map(([type, count]) => {
+              const isSelected = selectedFormat === type;
+              return (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => onSelectFormat && onSelectFormat(isSelected ? 'all' : type)}
+                  className={`stat-chip ${count > 0 ? 'stat-chip-active' : ''} ${isSelected ? 'stat-chip-selected' : ''}`}
+                  title={isSelected ? `Clear ${type} filter` : `Filter by ${type}`}
+                  aria-pressed={isSelected}
+                  aria-label={`Filter by ${type} binary format (${count} reports)`}
+                >
+                  <span className="stat-chip-name">{type}</span>
+                  <span className="stat-chip-badge mono">{count}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -108,8 +162,11 @@ export default function StatsPanel({
             {recentBinaries.map((bin, idx) => (
               <button
                 key={`${bin}-${idx}`}
+                type="button"
                 onClick={() => onSelectBinary(bin)}
                 className="binary-chip mono"
+                title={`Filter by target binary ${bin}`}
+                aria-label={`Filter by target binary ${bin}`}
               >
                 {bin}
               </button>
