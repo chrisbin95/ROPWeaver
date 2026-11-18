@@ -191,19 +191,37 @@ test('Timestamp: Handles Firestore Timestamp object with seconds / _seconds', ()
   assert.equal(getReportTimestamp(rep2), 1791653080000);
 });
 
-test('Timestamp: getReportUploadTimestamp strictly resolves genuine upload fields and returns 0 when absent without substituting report_date', () => {
-  // Genuine upload timestamp present
+test('Timestamp: getReportUploadTimestamp strictly resolves genuine upload fields and returns 0 when absent without substituting report_date or timestamp', () => {
+  // 1. Genuine uploaded_at takes precedence over report_date
   const repWithUploaded = { uploaded_at: '2026-10-20T14:30:00Z', report_date: '2026-10-10T12:00:00Z' };
   assert.equal(getReportUploadTimestamp(repWithUploaded), Date.parse('2026-10-20T14:30:00Z'));
 
+  // 2. created_at is accepted as supported upload metadata
   const repWithCreated = { created_at: '2026-10-22T08:00:00Z' };
   assert.equal(getReportUploadTimestamp(repWithCreated), Date.parse('2026-10-22T08:00:00Z'));
 
-  // Missing genuine upload timestamp: must return 0, strictly avoiding substitution of report_date
-  const repExecutionOnly = { report_date: '2026-10-10T12:00:00Z', timestamp: '2025-01-01T00:00:00Z' };
-  assert.equal(getReportUploadTimestamp(repExecutionOnly), 0);
+  // 2b. upload_date and upload_time are accepted as supported upload metadata
+  const repWithUploadDate = { upload_date: '2026-10-23T09:00:00Z' };
+  assert.equal(getReportUploadTimestamp(repWithUploadDate), Date.parse('2026-10-23T09:00:00Z'));
+  const repWithUploadTime = { upload_time: '2026-10-24T10:00:00Z' };
+  assert.equal(getReportUploadTimestamp(repWithUploadTime), Date.parse('2026-10-24T10:00:00Z'));
+
+  // 3. Missing upload metadata never falls back to report_date
+  const repReportDateOnly = { report_date: '2026-10-10T12:00:00Z' };
+  assert.equal(getReportUploadTimestamp(repReportDateOnly), 0);
+
+  // 4. Missing upload metadata never falls back to timestamp or ROPW-<epoch>
+  const repTimestampString = { timestamp: '2025-07-02T13:11:31Z' };
+  assert.equal(getReportUploadTimestamp(repTimestampString), 0);
+  const repTimestampObj = { timestamp: { seconds: 1751461891 } };
+  assert.equal(getReportUploadTimestamp(repTimestampObj), 0);
+  const repRopwId = { report_id: 'ROPW-1791653080' };
+  assert.equal(getReportUploadTimestamp(repRopwId), 0);
+
+  // Safely handles null, undefined, empty object
   assert.equal(getReportUploadTimestamp({}), 0);
   assert.equal(getReportUploadTimestamp(null), 0);
+  assert.equal(getReportUploadTimestamp(undefined), 0);
 });
 
 test('Timestamp: getReportTimestamp prioritizes genuine upload timestamp over report_date when both are present', () => {
@@ -275,29 +293,29 @@ test('Sorting: Prioritizes genuine upload timestamp when upload and execution ti
   assert.deepEqual(sortedAsc.map(r => r.id), ['repB', 'repA']);
 });
 
-test('Sorting: Newest-first orders descending by timestamp', () => {
-  const r1 = { id: 'r1', report_date: '2026-10-10T10:00:00Z' };
-  const r2 = { id: 'r2', report_date: '2026-10-10T12:00:00Z' };
-  const r3 = { id: 'r3', report_date: '2026-10-10T08:00:00Z' };
+test('Sorting: Newest-first orders descending by genuine upload timestamp', () => {
+  const r1 = { id: 'r1', uploaded_at: '2026-10-10T10:00:00Z', report_date: '2026-10-12T12:00:00Z' };
+  const r2 = { id: 'r2', uploaded_at: '2026-10-10T12:00:00Z', report_date: '2026-10-09T08:00:00Z' };
+  const r3 = { id: 'r3', uploaded_at: '2026-10-10T08:00:00Z', report_date: '2026-10-15T15:00:00Z' };
 
   const sorted = sortReports([r1, r2, r3], 'desc');
   assert.deepEqual(sorted.map(r => r.id), ['r2', 'r1', 'r3']);
 });
 
-test('Sorting: Oldest-first orders ascending by timestamp', () => {
-  const r1 = { id: 'r1', report_date: '2026-10-10T10:00:00Z' };
-  const r2 = { id: 'r2', report_date: '2026-10-10T12:00:00Z' };
-  const r3 = { id: 'r3', report_date: '2026-10-10T08:00:00Z' };
+test('Sorting: Oldest-first orders ascending by genuine upload timestamp', () => {
+  const r1 = { id: 'r1', uploaded_at: '2026-10-10T10:00:00Z', report_date: '2026-10-12T12:00:00Z' };
+  const r2 = { id: 'r2', uploaded_at: '2026-10-10T12:00:00Z', report_date: '2026-10-09T08:00:00Z' };
+  const r3 = { id: 'r3', uploaded_at: '2026-10-10T08:00:00Z', report_date: '2026-10-15T15:00:00Z' };
 
   const sorted = sortReports([r1, r2, r3], 'asc');
   assert.deepEqual(sorted.map(r => r.id), ['r3', 'r1', 'r2']);
 });
 
 test('Sorting: Equal timestamps break ties deterministically using code-point lexical order', () => {
-  const rA = { id: 'doc-Alpha', report_date: '2026-10-10T12:00:00Z' };
-  const rB = { id: 'doc-alpha', report_date: '2026-10-10T12:00:00Z' };
-  const rC = { id: 'doc-beta_1', report_date: '2026-10-10T12:00:00Z' };
-  const rD = { id: 'doc-beta.2', report_date: '2026-10-10T12:00:00Z' };
+  const rA = { id: 'doc-Alpha', uploaded_at: '2026-10-10T12:00:00Z' };
+  const rB = { id: 'doc-alpha', uploaded_at: '2026-10-10T12:00:00Z' };
+  const rC = { id: 'doc-beta_1', uploaded_at: '2026-10-10T12:00:00Z' };
+  const rD = { id: 'doc-beta.2', uploaded_at: '2026-10-10T12:00:00Z' };
 
   // Ascending order: 'A' < 'a', '.' (46) < '_' (95)
   // 'doc-Alpha' < 'doc-alpha' < 'doc-beta.2' < 'doc-beta_1'
@@ -309,26 +327,38 @@ test('Sorting: Equal timestamps break ties deterministically using code-point le
   assert.deepEqual(sortedDesc.map(r => r.id), ['doc-beta_1', 'doc-beta.2', 'doc-alpha', 'doc-Alpha']);
 });
 
-test('Sorting: Stably preserves reports with missing/zero timestamps without dropping them', () => {
-  const rDated = { id: 'dated', report_date: '2026-10-10T12:00:00Z' };
-  const rZero1 = { id: 'zero-b' };
-  const rZero2 = { id: 'zero-a' };
+test('Sorting: Missing timestamps remain last in both directions', () => {
+  const rValid = { id: 'valid', uploaded_at: '2026-10-20T12:00:00Z' };
+  // Missing upload metadata never falls back to report_date or timestamp
+  const rMiss1 = { id: 'miss-b', report_date: '2026-11-01T12:00:00Z' };
+  const rMiss2 = { id: 'miss-a', timestamp: '2025-07-02T13:11:31Z' };
 
-  const sortedDesc = sortReports([rZero1, rDated, rZero2], 'desc');
-  assert.equal(sortedDesc.length, 3);
-  assert.equal(sortedDesc[0].id, 'dated');
-  assert.equal(sortedDesc[1].id, 'zero-b');
-  assert.equal(sortedDesc[2].id, 'zero-a');
+  // Descending: valid record first, missing records last (tie-broken in reverse lexical order)
+  const sortedDesc = sortReports([rMiss1, rValid, rMiss2], 'desc');
+  assert.deepEqual(sortedDesc.map(r => r.id), ['valid', 'miss-b', 'miss-a']);
 
-  const sortedAsc = sortReports([rZero1, rDated, rZero2], 'asc');
-  assert.equal(sortedAsc.length, 3);
-  assert.equal(sortedAsc[0].id, 'zero-a');
-  assert.equal(sortedAsc[1].id, 'zero-b');
-  assert.equal(sortedAsc[2].id, 'dated');
+  // Ascending: valid record first, missing records last (tie-broken in lexical order)
+  const sortedAsc = sortReports([rMiss1, rValid, rMiss2], 'asc');
+  assert.deepEqual(sortedAsc.map(r => r.id), ['valid', 'miss-a', 'miss-b']);
+});
+
+test('Sorting: Samples with all missing upload metadata order deterministically by ID in both directions', () => {
+  const r1 = { id: 'doc-Alpha', report_date: '2026-10-10T12:00:00Z' };
+  const r2 = { id: 'doc-alpha', timestamp: '2025-01-01T00:00:00Z' };
+  const r3 = { id: 'doc-beta', report_id: 'ROPW-1791653080' };
+
+  // All 3 lack genuine upload metadata:
+  // Ascending: lexical tie-breaking
+  const sortedAsc = sortReports([r3, r2, r1], 'asc');
+  assert.deepEqual(sortedAsc.map(r => r.id), ['doc-Alpha', 'doc-alpha', 'doc-beta']);
+
+  // Descending: reverse lexical tie-breaking
+  const sortedDesc = sortReports([r3, r2, r1], 'desc');
+  assert.deepEqual(sortedDesc.map(r => r.id), ['doc-beta', 'doc-alpha', 'doc-Alpha']);
 });
 
 test('Sorting: Input array is not mutated', () => {
-  const original = [{ id: 'b', report_date: 100 }, { id: 'a', report_date: 200 }];
+  const original = [{ id: 'b', uploaded_at: '2026-10-10T10:00:00Z' }, { id: 'a', uploaded_at: '2026-10-10T12:00:00Z' }];
   const copy = [...original];
   const sorted = sortReports(original, 'desc');
   assert.deepEqual(original, copy);

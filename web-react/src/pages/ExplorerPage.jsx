@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, RotateCcw, AlertTriangle, Layers, Filter, Terminal, RefreshCw, Database, Check, X, ArrowUpDown, ArrowDown, ArrowUp } from 'lucide-react';
+import { Search, AlertTriangle, Filter, Terminal, RefreshCw, Database, Check, X, ArrowUpDown, ArrowDown, ArrowUp } from 'lucide-react';
 import { db, collection, getDocs, query, limit, startAfter, getCountFromServer } from '../firebase/config';
 import {
   mapFirestoreReportDoc,
   filterReports,
   sortReports,
+  getReportUploadTimestamp,
   tallyExplorerMetrics,
   classifyFirestoreError,
   serializeExplorerCache,
@@ -17,7 +18,6 @@ import {
 } from '../utils/cloudExplorerHelper';
 import StatsPanel from '../components/StatsPanel';
 import ReportCard from '../components/ReportCard';
-import GadgetItem from '../components/GadgetItem';
 import BinaryGadgetGroup from '../components/BinaryGadgetGroup';
 import LazyList from '../components/LazyList';
 import ReportDetailModal from '../components/ReportDetailModal';
@@ -236,6 +236,11 @@ export default function ExplorerPage({ onNavigateToBinary, onInspectReport }) {
     });
     return sortReports(filtered, sortOrder);
   }, [rawReports, selectedArch, selectedFormat, searchTerm, sortOrder]);
+
+  // Detect if any loaded records contain genuine upload metadata
+  const hasAnyUploadTimestamps = useMemo(() => {
+    return rawReports.some((r) => getReportUploadTimestamp(r) > 0);
+  }, [rawReports]);
 
   // Multi-dimensional filter logic (gadgets)
   const filteredGadgets = useMemo(() => {
@@ -669,6 +674,12 @@ export default function ExplorerPage({ onNavigateToBinary, onInspectReport }) {
                       <span>ASCENDING (OLDEST)</span>
                     </button>
                   </div>
+                  {!hasAnyUploadTimestamps && rawReports.length > 0 && (
+                    <div className="sort-notice-tag mono text-dim" title="Loaded sample records lack explicit upload metadata (uploaded_at). Ordering is maintained deterministically by record identity.">
+                      <AlertTriangle size={11} className="text-accent-amber" />
+                      <span>NO UPLOAD METADATA DETECTED IN LOADED SAMPLE — ORDERED DETERMINISTICALLY BY ID</span>
+                    </div>
+                  )}
                 </div>
               </div>
 

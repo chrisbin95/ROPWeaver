@@ -297,12 +297,14 @@ export function getReportTimestamp(report) {
 }
 
 /**
- * Deterministically sorts an array of reports by analysis generation timestamp.
+ * Deterministically sorts an array of reports exclusively by genuine upload timestamp.
  *
- * - direction: 'desc' (newest first, default) or 'asc' (oldest first).
- * - Equal timestamps break ties deterministically using locale-independent code-point lexical comparison.
- * - Prioritizes Firestore document identity (`firestore_id`) over payload identifiers.
- * - Documents with missing or zero timestamps are stably sorted to the end (desc) or start (asc).
+ * Rules:
+ * - Uses genuine upload metadata only: uploaded_at, upload_date, upload_time, created_at.
+ * - Strictly does NOT substitute execution timestamps (report_date, timestamp, etc.).
+ * - DESCENDING: records with valid upload timestamps first (newest first); missing timestamps last.
+ * - ASCENDING: records with valid upload timestamps first (oldest first); missing timestamps last.
+ * - When timestamps are equal or missing, uses deterministic locale-independent code-point lexical tie-breaker.
  * - Never mutates the caller's array.
  *
  * @param {Array<Object>} reports - Array of report objects
@@ -314,14 +316,23 @@ export function sortReports(reports, direction = 'desc') {
   const isAsc = direction === 'asc';
 
   return [...reports].sort((a, b) => {
-    const timeA = getReportTimestamp(a);
-    const timeB = getReportTimestamp(b);
+    const timeA = getReportUploadTimestamp(a);
+    const timeB = getReportUploadTimestamp(b);
 
-    if (timeA !== timeB) {
+    const hasTimeA = timeA > 0;
+    const hasTimeB = timeB > 0;
+
+    // Records with valid upload timestamps come first; missing timestamps remain last in both directions
+    if (hasTimeA && !hasTimeB) return -1;
+    if (!hasTimeA && hasTimeB) return 1;
+
+    // Both have valid upload timestamps
+    if (hasTimeA && hasTimeB && timeA !== timeB) {
       return isAsc ? timeA - timeB : timeB - timeA;
     }
 
     // Deterministic tie-breaker using locale-independent code-point lexical comparison
+    // Used when timestamps are equal or when both records have missing upload timestamps
     const idA = getReportIdentifier(a);
     const idB = getReportIdentifier(b);
 
