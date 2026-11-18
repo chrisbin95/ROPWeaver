@@ -5,6 +5,7 @@ import {
   mapFirestoreReportDoc,
   filterReports,
   sortReports,
+  getReportIdentifier,
   getReportUploadTimestamp,
   tallyExplorerMetrics,
   classifyFirestoreError,
@@ -708,7 +709,7 @@ export default function ExplorerPage({ onNavigateToBinary, onInspectReport }) {
                 }
                 renderItem={(report, index) => (
                   <ReportCard
-                    key={report.id || index}
+                    key={getReportIdentifier(report) || report.id || index}
                     report={report}
                     index={index + 1}
                     onSelectReportId={handleSelectReportId}

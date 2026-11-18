@@ -90,7 +90,7 @@ test('Identity: mapFirestoreReportDoc preserves explicit firestore_id and payloa
   assert.equal(mappedB.report_id, 'ROPW-1791653080');
 });
 
-test('Identity: Firestore document ID differs from payload id and report_id', () => {
+test('Identity: Visible report_id takes priority in getReportIdentifier over internal IDs', () => {
   const report = {
     firestore_id: 'firestore_doc_unique_1',
     id: 'payload_local_id_2',
@@ -100,30 +100,28 @@ test('Identity: Firestore document ID differs from payload id and report_id', ()
   assert.equal(getFirestoreDocumentId(report), 'firestore_doc_unique_1');
   assert.equal(getPayloadReportId(report), 'ROPW-1791653080');
   assert.equal(report.id, 'payload_local_id_2');
-  assert.equal(getReportIdentifier(report), 'firestore_doc_unique_1'); // Tie-breaker prioritizes firestore_id
+  assert.equal(getReportIdentifier(report), 'ROPW-1791653080'); // Visible report_id prioritized
 });
 
-test('Identity: Missing Firestore ID falls back safely without inventing synthetic IDs', () => {
+test('Identity: Missing report_id falls back to report.id, then firestore_id', () => {
   // Only payload id present
-  const payloadOnly = { id: 'payload_only_id', report_id: 'ROPW-1791653080' };
-  assert.equal(getFirestoreDocumentId(payloadOnly), 'payload_only_id');
-  assert.equal(getPayloadReportId(payloadOnly), 'ROPW-1791653080');
+  const payloadOnly = { id: 'payload_only_id' };
   assert.equal(getReportIdentifier(payloadOnly), 'payload_only_id');
 
-  // Only report_id present
-  const reportIdOnly = { report_id: 'ROPW-1791653080' };
-  assert.equal(getFirestoreDocumentId(reportIdOnly), '');
-  assert.equal(getPayloadReportId(reportIdOnly), 'ROPW-1791653080');
-  assert.equal(getReportIdentifier(reportIdOnly), 'ROPW-1791653080');
+  // Only firestore_id present
+  const firestoreOnly = { firestore_id: 'firestore_only_id' };
+  assert.equal(getReportIdentifier(firestoreOnly), 'firestore_only_id');
+
+  // Both present without report_id: id takes precedence
+  const bothNoReportId = { id: 'local_id', firestore_id: 'doc_id' };
+  assert.equal(getReportIdentifier(bothNoReportId), 'local_id');
 
   // Empty object
-  assert.equal(getFirestoreDocumentId({}), '');
-  assert.equal(getPayloadReportId({}), '');
   assert.equal(getReportIdentifier({}), '');
 });
 
-test('Identity: Deterministic sorting uses Firestore ID for tie-breaking', () => {
-  // Equal timestamps: Firestore ID 'doc-A' vs 'doc-B', while payload 'id' is reversed ('z-id' vs 'a-id')
+test('Identity: Deterministic sorting uses visible report_id for tie-breaking', () => {
+  // Equal timestamps: visible report_id 'ROPW-111' vs 'ROPW-999'
   const r1 = {
     firestore_id: 'doc-A',
     id: 'z-payload-id',
@@ -137,13 +135,13 @@ test('Identity: Deterministic sorting uses Firestore ID for tie-breaking', () =>
     report_date: '2026-10-10T12:00:00Z'
   };
 
-  // Ascending: doc-A comes before doc-B despite payload id being 'z-...' vs 'a-...'
-  const sortedAsc = sortReports([r2, r1], 'asc');
-  assert.deepEqual(sortedAsc.map(r => r.firestore_id), ['doc-A', 'doc-B']);
+  // Ascending: ROPW-111 comes before ROPW-999
+  const sortedAsc = sortReports([r1, r2], 'asc');
+  assert.deepEqual(sortedAsc.map(r => r.report_id), ['ROPW-111', 'ROPW-999']);
 
-  // Descending: doc-B comes before doc-A
-  const sortedDesc = sortReports([r2, r1], 'desc');
-  assert.deepEqual(sortedDesc.map(r => r.firestore_id), ['doc-B', 'doc-A']);
+  // Descending: ROPW-999 comes before ROPW-111
+  const sortedDesc = sortReports([r1, r2], 'desc');
+  assert.deepEqual(sortedDesc.map(r => r.report_id), ['ROPW-999', 'ROPW-111']);
 });
 
 // 2. Timestamp Resolution & Fallback Tests
@@ -342,19 +340,68 @@ test('Sorting: Missing timestamps remain last in both directions', () => {
   assert.deepEqual(sortedAsc.map(r => r.id), ['valid', 'miss-a', 'miss-b']);
 });
 
-test('Sorting: Samples with all missing upload metadata order deterministically by ID in both directions', () => {
-  const r1 = { id: 'doc-Alpha', report_date: '2026-10-10T12:00:00Z' };
-  const r2 = { id: 'doc-alpha', timestamp: '2025-01-01T00:00:00Z' };
-  const r3 = { id: 'doc-beta', report_id: 'ROPW-1791653080' };
+test('Sorting: Samples with all missing upload metadata order deterministically by visible ID in both directions', () => {
+  const r1 = { id: 'id-1', report_id: 'ROPW-Alpha', report_date: '2026-10-10T12:00:00Z' };
+  const r2 = { id: 'id-2', report_id: 'ROPW-alpha', timestamp: '2025-01-01T00:00:00Z' };
+  const r3 = { id: 'id-3', report_id: 'ROPW-beta', report_date: '2026-10-31T22:47:44Z' };
 
-  // All 3 lack genuine upload metadata:
-  // Ascending: lexical tie-breaking
-  const sortedAsc = sortReports([r3, r2, r1], 'asc');
-  assert.deepEqual(sortedAsc.map(r => r.id), ['doc-Alpha', 'doc-alpha', 'doc-beta']);
+  // Ascending: deterministic lexical ID order ('ROPW-Alpha' < 'ROPW-alpha' < 'ROPW-beta')
+  const sortedAsc = sortReports([r3, r1, r2], 'asc');
+  assert.deepEqual(sortedAsc.map(r => r.report_id), ['ROPW-Alpha', 'ROPW-alpha', 'ROPW-beta']);
 
-  // Descending: reverse lexical tie-breaking
-  const sortedDesc = sortReports([r3, r2, r1], 'desc');
-  assert.deepEqual(sortedDesc.map(r => r.id), ['doc-beta', 'doc-alpha', 'doc-Alpha']);
+  // Descending: reverse deterministic lexical ID order ('ROPW-beta' > 'ROPW-alpha' > 'ROPW-Alpha')
+  const sortedDesc = sortReports([r3, r1, r2], 'desc');
+  assert.deepEqual(sortedDesc.map(r => r.report_id), ['ROPW-beta', 'ROPW-alpha', 'ROPW-Alpha']);
+});
+
+test('Sorting: Mixed valid and missing upload timestamps - valid first according to direction, missing at end', () => {
+  const rValidNew = { id: 'rV1', report_id: 'ROPW-ValidNew', uploaded_at: '2026-10-25T12:00:00Z' };
+  const rValidOld = { id: 'rV2', report_id: 'ROPW-ValidOld', uploaded_at: '2026-10-10T12:00:00Z' };
+  const rMissA = { id: 'rM1', report_id: 'ROPW-MissA', report_date: '2026-10-31T22:47:44Z' };
+  const rMissB = { id: 'rM2', report_id: 'ROPW-MissB', report_date: '2026-10-01T10:00:00Z' };
+
+  // Descending (newest first): ValidNew, then ValidOld, then missing in reverse lexical order (MissB, MissA)
+  const sortedDesc = sortReports([rMissB, rValidOld, rMissA, rValidNew], 'desc');
+  assert.deepEqual(sortedDesc.map(r => r.report_id), ['ROPW-ValidNew', 'ROPW-ValidOld', 'ROPW-MissB', 'ROPW-MissA']);
+
+  // Ascending (oldest first): ValidOld, then ValidNew, then missing in lexical order (MissA, MissB)
+  const sortedAsc = sortReports([rMissB, rValidOld, rMissA, rValidNew], 'asc');
+  assert.deepEqual(sortedAsc.map(r => r.report_id), ['ROPW-ValidOld', 'ROPW-ValidNew', 'ROPW-MissA', 'ROPW-MissB']);
+});
+
+test('Sorting: Stable deterministic behavior regardless of source records input arrival order', () => {
+  const rA = { id: 'doc-A', report_id: 'ROPW-100', report_date: '2026-10-10T12:00:00Z' };
+  const rB = { id: 'doc-B', report_id: 'ROPW-200', report_date: '2026-10-10T12:00:00Z' };
+  const rC = { id: 'doc-C', report_id: 'ROPW-300', report_date: '2026-10-10T12:00:00Z' };
+
+  // Permutation 1
+  const sorted1 = sortReports([rC, rA, rB], 'asc');
+  // Permutation 2
+  const sorted2 = sortReports([rB, rC, rA], 'asc');
+  // Permutation 3
+  const sorted3 = sortReports([rA, rB, rC], 'asc');
+
+  assert.deepEqual(sorted1.map(r => r.report_id), ['ROPW-100', 'ROPW-200', 'ROPW-300']);
+  assert.deepEqual(sorted2.map(r => r.report_id), ['ROPW-100', 'ROPW-200', 'ROPW-300']);
+  assert.deepEqual(sorted3.map(r => r.report_id), ['ROPW-100', 'ROPW-200', 'ROPW-300']);
+});
+
+test('Sorting: Filtering and direction toggling preserve deterministic ordering', () => {
+  const r1 = { id: '1', report_id: 'ROPW-ELF-1', architecture: 'x86_64', file_type: 'ELF', report_date: '2026-10-10T12:00:00Z' };
+  const r2 = { id: '2', report_id: 'ROPW-ELF-2', architecture: 'x86_64', file_type: 'ELF', report_date: '2026-10-31T22:47:44Z' };
+  const r3 = { id: '3', report_id: 'ROPW-PE-1', architecture: 'i386', file_type: 'PE', report_date: '2026-10-10T12:00:00Z' };
+
+  const all = [r2, r3, r1];
+  const filtered = filterReports(all, { architecture: 'x86_64', format: 'all', searchTerm: '' });
+  assert.equal(filtered.length, 2);
+
+  // In descending: ROPW-ELF-2 comes before ROPW-ELF-1 by reverse lexical ID
+  const desc = sortReports(filtered, 'desc');
+  assert.deepEqual(desc.map(r => r.report_id), ['ROPW-ELF-2', 'ROPW-ELF-1']);
+
+  // In ascending: ROPW-ELF-1 comes before ROPW-ELF-2 by lexical ID
+  const asc = sortReports(filtered, 'asc');
+  assert.deepEqual(asc.map(r => r.report_id), ['ROPW-ELF-1', 'ROPW-ELF-2']);
 });
 
 test('Sorting: Input array is not mutated', () => {

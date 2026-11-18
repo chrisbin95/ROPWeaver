@@ -82,6 +82,68 @@ body {
 .text-accent-red { color: var(--accent-red); }
 .text-muted { color: var(--text-muted); }
 
+/* Generic Responsive Typography Utilities */
+.text-xs {
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.text-sm {
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.text-md, .text-base {
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.text-lg {
+  font-size: 1.125rem;
+  line-height: 1.5;
+}
+
+.text-xl {
+  font-size: 1.25rem;
+  line-height: 1.4;
+}
+
+@media (max-width: 640px) {
+  .text-xs {
+    font-size: 0.71rem;
+    line-height: 1.45;
+  }
+
+  .text-sm {
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  .text-md, .text-base {
+    font-size: 0.9375rem;
+    line-height: 1.55;
+  }
+
+  .text-lg {
+    font-size: 1.05rem;
+    line-height: 1.45;
+  }
+
+  .text-xl {
+    font-size: 1.15rem;
+    line-height: 1.35;
+  }
+}
+
+@media (max-width: 380px) {
+  .text-xs {
+    font-size: 0.68rem;
+  }
+  .text-sm {
+    font-size: 0.78rem;
+  }
+}
+
 /* Badges */
 .badge {
   display: inline-flex;

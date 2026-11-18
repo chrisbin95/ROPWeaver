@@ -84,9 +84,9 @@ export function getPayloadReportId(report) {
 /**
  * Returns the primary unique identifier for a report for deterministic tie-breaking.
  * Priority:
- * 1. Explicit Firestore document ID (`firestore_id`)
- * 2. Fallback to `report.id` (when firestore_id is absent)
- * 3. Fallback to payload `report_id`
+ * 1. Visible payload report ID (`report_id`) - matches the visible Report ID on cards
+ * 2. Fallback to `report.id`
+ * 3. Fallback to explicit Firestore document ID (`firestore_id`)
  * 4. Empty string (never invents synthetic IDs)
  *
  * @param {Object} report - Analysis report object
@@ -94,11 +94,15 @@ export function getPayloadReportId(report) {
  */
 export function getReportIdentifier(report) {
   if (!report || typeof report !== 'object') return '';
-  const firestoreId = getFirestoreDocumentId(report);
-  if (firestoreId) return firestoreId;
-
   const payloadId = getPayloadReportId(report);
   if (payloadId) return payloadId;
+
+  if (typeof report.id === 'string' && report.id.trim()) {
+    return report.id.trim();
+  }
+
+  const firestoreId = getFirestoreDocumentId(report);
+  if (firestoreId) return firestoreId;
 
   return '';
 }
@@ -336,7 +340,12 @@ export function sortReports(reports, direction = 'desc') {
     const idA = getReportIdentifier(a);
     const idB = getReportIdentifier(b);
 
-    const tie = lexicalCompare(idA, idB);
+    let tie = lexicalCompare(idA, idB);
+    if (tie === 0) {
+      const fsA = getFirestoreDocumentId(a);
+      const fsB = getFirestoreDocumentId(b);
+      tie = lexicalCompare(fsA, fsB);
+    }
     return isAsc ? tie : -tie;
   });
 }

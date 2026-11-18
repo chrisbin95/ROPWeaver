@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { 
   Shield, ChevronDown, ChevronUp, Copy, Check, Terminal, 
-  ExternalLink, Code2, Cpu, Eye, FileCode
+  Code2, Eye
 } from 'lucide-react';
 import { detectBinaryFormat, getNormalizedMitigations } from '../utils/mitigationHelper';
 import { formatLocalTimestamp } from '../utils/dateHelper';
+import { getReportUploadTimestamp } from '../utils/cloudExplorerHelper';
 
 function ReportCard({ report, index, onSelectReportId, onOpenDetail }) {
   const [showGadgets, setShowGadgets] = useState(false);
@@ -27,24 +28,16 @@ function ReportCard({ report, index, onSelectReportId, onOpenDetail }) {
     return report.architecture || (report.binary_analysis && report.binary_analysis.architecture) || 'x86_64';
   };
 
-  const getFormat = () => {
-    if (report.format) return report.format;
-    if (report.binary_analysis && report.binary_analysis.format) return report.binary_analysis.format;
-    const path = getBinaryName().toLowerCase();
-    if (path.endsWith('.exe')) return 'PE';
-    if (path.endsWith('.dylib')) return 'Mach-O';
-    return 'ELF';
-  };
-
   const binPath = getBinaryName();
   const binName = binPath.split(/[/\\]/).pop();
   const arch = getArch();
   const format = detectBinaryFormat(report);
   const normalizedMitigations = getNormalizedMitigations(report);
   const reportId = report.report_id || report.id || 'ROPW-N/A';
-  const date = formatLocalTimestamp(
-    report.report_date ?? report.timestamp ?? report.uploaded_at ?? report.created_at
-  );
+  const uploadTime = getReportUploadTimestamp(report);
+  const uploadDate = uploadTime > 0 ? formatLocalTimestamp(uploadTime) : null;
+  const execTime = report.report_date ?? report.timestamp;
+  const execDate = execTime ? formatLocalTimestamp(execTime, { fallback: 'N/A' }) : null;
 
   const summary = report.summary || (report.rop_chain_generation ? {
     chain_type: report.rop_chain_generation.target_syscall || 'execve',
@@ -139,7 +132,8 @@ function ReportCard({ report, index, onSelectReportId, onOpenDetail }) {
       {/* Date & Subtitle */}
       <div className="report-date-line mono text-dim text-xs">
         <span>Path: <strong className="text-muted">{binPath}</strong></span>
-        {date !== 'N/A' && <span> &bull; Executed: {date}</span>}
+        {uploadDate && <span> &bull; Uploaded: <strong className="text-accent-cyan">{uploadDate}</strong></span>}
+        {execDate && execDate !== 'N/A' && <span> &bull; Executed: {execDate}</span>}
       </div>
 
       {/* Security Hardening Protections — ALWAYS VISIBLE */}
