@@ -4,6 +4,7 @@ import {
   ExternalLink, Code2, Cpu, Eye, FileCode
 } from 'lucide-react';
 import { detectBinaryFormat, getNormalizedMitigations } from '../utils/mitigationHelper';
+import { formatLocalTimestamp } from '../utils/dateHelper';
 
 function ReportCard({ report, index, onSelectReportId, onOpenDetail }) {
   const [showGadgets, setShowGadgets] = useState(false);
@@ -41,7 +42,9 @@ function ReportCard({ report, index, onSelectReportId, onOpenDetail }) {
   const format = detectBinaryFormat(report);
   const normalizedMitigations = getNormalizedMitigations(report);
   const reportId = report.report_id || report.id || 'ROPW-N/A';
-  const date = report.report_date || (report.timestamp && report.timestamp.toDate ? report.timestamp.toDate().toLocaleString() : 'N/A');
+  const date = formatLocalTimestamp(
+    report.report_date ?? report.timestamp ?? report.uploaded_at ?? report.created_at
+  );
 
   const summary = report.summary || (report.rop_chain_generation ? {
     chain_type: report.rop_chain_generation.target_syscall || 'execve',

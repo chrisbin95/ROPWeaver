@@ -18,6 +18,7 @@ import {
   getFirestoreDocumentId,
   getPayloadReportId,
   getReportIdentifier,
+  getReportUploadTimestamp,
   getReportTimestamp,
   sortReports,
   normalizeArchitecture,
@@ -190,6 +191,42 @@ test('Timestamp: Handles Firestore Timestamp object with seconds / _seconds', ()
   assert.equal(getReportTimestamp(rep2), 1791653080000);
 });
 
+test('Timestamp: getReportUploadTimestamp strictly resolves genuine upload fields and returns 0 when absent without substituting report_date', () => {
+  // Genuine upload timestamp present
+  const repWithUploaded = { uploaded_at: '2026-10-20T14:30:00Z', report_date: '2026-10-10T12:00:00Z' };
+  assert.equal(getReportUploadTimestamp(repWithUploaded), Date.parse('2026-10-20T14:30:00Z'));
+
+  const repWithCreated = { created_at: '2026-10-22T08:00:00Z' };
+  assert.equal(getReportUploadTimestamp(repWithCreated), Date.parse('2026-10-22T08:00:00Z'));
+
+  // Missing genuine upload timestamp: must return 0, strictly avoiding substitution of report_date
+  const repExecutionOnly = { report_date: '2026-10-10T12:00:00Z', timestamp: '2025-01-01T00:00:00Z' };
+  assert.equal(getReportUploadTimestamp(repExecutionOnly), 0);
+  assert.equal(getReportUploadTimestamp({}), 0);
+  assert.equal(getReportUploadTimestamp(null), 0);
+});
+
+test('Timestamp: getReportTimestamp prioritizes genuine upload timestamp over report_date when both are present', () => {
+  const repBoth = {
+    uploaded_at: '2026-10-25T16:00:00Z', // Genuine upload timestamp (newer)
+    report_date: '2026-10-10T10:00:00Z'  // Execution timestamp (older)
+  };
+  // Must return uploaded_at, NOT report_date
+  assert.equal(getReportTimestamp(repBoth), Date.parse('2026-10-25T16:00:00Z'));
+});
+
+test('Timestamp: Falls back to uploaded_at or created_at when date/timestamp absent', () => {
+  const repUploaded = {
+    uploaded_at: '2026-10-10 17:24:24Z'
+  };
+  assert.equal(getReportTimestamp(repUploaded), Date.parse('2026-10-10T17:24:24Z'));
+
+  const repCreated = {
+    created_at: '2026-10-10T15:00:00Z'
+  };
+  assert.equal(getReportTimestamp(repCreated), Date.parse('2026-10-10T15:00:00Z'));
+});
+
 test('Timestamp: Falls back to ROPW-<epoch> in report_id when date/timestamp absent', () => {
   const rep = {
     report_id: 'ROPW-1791653080'
@@ -215,6 +252,29 @@ test('Timestamp: Handles invalid, missing, null, and malformed values safely wit
 });
 
 // 3. Deterministic Sorting Tests
+test('Sorting: Prioritizes genuine upload timestamp when upload and execution timestamps differ', () => {
+  // Record A: older execution time (Oct 10), but newer upload time (Oct 20)
+  const repA = {
+    id: 'repA',
+    report_date: '2026-10-10T12:00:00Z',
+    uploaded_at: '2026-10-20T12:00:00Z'
+  };
+  // Record B: newer execution time (Oct 18), but older upload time (Oct 15)
+  const repB = {
+    id: 'repB',
+    report_date: '2026-10-18T12:00:00Z',
+    uploaded_at: '2026-10-15T12:00:00Z'
+  };
+
+  // Descending (newest upload first): repA (Oct 20) > repB (Oct 15)
+  const sortedDesc = sortReports([repB, repA], 'desc');
+  assert.deepEqual(sortedDesc.map(r => r.id), ['repA', 'repB']);
+
+  // Ascending (oldest upload first): repB (Oct 15) < repA (Oct 20)
+  const sortedAsc = sortReports([repB, repA], 'asc');
+  assert.deepEqual(sortedAsc.map(r => r.id), ['repB', 'repA']);
+});
+
 test('Sorting: Newest-first orders descending by timestamp', () => {
   const r1 = { id: 'r1', report_date: '2026-10-10T10:00:00Z' };
   const r2 = { id: 'r2', report_date: '2026-10-10T12:00:00Z' };

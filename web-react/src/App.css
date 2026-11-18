@@ -769,7 +769,8 @@ h2.section-header-title {
 .report-id-badge:focus-visible,
 .report-inspect-btn:focus-visible,
 .clear-all-filters-btn:focus-visible,
-.load-more-btn:focus-visible {
+.load-more-btn:focus-visible,
+.sort-btn:focus-visible {
   outline: 2px solid var(--accent-cyan) !important;
   outline-offset: 2px !important;
 }
@@ -1504,6 +1505,95 @@ h2.section-header-title {
   color: var(--accent-orange);
   font-size: 0.9rem;
   font-weight: 700;
+}
+
+/* ========================================================
+   UPLOAD-TIME SORTING TOOLBAR (LOADED SAMPLE)
+   ======================================================== */
+.report-sort-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+  padding: 0.45rem 0.85rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  max-width: 680px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.sort-label-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.sort-label-text {
+  color: var(--text-dim);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.sort-metric-tag {
+  color: var(--accent-cyan);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.sort-buttons-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.72rem;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.sort-btn:hover {
+  border-color: var(--accent-cyan);
+  color: var(--text-main);
+}
+
+.sort-btn-active {
+  background: rgba(0, 255, 136, 0.12) !important;
+  border-color: var(--accent-green) !important;
+  color: var(--accent-green) !important;
+  font-weight: 700;
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.25);
+}
+
+@media (max-width: 580px) {
+  .report-sort-toolbar {
+    flex-direction: column;
+    gap: 0.45rem;
+    padding: 0.5rem;
+  }
+  .sort-buttons-group {
+    width: 100%;
+    justify-content: center;
+  }
+  .sort-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 0.35rem 0.4rem;
+    font-size: 0.68rem;
+  }
 }
 
 /* ========================================================

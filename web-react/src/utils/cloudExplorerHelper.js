@@ -104,13 +104,98 @@ export function getReportIdentifier(report) {
 }
 
 /**
+ * Resolves an authoritative Unix epoch millisecond timestamp strictly representing
+ * the genuine upload/creation time of the report in the cloud repository.
+ *
+ * Rules:
+ * 1. Prioritizes genuine upload timestamp fields:
+ *    - report.uploaded_at (ISO string, numeric epoch, or Firestore Timestamp)
+ *    - report.upload_date (ISO string or numeric epoch)
+ *    - report.upload_time (ISO string or numeric epoch)
+ *    - report.created_at  (Firestore creation timestamp)
+ * 2. Strictly does NOT silently substitute execution timestamps (report_date, timestamp, etc.).
+ * 3. Returns 0 if no valid upload timestamp exists.
+ *
+ * @param {Object} report - Analysis report object
+ * @returns {number} Unix epoch timestamp in milliseconds (>= 0)
+ */
+export function getReportUploadTimestamp(report) {
+  if (!report || typeof report !== 'object') return 0;
+
+  const normalizeNumeric = (val) => {
+    if (typeof val !== 'number' || isNaN(val) || !isFinite(val) || val <= 0) return 0;
+    if (val >= 1e8 && val < 1e11) return Math.floor(val * 1000);
+    if (val >= 1e11) return Math.floor(val);
+    return 0;
+  };
+
+  const parseVal = (val) => {
+    if (val === undefined || val === null) return 0;
+    if (typeof val.toMillis === 'function') {
+      try {
+        const ms = val.toMillis();
+        if (typeof ms === 'number' && !isNaN(ms) && ms > 0) return ms;
+      } catch {
+        // ignore
+      }
+    }
+    if (typeof val.toDate === 'function') {
+      try {
+        const d = val.toDate();
+        if (d instanceof Date && !isNaN(d.getTime()) && d.getTime() > 0) return d.getTime();
+      } catch {
+        // ignore
+      }
+    }
+    const rawSeconds = val.seconds ?? val._seconds;
+    if (typeof rawSeconds === 'number') {
+      const norm = normalizeNumeric(rawSeconds);
+      if (norm > 0) return norm;
+    }
+    if (typeof val === 'string') {
+      let str = val.trim();
+      if (str.includes(' ') && !str.includes('T')) {
+        str = str.replace(' ', 'T');
+      }
+      const parsed = Date.parse(str);
+      if (!isNaN(parsed) && parsed > 0) return parsed;
+    }
+    if (typeof val === 'number') {
+      const norm = normalizeNumeric(val);
+      if (norm > 0) return norm;
+    }
+    return 0;
+  };
+
+  // 1. uploaded_at
+  const fromUploadedAt = parseVal(report.uploaded_at);
+  if (fromUploadedAt > 0) return fromUploadedAt;
+
+  // 2. upload_date
+  const fromUploadDate = parseVal(report.upload_date);
+  if (fromUploadDate > 0) return fromUploadDate;
+
+  // 3. upload_time
+  const fromUploadTime = parseVal(report.upload_time);
+  if (fromUploadTime > 0) return fromUploadTime;
+
+  // 4. created_at (cloud document creation)
+  const fromCreatedAt = parseVal(report.created_at);
+  if (fromCreatedAt > 0) return fromCreatedAt;
+
+  // Never substitute execution timestamp (report_date) for missing upload timestamp
+  return 0;
+}
+
+/**
  * Resolves an authoritative Unix epoch millisecond timestamp from report metadata.
  *
- * Fallback precedence:
- * 1. Valid report.report_date (ISO 8601 string or numeric timestamp)
- * 2. Valid report.timestamp (Firestore Timestamp object, ISO string, or numeric)
- * 3. Unix epoch seconds encoded in payload report_id or document id (e.g. "ROPW-1791653080")
- * 4. Fallback: 0
+ * Precedence:
+ * 1. Genuine upload timestamp: uploaded_at, upload_date, upload_time, created_at
+ * 2. Execution / analysis timestamp: report_date (ISO 8601 string or numeric)
+ * 3. Legacy Firestore Timestamp: report.timestamp (Firestore Timestamp object, ISO string, or numeric)
+ * 4. Unix epoch seconds encoded in payload report_id or document id (e.g. "ROPW-1791653080")
+ * 5. Fallback: 0
  *
  * Safely handles invalid dates, null, undefined, and malformed structures.
  * Normalizes seconds vs milliseconds consistently.
@@ -135,10 +220,18 @@ export function getReportTimestamp(report) {
     return 0;
   };
 
-  // 1. Prefer report_date
+  // 1. Prioritize genuine upload timestamp fields
+  const uploadTime = getReportUploadTimestamp(report);
+  if (uploadTime > 0) return uploadTime;
+
+  // 2. Fall back to report_date (execution/analysis timestamp)
   if (report.report_date !== undefined && report.report_date !== null) {
     if (typeof report.report_date === 'string') {
-      const parsed = Date.parse(report.report_date);
+      let str = report.report_date.trim();
+      if (str.includes(' ') && !str.includes('T')) {
+        str = str.replace(' ', 'T');
+      }
+      const parsed = Date.parse(str);
       if (!isNaN(parsed) && parsed > 0) return parsed;
     } else if (typeof report.report_date === 'number') {
       const norm = normalizeNumeric(report.report_date);
@@ -146,7 +239,7 @@ export function getReportTimestamp(report) {
     }
   }
 
-  // 2. Fall back to timestamp
+  // 3. Fall back to legacy timestamp
   if (report.timestamp !== undefined && report.timestamp !== null) {
     // Firestore Timestamp with toMillis()
     if (typeof report.timestamp.toMillis === 'function') {
@@ -176,7 +269,11 @@ export function getReportTimestamp(report) {
     }
     // String timestamp
     if (typeof report.timestamp === 'string') {
-      const parsed = Date.parse(report.timestamp);
+      let str = report.timestamp.trim();
+      if (str.includes(' ') && !str.includes('T')) {
+        str = str.replace(' ', 'T');
+      }
+      const parsed = Date.parse(str);
       if (!isNaN(parsed) && parsed > 0) return parsed;
     }
     // Numeric timestamp
@@ -186,7 +283,7 @@ export function getReportTimestamp(report) {
     }
   }
 
-  // 3. Fall back to ROPW-<epoch> encoded in payload report_id, id, or firestore_id
+  // 4. Fall back to ROPW-<epoch> encoded in payload report_id, id, or firestore_id
   const repId = report.report_id || report.id || report.firestore_id;
   if (typeof repId === 'string' && repId.startsWith('ROPW-')) {
     const epochStr = repId.slice(5).trim();
@@ -195,7 +292,7 @@ export function getReportTimestamp(report) {
     if (norm > 0) return norm;
   }
 
-  // 4. Fallback: 0
+  // 5. Fallback: 0
   return 0;
 }
 

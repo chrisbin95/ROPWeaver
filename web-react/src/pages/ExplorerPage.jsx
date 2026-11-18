@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, RotateCcw, AlertTriangle, Layers, Filter, Terminal, RefreshCw, Database, Check, X } from 'lucide-react';
+import { Search, RotateCcw, AlertTriangle, Layers, Filter, Terminal, RefreshCw, Database, Check, X, ArrowUpDown, ArrowDown, ArrowUp } from 'lucide-react';
 import { db, collection, getDocs, query, limit, startAfter, getCountFromServer } from '../firebase/config';
 import {
   mapFirestoreReportDoc,
   filterReports,
+  sortReports,
   tallyExplorerMetrics,
   classifyFirestoreError,
   serializeExplorerCache,
@@ -27,6 +28,7 @@ export default function ExplorerPage({ onNavigateToBinary, onInspectReport }) {
   const [selectedArch, setSelectedArch] = useState('all');
   const [selectedFormat, setSelectedFormat] = useState('all');
   const [activeFilter, setActiveFilter] = useState('all'); // 'all', 'reports', 'gadgets'
+  const [sortOrder, setSortOrder] = useState('desc'); // 'desc' (newest first) | 'asc' (oldest first)
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState(null);
@@ -225,14 +227,15 @@ export default function ExplorerPage({ onNavigateToBinary, onInspectReport }) {
     fetchData();
   }, []);
 
-  // Multi-dimensional filter logic (reports)
+  // Multi-dimensional filter & deterministic sort logic (reports)
   const filteredReports = useMemo(() => {
-    return filterReports(rawReports, {
+    const filtered = filterReports(rawReports, {
       architecture: selectedArch,
       format: selectedFormat,
       searchTerm: searchTerm
     });
-  }, [rawReports, selectedArch, selectedFormat, searchTerm]);
+    return sortReports(filtered, sortOrder);
+  }, [rawReports, selectedArch, selectedFormat, searchTerm, sortOrder]);
 
   // Multi-dimensional filter logic (gadgets)
   const filteredGadgets = useMemo(() => {
@@ -634,6 +637,39 @@ export default function ExplorerPage({ onNavigateToBinary, onInspectReport }) {
                     filteredCount: filteredReports.length
                   }).displayLabel}) ==«✪»==
                 </h2>
+
+                {/* Upload-Time Sorting Toolbar (Loaded Sample) */}
+                <div className="report-sort-toolbar mono text-xs">
+                  <div className="sort-label-group">
+                    <ArrowUpDown size={13} className="text-accent-cyan" />
+                    <span className="sort-label-text">SORT:</span>
+                    <span className="sort-metric-tag">BY_UPLOAD_TIME (LOADED SAMPLE)</span>
+                  </div>
+                  <div className="sort-buttons-group">
+                    <button
+                      type="button"
+                      onClick={() => setSortOrder('desc')}
+                      className={`sort-btn ${sortOrder === 'desc' ? 'sort-btn-active' : ''}`}
+                      aria-pressed={sortOrder === 'desc'}
+                      aria-label="Sort loaded reports by upload time descending (newest first)"
+                      title="Sort loaded reports newest first"
+                    >
+                      <ArrowDown size={12} />
+                      <span>DESCENDING (NEWEST)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSortOrder('asc')}
+                      className={`sort-btn ${sortOrder === 'asc' ? 'sort-btn-active' : ''}`}
+                      aria-pressed={sortOrder === 'asc'}
+                      aria-label="Sort loaded reports by upload time ascending (oldest first)"
+                      title="Sort loaded reports oldest first"
+                    >
+                      <ArrowUp size={12} />
+                      <span>ASCENDING (OLDEST)</span>
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <LazyList

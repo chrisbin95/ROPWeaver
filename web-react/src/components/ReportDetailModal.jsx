@@ -4,6 +4,7 @@ import {
   Cpu, FileCode, Layers, ArrowRight, Sparkles, AlertCircle, FileText
 } from 'lucide-react';
 import { detectBinaryFormat, getNormalizedMitigations } from '../utils/mitigationHelper';
+import { formatLocalTimestamp } from '../utils/dateHelper';
 
 export default function ReportDetailModal({ report, index, onClose }) {
   const [copiedField, setCopiedField] = useState(null);
@@ -57,7 +58,10 @@ export default function ReportDetailModal({ report, index, onClose }) {
   const format = detectBinaryFormat(report);
   const normalizedMitigations = getNormalizedMitigations(report);
   const reportId = report.report_id || report.id || 'ROPW-N/A';
-  const date = report.report_date || (report.timestamp && report.timestamp.toDate ? report.timestamp.toDate().toLocaleString() : new Date().toISOString());
+  const date = formatLocalTimestamp(
+    report.report_date ?? report.timestamp ?? report.uploaded_at ?? report.created_at,
+    { fallback: 'N/A' }
+  );
   const toolVersion = report.tool_version || 'ROPWeaver_v1.6.3';
 
   // Mitigations

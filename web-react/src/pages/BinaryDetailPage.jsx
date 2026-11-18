@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { db, collection, getDocs } from '../firebase/config';
 import { detectBinaryFormat, getNormalizedMitigations } from '../utils/mitigationHelper';
+import { formatLocalTimestamp } from '../utils/dateHelper';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 // Helper to categorize any gadget list into standard ROP groups
@@ -208,7 +209,10 @@ export default function BinaryDetailPage({
     const arch = report?.architecture || 'x86_64';
     const format = detectBinaryFormat(report);
     const hash = report?.target_binary?.hash || report?.target_binary?.sha256 || binaryHash || 'N/A';
-    const date = report?.report_date || 'N/A';
+    const date = formatLocalTimestamp(
+      report?.report_date ?? report?.timestamp ?? report?.uploaded_at ?? report?.created_at,
+      { fallback: 'N/A' }
+    );
     const id = report?.report_id || report?.id || 'N/A';
     const normalizedMitigations = getNormalizedMitigations(report);
     const chainDetails = report?.rop_chain_details || [];
@@ -322,20 +326,10 @@ export default function BinaryDetailPage({
   const normalizedMitigations = getNormalizedMitigations(report);
   const finalHash = report?.target_binary?.hash || report?.target_binary?.sha256 || report?.hash || binaryHash || '3c54b2579e5d25e951162f220b0917c8';
   
-  let finalDate = '2026-10-10 20:08:57 UTC';
-  if (report?.report_date) {
-    finalDate = typeof report.report_date === 'string' ? report.report_date.replace('T', ' ') : report.report_date;
-  } else if (report?.timestamp) {
-    if (typeof report.timestamp.toDate === 'function') {
-      finalDate = report.timestamp.toDate().toLocaleString();
-    } else if (typeof report.timestamp === 'string') {
-      finalDate = report.timestamp.replace('T', ' ');
-    }
-  } else if (report?.uploaded_at) {
-    finalDate = new Date(report.uploaded_at).toLocaleString();
-  } else if (report?.created_at) {
-    finalDate = new Date(report.created_at).toLocaleString();
-  }
+  const finalDate = formatLocalTimestamp(
+    report?.report_date ?? report?.timestamp ?? report?.uploaded_at ?? report?.created_at,
+    { fallback: 'N/A' }
+  );
 
   const baseAddress = report?.base_address || report?.target_binary?.base_address || '0x004003c0';
   const totalCount = gadgets.length > 0 ? gadgets.length : (cleanBaseName === 'p1' ? 13008 : 23);
