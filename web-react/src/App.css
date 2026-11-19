@@ -2838,9 +2838,6 @@ h2.section-header-title {
   .navbar-content {
     padding: 0.5rem 0.75rem;
   }
-  .app-container {
-    padding: 0.75rem 0.5rem 2rem 0.5rem;
-  }
   .load-more-btn {
     width: 100%;
     justify-content: center;
@@ -4382,9 +4379,9 @@ h2.section-header-title {
   }
 
   .app-container {
-    max-width: 100% !important;
-    padding: 1rem 0.65rem 2.5rem 0.65rem !important;
     box-sizing: border-box !important;
+    max-width: 100% !important;
+    padding: 1rem 0.65rem 2.5rem !important;
   }
 
   /* Navbar Mobile */
@@ -4958,6 +4955,10 @@ h2.section-header-title {
    MOBILE TYPOGRAPHY, FONT SCALING & MICRO SPACING (MAX-WIDTH: 480px)
    ========================================================================== */
 @media (max-width: 480px) {
+  .app-container {
+    padding: 0.75rem 0.5rem 2rem !important;
+  }
+
   /* Font Scaling to Accommodate View */
   .hero-title {
     font-size: 1.45rem !important;
@@ -5232,7 +5233,7 @@ h2.section-header-title {
    ========================================================================== */
 @media (max-width: 360px) {
   .app-container {
-    padding: 0.65rem 0.35rem 2rem 0.35rem !important;
+    padding: 0.65rem 0.35rem 2rem !important;
   }
 
   .hero-title {
