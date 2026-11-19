@@ -248,6 +248,118 @@ bool FirebaseUploader::reportExists(const std::string& docId) {
     return (res == CURLE_OK && httpCode == 200);
 }
 
+json FirebaseUploader::buildReportDocumentFields(const json& inputJson) {
+    // 1. Calculate total gadgets count from metadata or raw gadgets array
+    size_t totalGadgets = 0;
+    if (inputJson.contains("total_gadgets") && inputJson["total_gadgets"].is_number()) {
+        totalGadgets = inputJson["total_gadgets"].get<size_t>();
+    } else if (inputJson.contains("discovered_gadgets_count") && inputJson["discovered_gadgets_count"].is_number()) {
+        totalGadgets = inputJson["discovered_gadgets_count"].get<size_t>();
+    } else if (inputJson.contains("gadgets") && inputJson["gadgets"].is_array()) {
+        totalGadgets = inputJson["gadgets"].size();
+    }
+
+    // 2. Compute category counts from complete gadget collection if available
+    std::map<std::string, size_t> categoryCounts;
+    if (inputJson.contains("category_counts") && inputJson["category_counts"].is_object()) {
+        for (const auto& [cat, cnt] : inputJson["category_counts"].items()) {
+            if (cnt.is_number()) {
+                categoryCounts[cat] = cnt.get<size_t>();
+            }
+        }
+    } else if (inputJson.contains("gadgets") && inputJson["gadgets"].is_array()) {
+        for (const auto& gItem : inputJson["gadgets"]) {
+            if (!gItem.is_object()) continue;
+            if (gItem.contains("category") && gItem["category"].is_string()) {
+                std::string c = gItem["category"].get<std::string>();
+                categoryCounts[c.empty() ? "others" : c]++;
+            } else if (gItem.contains("categories") && gItem["categories"].is_array() && !gItem["categories"].empty()) {
+                std::string c = gItem["categories"][0].get<std::string>();
+                categoryCounts[c.empty() ? "others" : c]++;
+            } else {
+                categoryCounts["others"]++;
+            }
+        }
+    }
+
+    // 3. Serialize all metadata fields into Firestore format, excluding the unbounded gadgets array
+    json fields = json::object();
+    for (const auto& [key, value] : inputJson.items()) {
+        if (key == "gadgets") {
+            continue; // Exclude complete raw gadgets array to strictly respect Firestore's 1 MiB document limit
+        }
+        json fVal = toFirestoreValue(value);
+        if (!fVal.empty()) {
+            fields[key] = fVal;
+        }
+    }
+
+    // 4. Ensure total gadget counts are explicitly present in the report document
+    fields["total_gadgets"] = toFirestoreValue(json(totalGadgets));
+    fields["discovered_gadgets_count"] = toFirestoreValue(json(totalGadgets));
+
+    // 5. Populate category counts if available
+    if (!categoryCounts.empty()) {
+        json catObj = json::object();
+        for (const auto& [cat, count] : categoryCounts) {
+            catObj[cat] = count;
+        }
+        fields["category_counts"] = toFirestoreValue(catObj);
+    }
+
+    // 6. Explicitly flag that individual gadgets are indexed separately in the 'gadgets' collection
+    fields["gadgets_stored_separately"] = toFirestoreValue(json(true));
+
+    // 7. Standardize filename field while preserving backward-compatible aliases
+    std::string binName;
+    if (inputJson.contains("target_binary") && inputJson["target_binary"].is_object() &&
+        inputJson["target_binary"].contains("filename") && inputJson["target_binary"]["filename"].is_string()) {
+        binName = inputJson["target_binary"]["filename"].get<std::string>();
+    } else if (inputJson.contains("filename") && inputJson["filename"].is_string()) {
+        binName = inputJson["filename"].get<std::string>();
+    } else if (inputJson.contains("file name") && inputJson["file name"].is_string()) {
+        binName = inputJson["file name"].get<std::string>();
+    } else if (inputJson.contains("binary_name") && inputJson["binary_name"].is_string()) {
+        binName = inputJson["binary_name"].get<std::string>();
+    }
+
+    if (!binName.empty()) {
+        if (!fields.contains("filename")) {
+            fields["filename"] = toFirestoreValue(json(binName));
+        }
+        if (!fields.contains("file name")) {
+            fields["file name"] = toFirestoreValue(json(binName));
+        }
+        if (!fields.contains("binary_name")) {
+            fields["binary_name"] = toFirestoreValue(json(binName));
+        }
+    }
+
+    return fields;
+}
+
+std::string FirebaseUploader::makeGadgetDocumentId(const std::string& binaryName,
+                                                    const std::string& binaryHash,
+                                                    uint64_t address) {
+    std::stringstream shortAddr;
+    shortAddr << std::hex << address;
+
+    std::string hashPart = (!binaryHash.empty() && binaryHash != binaryName)
+                           ? ((binaryHash.size() >= 12) ? binaryHash.substr(0, 12) : binaryHash)
+                           : "";
+    std::string docId;
+    if (!hashPart.empty()) {
+        docId = binaryName + "_" + hashPart + "_0x" + shortAddr.str();
+    } else {
+        docId = binaryName + "_0x" + shortAddr.str();
+    }
+    std::replace(docId.begin(), docId.end(), '/', '_');
+    std::replace(docId.begin(), docId.end(), '\\', '_');
+    std::replace(docId.begin(), docId.end(), '.', '_');
+    std::replace(docId.begin(), docId.end(), ' ', '_');
+    return docId;
+}
+
 bool FirebaseUploader::uploadReport(const std::string& jsonPath, const std::string& docId) {
     if (!isConfigured()) {
         std::cerr << "[x] Firebase config not loaded properly.\n";
@@ -269,13 +381,7 @@ bool FirebaseUploader::uploadReport(const std::string& jsonPath, const std::stri
         return false; 
     }
 
-    json firestoreFormat = { {"fields", json::object()} };
-    for (const auto& [key, value] : inputJson.items()) {
-        json fVal = toFirestoreValue(value);
-        if (!fVal.empty()) {
-            firestoreFormat["fields"][key] = fVal;
-        }
-    }
+    json firestoreFormat = { {"fields", buildReportDocumentFields(inputJson)} };
 
     std::string proj = !projectId.empty() ? projectId : "ropweaver";
     std::string endpoint;
@@ -312,13 +418,7 @@ bool FirebaseUploader::uploadReportFromData(const std::string& binaryName,
     reportJson["binary_name"] = binaryName;
     reportJson["architecture"] = architecture;
     
-    json firestoreFormat = { {"fields", json::object()} };
-    for (const auto& [key, value] : reportJson.items()) {
-        json fVal = toFirestoreValue(value);
-        if (!fVal.empty()) {
-            firestoreFormat["fields"][key] = fVal;
-        }
-    }
+    json firestoreFormat = { {"fields", buildReportDocumentFields(reportJson)} };
 
     std::string separator = (firebaseUrl.find('?') == std::string::npos) ? "?key=" : "&key=";
     return uploadToEndpoint(firebaseUrl + separator + apiKey, firestoreFormat.dump());
@@ -365,17 +465,12 @@ bool FirebaseUploader::uploadGadgets(const std::string& binaryName,
                 if (k + 1 < g.instructions.size()) instrStr += " ; ";
             }
 
-            // Create a deterministic safe document ID: <binary>_<address>
-            std::stringstream shortAddr;
-            shortAddr << std::hex << g.address;
-            std::string docId = binaryName + "_0x" + shortAddr.str();
-            std::replace(docId.begin(), docId.end(), '/', '_');
-            std::replace(docId.begin(), docId.end(), '\\', '_');
-            std::replace(docId.begin(), docId.end(), ' ', '_');
-
+            // Create a deterministic collision-resistant document ID: <binary>_<hashShort>_0x<address>
+            std::string docId = makeGadgetDocumentId(binaryName, binaryHash, g.address);
             std::string docPath = "projects/" + proj + "/databases/(default)/documents/gadgets/" + docId;
 
             json fields = {
+                {"filename", { {"stringValue", binaryName} }},
                 {"file name", { {"stringValue", binaryName} }},
                 {"architecture", { {"stringValue", architecture} }},
                 {"category", { {"stringValue", g.category.empty() ? "others" : g.category} }},

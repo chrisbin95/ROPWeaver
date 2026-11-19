@@ -29,7 +29,7 @@ export default function UploadPage({ onSelectBinarySample }) {
         const gadgetCountsByBinary = {};
         gadgetsSnap.forEach(doc => {
           const g = doc.data();
-          const fn = (g["file name"] || g.fileName || g.binary_name || '').split(/[/\\]/).pop();
+          const fn = (g.filename || g["file name"] || g.fileName || g.binary_name || '').split(/[/\\]/).pop();
           if (fn) {
             gadgetCountsByBinary[fn] = (gadgetCountsByBinary[fn] || 0) + 1;
           }

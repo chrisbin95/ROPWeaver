@@ -95,8 +95,13 @@ export default function ReportDetailModal({ report, index, onClose }) {
     ];
   }
 
-  // Gadgets list
+  // Gadgets list and total count telemetry
   const gadgetsList = report.gadgets || [];
+  const totalGadgetCount = typeof report.total_gadgets === 'number'
+    ? report.total_gadgets
+    : (typeof report.discovered_gadgets_count === 'number'
+        ? report.discovered_gadgets_count
+        : (Array.isArray(report.gadgets) ? report.gadgets.length : 0));
 
   // Group gadgets into categories
   const categorizeGadget = (instr) => {
@@ -310,7 +315,7 @@ sys.stdout.buffer.write(payload)
             <div className="section-header-row">
               <h3 className="section-label mono">
                 <Layers size={16} className="text-accent-cyan" />
-                <span>DISCOVERED &amp; SUGGESTED GADGET PRIMITIVES ({gadgetsList.length})</span>
+                <span>DISCOVERED &amp; SUGGESTED GADGET PRIMITIVES ({totalGadgetCount.toLocaleString()})</span>
               </h3>
             </div>
 
@@ -374,7 +379,9 @@ sys.stdout.buffer.write(payload)
                 </table>
               ) : (
                 <div className="empty-gadgets-text mono text-dim text-xs text-center" style={{ padding: '1.5rem' }}>
-                  No gadgets match the active filter.
+                  {gadgetsList.length === 0 && totalGadgetCount > 0
+                    ? `All ${totalGadgetCount.toLocaleString()} discovered gadget primitives are indexed separately in the Cloud Gadgets repository. Browse, search, and copy them in the Cloud Explorer Gadgets section.`
+                    : 'No gadgets match the active filter.'}
                 </div>
               )}
             </div>

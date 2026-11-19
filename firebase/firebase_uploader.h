@@ -39,6 +39,16 @@ public:
                               const std::string& architecture,
                               const std::string& jsonData);
 
+    // Builds bounded Firestore document fields from a complete report JSON,
+    // excluding the unbounded gadgets array to respect Firestore's 1 MiB document limit.
+    static nlohmann::json buildReportDocumentFields(const nlohmann::json& inputJson);
+
+    // Generates a collision-resistant deterministic gadget document ID incorporating
+    // binary name, stable short binary hash, and gadget address.
+    static std::string makeGadgetDocumentId(const std::string& binaryName,
+                                            const std::string& binaryHash,
+                                            uint64_t address);
+
     // Getters for configuration state
     const std::string& getFirebaseUrl() const { return firebaseUrl; }
     const std::string& getApiKey() const { return apiKey; }

@@ -5,7 +5,7 @@ export default function GadgetItem({ gadget, index, onSelectReportId, onSelectBi
   const [copiedAddr, setCopiedAddr] = useState(false);
   const [copiedInstr, setCopiedInstr] = useState(false);
 
-  const fileName = gadget["file name"] || gadget.fileName || gadget.binary_name || 'N/A';
+  const fileName = gadget.filename || gadget["file name"] || gadget.fileName || gadget.binary_name || 'N/A';
   const hash = gadget.hash || 'N/A';
   const arch = gadget.architecture || 'N/A';
   const instr = gadget.instructions || gadget.gadget || '[no instruction]';

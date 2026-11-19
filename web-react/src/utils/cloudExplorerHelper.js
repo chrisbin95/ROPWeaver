@@ -877,7 +877,87 @@ export function formatReportCountMetrics({ catalogTotal, loadedCount, filteredCo
 }
 
 /**
- * Deduplicates incoming gadget records against existing records using stable document ID,
+ * Normalizes a gadget virtual memory address into a standard hex string format.
+ *
+ * @param {string|number} addr - Raw address
+ * @returns {string|null} Normalized hex address (e.g. "0x401000") or null if invalid/missing
+ */
+export function normalizeGadgetAddress(addr) {
+  if (addr === undefined || addr === null) return null;
+  if (typeof addr === 'number' && Number.isFinite(addr)) {
+    return `0x${addr.toString(16).toLowerCase()}`;
+  }
+  const s = String(addr).trim().toLowerCase();
+  if (!s) return null;
+  if (s.startsWith('0x')) return s;
+  if (/^[0-9a-f]+$/i.test(s)) return `0x${s}`;
+  return s;
+}
+
+/**
+ * Computes a robust semantic deduplication key for a gadget record.
+ *
+ * Deduplication rules:
+ * 1. Prefer full binary SHA-256 hash + normalized gadget address.
+ *    This seamlessly reconciles duplicate records across legacy and new document ID schemas
+ *    while strictly preserving distinct binaries sharing identical filenames and addresses.
+ * 2. If hash is absent, fall back to report_id + normalized address.
+ * 3. If binary identity or address is missing, fall back to Firestore document ID (g.id)
+ *    to strictly prevent accidental merging of distinct gadgets based solely on filename.
+ * 4. If no unique identifier can be derived, returns null so records are safely retained.
+ *
+ * @param {Object} g - Gadget record
+ * @returns {string|null} Stable semantic deduplication key
+ */
+export function getGadgetDeduplicationKey(g) {
+  if (!g || typeof g !== 'object') return null;
+
+  const addr = normalizeGadgetAddress(g.address);
+
+  // 1. Prefer full SHA-256 hash as binary identity
+  let binId = null;
+  if (typeof g.hash === 'string' && g.hash.trim()) {
+    const h = g.hash.trim().toLowerCase();
+    const rawName = g.filename || g["file name"] || g.fileName || g.binary_name;
+    const fileName = (typeof rawName === 'string' && rawName.trim()) ? rawName.trim().toLowerCase() : '';
+    // Must not be the legacy fallback to filename when hash calculation was absent
+    if (h !== fileName && (h.length >= 8 || /^[0-9a-f]{8,}$/i.test(h))) {
+      binId = `hash:${h}`;
+    }
+  }
+
+  // 2. Fall back to report_id (which embeds the unique binary report identity)
+  if (!binId && typeof g.report_id === 'string' && g.report_id.trim()) {
+    binId = `rep:${g.report_id.trim().toLowerCase()}`;
+  } else if (!binId && typeof g.reportId === 'string' && g.reportId.trim()) {
+    binId = `rep:${g.reportId.trim().toLowerCase()}`;
+  }
+
+  // 3. Document ID embedding short hash prefix (new schema: <name>_<hashPart>_0x<addr>)
+  if (!binId && typeof g.id === 'string' && g.id.trim()) {
+    const match = g.id.trim().match(/^(.+)_([0-9a-fA-F]{8,64})_0x[0-9a-fA-F]+$/);
+    if (match && match[2]) {
+      binId = `docHash:${match[2].toLowerCase()}`;
+    }
+  }
+
+  // If both a trustworthy binary identity and a valid address exist, deduplicate semantically
+  if (binId && addr) {
+    return `${binId}@${addr}`;
+  }
+
+  // Safe fallback: use document ID to prevent accidental merging of gadgets
+  if (typeof g.id === 'string' && g.id.trim()) {
+    return `doc:${g.id.trim()}`;
+  }
+
+  // If no identifying key can be determined, return null so caller retains the record
+  return null;
+}
+
+/**
+ * Deduplicates incoming gadget records against existing records using semantic identity
+ * (preferring binary SHA-256 hash + address) with safe fallback to document ID,
  * preserving original array order and without replacing existing items.
  *
  * @param {Array<Object>} existingGadgets - Currently loaded gadgets
@@ -888,15 +968,15 @@ export function deduplicateGadgets(existingGadgets = [], incomingGadgets = []) {
   const existing = Array.isArray(existingGadgets) ? existingGadgets : [];
   const incoming = Array.isArray(incomingGadgets) ? incomingGadgets : [];
 
-  const seenIds = new Set();
+  const seenKeys = new Set();
   const result = [];
 
   for (const g of existing) {
     if (!g || typeof g !== 'object') continue;
-    const key = g.id || g.hash;
+    const key = getGadgetDeduplicationKey(g);
     if (key) {
-      if (!seenIds.has(key)) {
-        seenIds.add(key);
+      if (!seenKeys.has(key)) {
+        seenKeys.add(key);
         result.push(g);
       }
     } else {
@@ -906,10 +986,10 @@ export function deduplicateGadgets(existingGadgets = [], incomingGadgets = []) {
 
   for (const g of incoming) {
     if (!g || typeof g !== 'object') continue;
-    const key = g.id || g.hash;
+    const key = getGadgetDeduplicationKey(g);
     if (key) {
-      if (!seenIds.has(key)) {
-        seenIds.add(key);
+      if (!seenKeys.has(key)) {
+        seenKeys.add(key);
         result.push(g);
       }
     } else {

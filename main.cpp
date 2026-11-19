@@ -473,7 +473,12 @@ int main(int argc, char* argv[]) {
         if (uploader.uploadReport(copyPath.string(), reportDocId)) {
             std::cout << "[+] Report uploaded to Firebase." << std::endl;
             // Upload discovered gadgets to Firestore 'gadgets' collection
-            uploader.uploadGadgets(base, arch_to_use, fileHash, reportId, gadgets);
+            if (!uploader.uploadGadgets(base, arch_to_use, fileHash, reportId, gadgets)) {
+                std::cerr << "[x] Firebase gadget upload failed or was incomplete.\n"
+                          << "[i] Report metadata was uploaded, but individual gadgets could not be fully stored in Firestore.\n"
+                          << "[i] Local analysis output and payloads remain preserved in 'reports/'.\n";
+                return 1;
+            }
         } else {
             std::cerr << "[x] Firebase upload failed. Cloud write access is disabled or unauthorized.\n"
                       << "[i] Local analysis output and payloads remain preserved in 'reports/'.\n";

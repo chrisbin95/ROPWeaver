@@ -44,7 +44,7 @@ export default function SearchPage({ onSelectBinarySample, onSelectReportId, onS
         gadgetsSnap.forEach((doc) => {
           const g = { id: doc.id, ...doc.data() };
           gadgetsList.push(g);
-          const rawFn = g["file name"] || g.fileName || g.binary_name || '';
+          const rawFn = g.filename || g["file name"] || g.fileName || g.binary_name || '';
           const cleanFn = (typeof rawFn === 'string' ? rawFn : '').split(/[/\\]/).pop();
           if (cleanFn) {
             gadgetCountsByBinary[cleanFn] = (gadgetCountsByBinary[cleanFn] || 0) + 1;
@@ -121,7 +121,7 @@ export default function SearchPage({ onSelectBinarySample, onSelectReportId, onS
     if (q) {
       results = results.filter(g => {
         const instr = (g.instructions || g.gadget || '').toLowerCase();
-        const bin = (g["file name"] || g.fileName || '').toLowerCase();
+        const bin = (g.filename || g["file name"] || g.fileName || '').toLowerCase();
         const hash = (g.hash || '').toLowerCase();
         const addr = (g.address || '').toLowerCase();
         return instr.includes(q) || bin.includes(q) || hash.includes(q) || addr.includes(q);

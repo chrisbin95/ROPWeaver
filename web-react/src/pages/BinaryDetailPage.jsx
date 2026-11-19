@@ -150,7 +150,7 @@ export default function BinaryDetailPage({
 
         gadgetsSnap.forEach(doc => {
           const g = { id: doc.id, ...doc.data() };
-          const gFn = (g["file name"] || g.fileName || g.binary_name || '').split(/[/\\]/).pop();
+          const gFn = (g.filename || g["file name"] || g.fileName || g.binary_name || '').split(/[/\\]/).pop();
           const gRepId = g.report_id;
           const gHash = g.hash;
 

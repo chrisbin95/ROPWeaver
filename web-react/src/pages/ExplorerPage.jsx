@@ -264,7 +264,7 @@ export default function ExplorerPage({ onNavigateToBinary, onInspectReport }) {
     }
 
     return list.filter((g) => {
-      const fileName = (g["file name"] || g.fileName || '').toLowerCase();
+      const fileName = (g.filename || g["file name"] || g.fileName || '').toLowerCase();
       const hash = (g.hash || '').toLowerCase();
       const instr = (g.instructions || g.gadget || '').toLowerCase();
       const cat = (g.category || '').toLowerCase();
@@ -350,7 +350,7 @@ export default function ExplorerPage({ onNavigateToBinary, onInspectReport }) {
     const map = new Map();
 
     filteredGadgets.forEach((g) => {
-      const rawName = g["file name"] || g.fileName || g.binary_name || 'unknown_binary';
+      const rawName = g.filename || g["file name"] || g.fileName || g.binary_name || 'unknown_binary';
       const cleanName = (typeof rawName === 'string' ? rawName : 'binary').split(/[/\\]/).pop() || 'binary';
 
       if (!map.has(cleanName)) {
