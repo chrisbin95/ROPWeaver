@@ -657,26 +657,42 @@ export default function ExplorerPage({ onNavigateToBinary, onInspectReport }) {
                       onClick={() => setSortOrder('desc')}
                       className={`sort-btn ${sortOrder === 'desc' ? 'sort-btn-active' : ''}`}
                       aria-pressed={sortOrder === 'desc'}
-                      aria-label="Sort loaded reports by upload time descending (newest first)"
-                      title="Sort loaded reports newest first"
+                      aria-label={
+                        hasAnyUploadTimestamps
+                          ? 'Sort loaded reports by upload time descending (newest first)'
+                          : 'Sort loaded reports descending by report ID (Z → A)'
+                      }
+                      title={
+                        hasAnyUploadTimestamps
+                          ? 'Sort loaded reports newest first'
+                          : 'No upload timestamps — sort by report ID, Z → A'
+                      }
                     >
                       <ArrowDown size={12} />
-                      <span>DESCENDING (NEWEST)</span>
+                      <span>{hasAnyUploadTimestamps ? 'DESCENDING (NEWEST)' : 'DESCENDING (Z → A)'}</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setSortOrder('asc')}
                       className={`sort-btn ${sortOrder === 'asc' ? 'sort-btn-active' : ''}`}
                       aria-pressed={sortOrder === 'asc'}
-                      aria-label="Sort loaded reports by upload time ascending (oldest first)"
-                      title="Sort loaded reports oldest first"
+                      aria-label={
+                        hasAnyUploadTimestamps
+                          ? 'Sort loaded reports by upload time ascending (oldest first)'
+                          : 'Sort loaded reports ascending by report ID (A → Z)'
+                      }
+                      title={
+                        hasAnyUploadTimestamps
+                          ? 'Sort loaded reports oldest first'
+                          : 'No upload timestamps — sort by report ID, A → Z'
+                      }
                     >
                       <ArrowUp size={12} />
-                      <span>ASCENDING (OLDEST)</span>
+                      <span>{hasAnyUploadTimestamps ? 'ASCENDING (OLDEST)' : 'ASCENDING (A → Z)'}</span>
                     </button>
                   </div>
                   {!hasAnyUploadTimestamps && rawReports.length > 0 && (
-                    <div className="sort-notice-tag mono text-dim" title="Loaded sample records lack explicit upload metadata (uploaded_at). Ordering is maintained deterministically by record identity.">
+                    <div className="sort-notice-tag mono text-dim" title="Loaded sample records lack explicit upload metadata (uploaded_at). Ordering is maintained deterministically by report ID. Upload genuine timestamps to enable chronological sorting.">
                       <AlertTriangle size={11} className="text-accent-amber" />
                       <span>NO UPLOAD METADATA DETECTED IN LOADED SAMPLE — ORDERED DETERMINISTICALLY BY ID</span>
                     </div>
@@ -742,10 +758,11 @@ export default function ExplorerPage({ onNavigateToBinary, onInspectReport }) {
                 <div className="empty-state-card" style={{ padding: '2.5rem 1.5rem', textAlign: 'center' }}>
                   <Database size={28} className="text-accent-cyan" style={{ marginBottom: '0.75rem', opacity: 0.8 }} />
                   <h3 className="mono text-sm" style={{ marginBottom: '0.5rem', color: 'var(--text-main)' }}>
-                    GADGET DATASTORE (DEFERRED TO OPTIMIZE INITIAL LOAD)
+                    GADGET INDEX — LOAD ON DEMAND
                   </h3>
                   <p className="mono text-dim text-xs" style={{ maxWidth: '540px', margin: '0 auto 1.25rem' }}>
-                    Indexed disassembly gadgets are loaded on demand in bounded batches of {GADGETS_BATCH_LIMIT} documents to reduce bandwidth and Firestore read consumption.
+                    Disassembly gadgets from indexed binaries are retrieved on demand in bounded batches of {GADGETS_BATCH_LIMIT} to minimize Firestore read costs.
+                    Click below to load the first batch and browse gadgets by instruction sequence, binary, or architecture.
                   </p>
                   <button
                     type="button"

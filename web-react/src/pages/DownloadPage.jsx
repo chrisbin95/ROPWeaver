@@ -53,19 +53,31 @@ export default function DownloadPage({ onNavigateTab }) {
   const [selectedArch, setSelectedArch] = useState(
     recommendation.recommendedArch || (recommendation.recommendedOS === 'macos' ? null : 'x86_64')
   );
+  // Track whether the user has explicitly changed the OS selection from the initial default.
+  // Once the user manually picks an OS, automatic recommendation syncing must NOT override their choice.
+  const [userHasExplicitlySelected, setUserHasExplicitlySelected] = useState(false);
 
-  // Sync selection when initial asynchronous highEntropyHints arrive if user hasn't diverged
+  // Sync selection only when the initial asynchronous highEntropyHints arrive AND the user has
+  // not yet made an explicit manual selection. This allows the initial auto-detection to update
+  // from a UA-based guess (e.g., 'windows' default) to the more accurate high-entropy result,
+  // but once the user clicks any OS card or dropdown option, their choice is permanently locked.
   useEffect(() => {
-    if (recommendation.recommendedOS && selectedOS === 'windows' && clientDetection.platform !== 'windows') {
+    if (
+      !userHasExplicitlySelected &&
+      recommendation.recommendedOS &&
+      selectedOS === 'windows' &&
+      clientDetection.platform !== 'windows'
+    ) {
       setSelectedOS(recommendation.recommendedOS);
       setSelectedArch(
         recommendation.recommendedArch || (recommendation.recommendedOS === 'macos' ? null : 'x86_64')
       );
     }
-  }, [recommendation, clientDetection.platform, selectedOS]);
+  }, [recommendation, clientDetection.platform, selectedOS, userHasExplicitlySelected]);
 
   const handleSelectOS = (osKey) => {
     setSelectedOS(osKey);
+    setUserHasExplicitlySelected(true);
     // Pick sensible default arch for the newly chosen OS
     if (osKey === 'windows') {
       setSelectedArch('x86_64');
@@ -89,6 +101,8 @@ export default function DownloadPage({ onNavigateTab }) {
     setSelectedArch(
       recommendation.recommendedArch || (recommendation.recommendedOS === 'macos' ? null : 'x86_64')
     );
+    // Resetting to recommendation re-enables future auto-syncing
+    setUserHasExplicitlySelected(false);
   };
 
   const handleCopy = (text, id) => {
