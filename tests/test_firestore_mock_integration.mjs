@@ -420,24 +420,61 @@ async function main() {
 
       assert.strictEqual(res.status, 0, `CLI failed with code ${res.status}. Stderr: ${res.stderr}`);
 
-      // Sequence: 1 GET, 1 PATCH, 2 POST commits
+      // Calculate expected batches dynamically
       const expectedBatches = Math.ceil(multiBatchGadgetCount / 400);
-      assert.strictEqual(expectedBatches, 2, `Multi-batch fixture must require exactly 2 commit batches, got ${expectedBatches}`);
-      assert.strictEqual(mock.requests.length, 4, `Expected 4 requests (1 GET, 1 PATCH, 2 commits), got ${mock.requests.length}`);
+      assert.ok(expectedBatches >= 2, `Multi-batch fixture must require at least 2 commit batches, got ${expectedBatches}`);
+
+      // Expected request sequence: 1 GET (exists check), 1 PATCH (report metadata), followed by commit POST requests
+      const commitRequests = mock.requests.filter(r => r.method === 'POST' && r.url.includes(':commit'));
+      assert.strictEqual(
+        commitRequests.length,
+        expectedBatches,
+        `Expected ${expectedBatches} commit batches, got ${commitRequests.length}`
+      );
+      assert.strictEqual(
+        mock.requests.length,
+        2 + expectedBatches,
+        `Expected ${2 + expectedBatches} total requests (1 GET, 1 PATCH, ${expectedBatches} commits), got ${mock.requests.length}`
+      );
       assert.strictEqual(mock.requests[0].method, 'GET');
       assert.strictEqual(mock.requests[1].method, 'PATCH');
-      assert.strictEqual(mock.requests[2].method, 'POST');
-      assert.strictEqual(mock.requests[3].method, 'POST');
 
-      const batch1Writes = mock.requests[2].body?.writes?.length || 0;
-      const batch2Writes = mock.requests[3].body?.writes?.length || 0;
+      const seenGadgetNames = new Set();
+      let totalCommittedWrites = 0;
 
-      const expectedBatch1 = 400;
-      const expectedBatch2 = multiBatchGadgetCount - 400;
+      commitRequests.forEach((req, idx) => {
+        const writes = req.body?.writes || [];
+        const isLastBatch = (idx === expectedBatches - 1);
+        const expectedWritesInBatch = isLastBatch
+          ? (multiBatchGadgetCount % 400 === 0 ? 400 : multiBatchGadgetCount % 400)
+          : 400;
 
-      assert.strictEqual(batch1Writes, expectedBatch1, `Batch 1 should have exactly ${expectedBatch1} writes, got ${batch1Writes}`);
-      assert.strictEqual(batch2Writes, expectedBatch2, `Batch 2 should have exactly ${expectedBatch2} writes, got ${batch2Writes}`);
-      assert.strictEqual(batch1Writes + batch2Writes, multiBatchGadgetCount, `Total writes should equal ${multiBatchGadgetCount}, got ${batch1Writes + batch2Writes}`);
+        assert.strictEqual(
+          writes.length,
+          expectedWritesInBatch,
+          `Batch ${idx + 1} should have ${expectedWritesInBatch} writes, got ${writes.length}`
+        );
+
+        for (const w of writes) {
+          const docName = w.update?.name;
+          assert.ok(docName, `Batch ${idx + 1} contains write without document name`);
+          assert.ok(!seenGadgetNames.has(docName), `Duplicate gadget write detected: ${docName}`);
+          seenGadgetNames.add(docName);
+        }
+
+        totalCommittedWrites += writes.length;
+      });
+
+      assert.strictEqual(
+        totalCommittedWrites,
+        multiBatchGadgetCount,
+        `Total committed writes (${totalCommittedWrites}) must equal fixture gadget count (${multiBatchGadgetCount})`
+      );
+      assert.strictEqual(
+        seenGadgetNames.size,
+        multiBatchGadgetCount,
+        `Unique committed gadget documents (${seenGadgetNames.size}) must equal fixture gadget count (${multiBatchGadgetCount})`
+      );
     });
 
     // -----------------------------------------------------------------------
