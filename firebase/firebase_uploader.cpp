@@ -206,11 +206,141 @@ void FirebaseUploader::loadConfig(const std::string& configPath) {
     }
 }
 
+std::string FirebaseUploader::getFirestoreBaseUrl(bool& isEmulator, bool logError) {
+    isEmulator = false;
+    const char* envVal = std::getenv("FIRESTORE_EMULATOR_HOST");
+    if (!envVal || envVal[0] == '\0') {
+        return "https://firestore.googleapis.com";
+    }
+
+    std::string raw(envVal);
+    size_t first = raw.find_first_not_of(" \t\r\n");
+    if (first == std::string::npos) {
+        if (logError) {
+            std::cerr << "[x] Invalid FIRESTORE_EMULATOR_HOST: value cannot be whitespace only.\n";
+        }
+        return "";
+    }
+    size_t last = raw.find_last_not_of(" \t\r\n");
+    std::string hostStr = raw.substr(first, (last - first + 1));
+
+    if (hostStr.find("://") != std::string::npos ||
+        hostStr.find('/') != std::string::npos ||
+        hostStr.find('\\') != std::string::npos ||
+        hostStr.find('?') != std::string::npos ||
+        hostStr.find('#') != std::string::npos ||
+        hostStr.find('@') != std::string::npos ||
+        hostStr.find(' ') != std::string::npos ||
+        hostStr.find('\t') != std::string::npos) {
+        if (logError) {
+            std::cerr << "[x] Invalid FIRESTORE_EMULATOR_HOST: must be a bare loopback host (localhost, 127.0.0.1, [::1]) optionally followed by :port without scheme or path: '" << hostStr << "'\n";
+        }
+        return "";
+    }
+
+    std::string hostPart;
+    std::string portPart;
+    bool hasColon = false;
+
+    if (hostStr.front() == '[') {
+        size_t closeBracket = hostStr.find(']');
+        if (closeBracket == std::string::npos) {
+            if (logError) {
+                std::cerr << "[x] Invalid FIRESTORE_EMULATOR_HOST: unclosed IPv6 bracket in '" << hostStr << "'\n";
+            }
+            return "";
+        }
+        hostPart = hostStr.substr(0, closeBracket + 1);
+        if (closeBracket + 1 < hostStr.size()) {
+            if (hostStr[closeBracket + 1] != ':') {
+                if (logError) {
+                    std::cerr << "[x] Invalid FIRESTORE_EMULATOR_HOST: unexpected character after bracket in '" << hostStr << "'\n";
+                }
+                return "";
+            }
+            hasColon = true;
+            portPart = hostStr.substr(closeBracket + 2);
+        }
+    } else {
+        size_t colonPos = hostStr.find(':');
+        if (colonPos != std::string::npos) {
+            hasColon = true;
+            hostPart = hostStr.substr(0, colonPos);
+            portPart = hostStr.substr(colonPos + 1);
+            if (portPart.find(':') != std::string::npos) {
+                if (logError) {
+                    std::cerr << "[x] Invalid FIRESTORE_EMULATOR_HOST: multiple colons in '" << hostStr << "' (IPv6 must be in brackets, e.g. [::1]:8080)\n";
+                }
+                return "";
+            }
+        } else {
+            hostPart = hostStr;
+        }
+    }
+
+    if (hasColon && portPart.empty()) {
+        if (logError) {
+            std::cerr << "[x] Invalid FIRESTORE_EMULATOR_HOST: trailing colon with missing port in '" << hostStr << "'\n";
+        }
+        return "";
+    }
+
+    std::string hostLower = hostPart;
+    std::transform(hostLower.begin(), hostLower.end(), hostLower.begin(), ::tolower);
+    if (hostLower != "localhost" && hostLower != "127.0.0.1" && hostLower != "[::1]") {
+        if (logError) {
+            std::cerr << "[x] Invalid FIRESTORE_EMULATOR_HOST: '" << hostPart << "' is not a permitted loopback address (allowed: localhost, 127.0.0.1, [::1]).\n";
+        }
+        return "";
+    }
+
+    if (!portPart.empty()) {
+        if (portPart.size() > 5) {
+            if (logError) {
+                std::cerr << "[x] Invalid FIRESTORE_EMULATOR_HOST port length: '" << portPart << "'\n";
+            }
+            return "";
+        }
+        for (char c : portPart) {
+            if (!std::isdigit(static_cast<unsigned char>(c))) {
+                if (logError) {
+                    std::cerr << "[x] Invalid FIRESTORE_EMULATOR_HOST port: '" << portPart << "' must contain only digits.\n";
+                }
+                return "";
+            }
+        }
+        try {
+            int portVal = std::stoi(portPart);
+            if (portVal <= 0 || portVal > 65535) {
+                if (logError) {
+                    std::cerr << "[x] FIRESTORE_EMULATOR_HOST port out of range (1-65535): " << portVal << "\n";
+                }
+                return "";
+            }
+        } catch (...) {
+            if (logError) {
+                std::cerr << "[x] Invalid FIRESTORE_EMULATOR_HOST port: '" << portPart << "'\n";
+            }
+            return "";
+        }
+    }
+
+    isEmulator = true;
+    return "http://" + hostStr;
+}
+
 bool FirebaseUploader::reportExists(const std::string& docId) {
     if (!isConfigured() || docId.empty()) return false;
 
+    bool isEmulator = false;
+    std::string baseUrl = getFirestoreBaseUrl(isEmulator);
+    if (baseUrl.empty()) {
+        std::cerr << "[x] Aborting reportExists: invalid FIRESTORE_EMULATOR_HOST.\n";
+        return false;
+    }
+
     std::string proj = !projectId.empty() ? projectId : "ropweaver";
-    std::string endpoint = "https://firestore.googleapis.com/v1/projects/" + proj +
+    std::string endpoint = baseUrl + "/v1/projects/" + proj +
                            "/databases/(default)/documents/reports/" + docId + "?key=" + apiKey;
 
     CURL* curl = curl_easy_init();
@@ -219,22 +349,27 @@ bool FirebaseUploader::reportExists(const std::string& docId) {
     std::string responseString;
     curl_easy_setopt(curl, CURLOPT_URL, endpoint.c_str());
     curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L);
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L);
+    if (isEmulator) {
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+    } else {
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L);
 #if defined(_WIN32)
 #ifndef CURLSSLOPT_NATIVE_CA
 #define CURLSSLOPT_NATIVE_CA (1L << 4)
 #endif
-    curl_easy_setopt(curl, CURLOPT_SSL_OPTIONS, CURLSSLOPT_NATIVE_CA);
+        curl_easy_setopt(curl, CURLOPT_SSL_OPTIONS, CURLSSLOPT_NATIVE_CA);
 #endif
 
-    std::string exeCa1 = (getExeDir() / "curl-ca-bundle.crt").string();
-    if (std::ifstream("curl-ca-bundle.crt").good()) {
-        curl_easy_setopt(curl, CURLOPT_CAINFO, "curl-ca-bundle.crt");
-    } else if (std::ifstream(exeCa1).good()) {
-        curl_easy_setopt(curl, CURLOPT_CAINFO, exeCa1.c_str());
-    } else if (std::ifstream("C:/msys64/mingw64/etc/ssl/certs/ca-bundle.crt").good()) {
-        curl_easy_setopt(curl, CURLOPT_CAINFO, "C:/msys64/mingw64/etc/ssl/certs/ca-bundle.crt");
+        std::string exeCa1 = (getExeDir() / "curl-ca-bundle.crt").string();
+        if (std::ifstream("curl-ca-bundle.crt").good()) {
+            curl_easy_setopt(curl, CURLOPT_CAINFO, "curl-ca-bundle.crt");
+        } else if (std::ifstream(exeCa1).good()) {
+            curl_easy_setopt(curl, CURLOPT_CAINFO, exeCa1.c_str());
+        } else if (std::ifstream("C:/msys64/mingw64/etc/ssl/certs/ca-bundle.crt").good()) {
+            curl_easy_setopt(curl, CURLOPT_CAINFO, "C:/msys64/mingw64/etc/ssl/certs/ca-bundle.crt");
+        }
     }
 
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
@@ -366,6 +501,13 @@ bool FirebaseUploader::uploadReport(const std::string& jsonPath, const std::stri
         return false;
     }
 
+    bool isEmulator = false;
+    std::string baseUrl = getFirestoreBaseUrl(isEmulator);
+    if (baseUrl.empty()) {
+        std::cerr << "[x] Aborting uploadReport: invalid FIRESTORE_EMULATOR_HOST.\n";
+        return false;
+    }
+
     std::ifstream file(jsonPath);
     if (!file.is_open()) {
         std::cerr << "[x] Failed to open report JSON file: " << jsonPath << "\n";
@@ -389,15 +531,20 @@ bool FirebaseUploader::uploadReport(const std::string& jsonPath, const std::stri
 
     if (!docId.empty()) {
         // Upsert to specific document ID: PATCH /reports/<docId>
-        endpoint = "https://firestore.googleapis.com/v1/projects/" + proj +
+        endpoint = baseUrl + "/v1/projects/" + proj +
                    "/databases/(default)/documents/reports/" + docId + "?key=" + apiKey;
         method = "PATCH";
     } else {
-        std::string separator = (firebaseUrl.find('?') == std::string::npos) ? "?key=" : "&key=";
-        endpoint = firebaseUrl + separator + apiKey;
+        if (isEmulator) {
+            endpoint = baseUrl + "/v1/projects/" + proj +
+                       "/databases/(default)/documents/reports?key=" + apiKey;
+        } else {
+            std::string separator = (firebaseUrl.find('?') == std::string::npos) ? "?key=" : "&key=";
+            endpoint = firebaseUrl + separator + apiKey;
+        }
     }
 
-    return uploadToEndpointWithMethod(endpoint, firestoreFormat.dump(), method);
+    return uploadToEndpointWithMethod(endpoint, firestoreFormat.dump(), method, isEmulator);
 }
 
 bool FirebaseUploader::uploadReportFromData(const std::string& binaryName,
@@ -405,6 +552,13 @@ bool FirebaseUploader::uploadReportFromData(const std::string& binaryName,
                                              const std::string& jsonData) {
     if (!isConfigured()) {
         std::cerr << "[x] Firebase config not loaded properly.\n";
+        return false;
+    }
+
+    bool isEmulator = false;
+    std::string baseUrl = getFirestoreBaseUrl(isEmulator);
+    if (baseUrl.empty()) {
+        std::cerr << "[x] Aborting uploadReportFromData: invalid FIRESTORE_EMULATOR_HOST.\n";
         return false;
     }
 
@@ -420,8 +574,16 @@ bool FirebaseUploader::uploadReportFromData(const std::string& binaryName,
     
     json firestoreFormat = { {"fields", buildReportDocumentFields(reportJson)} };
 
-    std::string separator = (firebaseUrl.find('?') == std::string::npos) ? "?key=" : "&key=";
-    return uploadToEndpoint(firebaseUrl + separator + apiKey, firestoreFormat.dump());
+    std::string endpoint;
+    if (isEmulator) {
+        std::string proj = !projectId.empty() ? projectId : "ropweaver";
+        endpoint = baseUrl + "/v1/projects/" + proj +
+                   "/databases/(default)/documents/reports?key=" + apiKey;
+    } else {
+        std::string separator = (firebaseUrl.find('?') == std::string::npos) ? "?key=" : "&key=";
+        endpoint = firebaseUrl + separator + apiKey;
+    }
+    return uploadToEndpoint(endpoint, firestoreFormat.dump(), isEmulator);
 }
 
 bool FirebaseUploader::uploadGadgets(const std::string& binaryName,
@@ -434,8 +596,15 @@ bool FirebaseUploader::uploadGadgets(const std::string& binaryName,
         return false;
     }
 
+    bool isEmulator = false;
+    std::string baseUrl = getFirestoreBaseUrl(isEmulator);
+    if (baseUrl.empty()) {
+        std::cerr << "[x] Aborting uploadGadgets: invalid FIRESTORE_EMULATOR_HOST.\n";
+        return false;
+    }
+
     std::string proj = !projectId.empty() ? projectId : "ropweaver";
-    std::string commitEndpoint = "https://firestore.googleapis.com/v1/projects/" + proj +
+    std::string commitEndpoint = baseUrl + "/v1/projects/" + proj +
                                  "/databases/(default)/documents:commit?key=" + apiKey;
 
     std::cout << "[*] Uploading " << gadgets.size() << " gadgets to Firestore 'gadgets' collection..." << std::endl;
@@ -490,7 +659,7 @@ bool FirebaseUploader::uploadGadgets(const std::string& binaryName,
         }
 
         json commitPayload = { {"writes", writesArray} };
-        if (uploadToEndpoint(commitEndpoint, commitPayload.dump())) {
+        if (uploadToEndpointWithMethod(commitEndpoint, commitPayload.dump(), "POST", isEmulator)) {
             uploadedCount += (endIdx - i);
         } else {
             std::cerr << "[x] Failed to upload batch of gadgets.\n";
@@ -503,13 +672,15 @@ bool FirebaseUploader::uploadGadgets(const std::string& binaryName,
 }
 
 bool FirebaseUploader::uploadToEndpoint(const std::string& endpoint,
-                                         const std::string& jsonData) {
-    return uploadToEndpointWithMethod(endpoint, jsonData, "POST");
+                                         const std::string& jsonData,
+                                         bool isEmulator) {
+    return uploadToEndpointWithMethod(endpoint, jsonData, "POST", isEmulator);
 }
 
 bool FirebaseUploader::uploadToEndpointWithMethod(const std::string& endpoint,
                                                   const std::string& jsonData,
-                                                  const std::string& method) {
+                                                  const std::string& method,
+                                                  bool isEmulator) {
     CURL* curl = curl_easy_init();
     if (!curl) {
         std::cerr << "[x] curl_easy_init() failed.\n";
@@ -531,23 +702,28 @@ bool FirebaseUploader::uploadToEndpointWithMethod(const std::string& endpoint,
     char errbuf[CURL_ERROR_SIZE] = {0};
     curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, errbuf);
     curl_easy_setopt(curl, CURLOPT_TIMEOUT, 15L);
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L);
+    if (isEmulator) {
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+    } else {
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L);
 #if defined(_WIN32)
 #ifndef CURLSSLOPT_NATIVE_CA
 #define CURLSSLOPT_NATIVE_CA (1L << 4)
 #endif
-    curl_easy_setopt(curl, CURLOPT_SSL_OPTIONS, CURLSSLOPT_NATIVE_CA);
+        curl_easy_setopt(curl, CURLOPT_SSL_OPTIONS, CURLSSLOPT_NATIVE_CA);
 #endif
 
-    // Look for local, exeDir, or standard CA bundle
-    std::string exeCa2 = (getExeDir() / "curl-ca-bundle.crt").string();
-    if (std::ifstream("curl-ca-bundle.crt").good()) {
-        curl_easy_setopt(curl, CURLOPT_CAINFO, "curl-ca-bundle.crt");
-    } else if (std::ifstream(exeCa2).good()) {
-        curl_easy_setopt(curl, CURLOPT_CAINFO, exeCa2.c_str());
-    } else if (std::ifstream("C:/msys64/mingw64/etc/ssl/certs/ca-bundle.crt").good()) {
-        curl_easy_setopt(curl, CURLOPT_CAINFO, "C:/msys64/mingw64/etc/ssl/certs/ca-bundle.crt");
+        // Look for local, exeDir, or standard CA bundle
+        std::string exeCa2 = (getExeDir() / "curl-ca-bundle.crt").string();
+        if (std::ifstream("curl-ca-bundle.crt").good()) {
+            curl_easy_setopt(curl, CURLOPT_CAINFO, "curl-ca-bundle.crt");
+        } else if (std::ifstream(exeCa2).good()) {
+            curl_easy_setopt(curl, CURLOPT_CAINFO, exeCa2.c_str());
+        } else if (std::ifstream("C:/msys64/mingw64/etc/ssl/certs/ca-bundle.crt").good()) {
+            curl_easy_setopt(curl, CURLOPT_CAINFO, "C:/msys64/mingw64/etc/ssl/certs/ca-bundle.crt");
+        }
     }
 
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);

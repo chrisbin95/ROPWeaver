@@ -21,6 +21,12 @@ public:
     // Checks if the configuration was loaded successfully
     bool isConfigured() const { return !firebaseUrl.empty() && !apiKey.empty(); }
 
+    // Resolves and strictly validates the Firestore base URL.
+    // If FIRESTORE_EMULATOR_HOST is unset, returns "https://firestore.googleapis.com" (isEmulator = false).
+    // If set to a valid loopback host (localhost, 127.0.0.1, [::1]), returns "http://" + host (isEmulator = true).
+    // If set to an invalid host, scheme, or path, logs an error and returns an empty string.
+    static std::string getFirestoreBaseUrl(bool& isEmulator, bool logError = true);
+
     // Checks if a report document with the given docId already exists in Firestore
     bool reportExists(const std::string& docId);
 
@@ -63,8 +69,8 @@ private:
     void loadConfig(const std::string& configPath);
 
     // Handles the actual CURL request to the Firestore endpoint
-    bool uploadToEndpoint(const std::string& endpoint, const std::string& jsonData);
-    bool uploadToEndpointWithMethod(const std::string& endpoint, const std::string& jsonData, const std::string& method);
+    bool uploadToEndpoint(const std::string& endpoint, const std::string& jsonData, bool isEmulator = false);
+    bool uploadToEndpointWithMethod(const std::string& endpoint, const std::string& jsonData, const std::string& method, bool isEmulator = false);
 };
 
 } // namespace ropweaver
