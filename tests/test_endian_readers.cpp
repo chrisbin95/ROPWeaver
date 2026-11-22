@@ -5,7 +5,47 @@
 
 using namespace ropweaver;
 
+// ---------------------------------------------------------------------------
+// Controlled Multi-Batch Gadget Fixture
+// Emits 90 distinct, non-inlined leaf functions with volatile arithmetic
+// to guarantee > 400 genuine discovered ROP gadgets across all architectures
+// (Linux x86_64 ELF, macOS ARM64 Mach-O, macOS x86_64 Mach-O, Windows x86_64 PE).
+// ---------------------------------------------------------------------------
+#if defined(_MSC_VER)
+#define ROPWEAVER_NOINLINE __declspec(noinline)
+#elif defined(__GNUC__) || defined(__clang__)
+#define ROPWEAVER_NOINLINE __attribute__((noinline))
+#else
+#define ROPWEAVER_NOINLINE
+#endif
+
+#define GADGET_LEAF(id) \
+    ROPWEAVER_NOINLINE uint32_t gadget_leaf_##id(uint32_t a, uint32_t b) { \
+        volatile uint32_t x = a + static_cast<uint32_t>(id); \
+        volatile uint32_t y = b ^ (static_cast<uint32_t>(id) * 3U + 1U); \
+        volatile uint32_t z = (x << 1U) - y; \
+        return z ^ (static_cast<uint32_t>(id) + 7U); \
+    }
+
+#define G10(p) \
+    GADGET_LEAF(p##0) GADGET_LEAF(p##1) GADGET_LEAF(p##2) GADGET_LEAF(p##3) GADGET_LEAF(p##4) \
+    GADGET_LEAF(p##5) GADGET_LEAF(p##6) GADGET_LEAF(p##7) GADGET_LEAF(p##8) GADGET_LEAF(p##9)
+
+// 90 leaf functions (gadget_leaf_10 through gadget_leaf_99)
+G10(1) G10(2) G10(3) G10(4) G10(5) G10(6) G10(7) G10(8) G10(9)
+
 int main() {
+    // Accumulate calls to all 90 controlled gadget functions to guarantee retention
+    volatile uint32_t gadget_accumulator = 0U;
+    #define C10(p) \
+        gadget_accumulator += gadget_leaf_##p##0(gadget_accumulator, 1U) + gadget_leaf_##p##1(gadget_accumulator, 2U) + \
+                              gadget_leaf_##p##2(gadget_accumulator, 3U) + gadget_leaf_##p##3(gadget_accumulator, 4U) + \
+                              gadget_leaf_##p##4(gadget_accumulator, 5U) + gadget_leaf_##p##5(gadget_accumulator, 6U) + \
+                              gadget_leaf_##p##6(gadget_accumulator, 7U) + gadget_leaf_##p##7(gadget_accumulator, 8U) + \
+                              gadget_leaf_##p##8(gadget_accumulator, 9U) + gadget_leaf_##p##9(gadget_accumulator, 10U);
+    C10(1) C10(2) C10(3) C10(4) C10(5) C10(6) C10(7) C10(8) C10(9)
+    (void)gadget_accumulator;
+
     int failures = 0;
 
     auto check32 = [&](const char* name, int32_t got, int32_t expected) {
