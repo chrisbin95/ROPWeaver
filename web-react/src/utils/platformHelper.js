@@ -26,7 +26,7 @@ export const OFFICIAL_ASSETS = {
     filename: 'ropweaver-windows-x64.exe',
     url: '/ropweaver-windows-x64.exe',
     size: '9.5 MB',
-    sha256: '53baa53a2c1c3c22e6d49a21bbbf89ba1838a19fe465666a61aa978ee6ffd02f',
+    sha256: '552b82173df0f09528a793368ed168b1c70204e4549b05ab1a682809ed38df98',
     platform: 'windows',
     arch: 'x86_64',
     isStaticAsset: true
@@ -36,7 +36,7 @@ export const OFFICIAL_ASSETS = {
     filename: 'ropweaver-v1.6.3-win64.zip',
     url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.3-win64.zip`,
     size: '9.5 MB',
-    sha256: 'd9acde6bfee97cd71630ad4d97f1e709a78131c98ddb2b397578ed9286941fd4',
+    sha256: '80a99faf4c81fde7d963978f03ecc7ad00a9c17ec208ac6dae49dfb4d8c154d5',
     platform: 'windows',
     arch: 'x86_64',
     isStaticAsset: false

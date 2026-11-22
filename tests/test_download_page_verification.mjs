@@ -20,12 +20,12 @@ const expectedAssets = [
   {
     name: 'Windows Standalone Executable',
     file: 'ropweaver-windows-x64.exe',
-    sha256: '53baa53a2c1c3c22e6d49a21bbbf89ba1838a19fe465666a61aa978ee6ffd02f'
+    sha256: '552b82173df0f09528a793368ed168b1c70204e4549b05ab1a682809ed38df98'
   },
   {
     name: 'Windows x86_64 ZIP',
     file: 'ropweaver-v1.6.3-win64.zip',
-    sha256: 'd9acde6bfee97cd71630ad4d97f1e709a78131c98ddb2b397578ed9286941fd4'
+    sha256: '80a99faf4c81fde7d963978f03ecc7ad00a9c17ec208ac6dae49dfb4d8c154d5'
   },
   {
     name: 'Linux Debian/Ubuntu AMD64 DEB',
