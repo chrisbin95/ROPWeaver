@@ -26,10 +26,11 @@ import os from 'node:os';
 import crypto from 'node:crypto';
 import assert from 'node:assert';
 
-console.log('=== ROPWeaver Task 5.9B5: Local Firestore Mock Integration Test Suite ===\n');
+console.log('=== ROPWeaver Task 5.9C4: Cross-Platform Firestore Mock Integration Test Suite ===\n');
 
 let passCount = 0;
 let failCount = 0;
+let skipCount = 0;
 
 function runTest(name, fn) {
   try {
@@ -45,7 +46,13 @@ function runTest(name, fn) {
 
 async function runAsyncTest(name, fn) {
   try {
-    await fn();
+    const res = await fn();
+    if (res && res.skipped) {
+      console.log(`  [SKIP] ${name}`);
+      console.log(`         ${res.reason}`);
+      skipCount++;
+      return;
+    }
     console.log(`  [PASS] ${name}`);
     passCount++;
   } catch (err) {
@@ -171,6 +178,93 @@ class MockFirestoreServer {
 }
 
 // ---------------------------------------------------------------------------
+// Executable and Fixture Resolution
+// ---------------------------------------------------------------------------
+function resolveExecutable() {
+  if (process.env.ROPWEAVER_EXECUTABLE) {
+    const customPath = path.resolve(process.env.ROPWEAVER_EXECUTABLE);
+    if (!fs.existsSync(customPath)) {
+      throw new Error(`Specified ROPWEAVER_EXECUTABLE does not exist: ${customPath}`);
+    }
+    return customPath;
+  }
+
+  const candidates = [
+    path.resolve('build-win', 'ropweaver.exe'),
+    path.resolve('build', 'ropweaver'),
+    path.resolve('build-mac', 'build', 'ropweaver')
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  throw new Error(
+    `No ROPWeaver executable found. Searched paths:\n` +
+    candidates.map(c => `  - ${c}`).join('\n') +
+    `\nPlease build ROPWeaver or set ROPWEAVER_EXECUTABLE.`
+  );
+}
+
+function resolveSingleBatchBinary() {
+  const target = path.resolve('test_binaries', 'binsh_test');
+  if (!fs.existsSync(target)) {
+    throw new Error(`Required single-batch test fixture missing: ${target}`);
+  }
+  return target;
+}
+
+function resolveMultiBatchBinary() {
+  if (process.env.ROPWEAVER_MULTI_BATCH_BINARY) {
+    const customPath = path.resolve(process.env.ROPWEAVER_MULTI_BATCH_BINARY);
+    if (!fs.existsSync(customPath)) {
+      throw new Error(`Specified ROPWEAVER_MULTI_BATCH_BINARY does not exist: ${customPath}`);
+    }
+    return customPath;
+  }
+
+  const candidates = [
+    path.resolve('build-win', 'test_endian_readers.exe'),
+    path.resolve('build', 'test_endian_readers'),
+    path.resolve('build-mac', 'build', 'test_endian_readers')
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  throw new Error(
+    `No multi-batch test fixture found. Searched paths:\n` +
+    candidates.map(c => `  - ${c}`).join('\n') +
+    `\nPlease build test_endian_readers or set ROPWEAVER_MULTI_BATCH_BINARY.`
+  );
+}
+
+async function verifyMultiBatchFixture(fixturePath) {
+  if (!fs.existsSync(fixturePath)) {
+    throw new Error(`Multi-batch fixture binary missing: ${fixturePath}`);
+  }
+  const probe = await runCli(fixturePath, ['--list-gadgets']);
+  const match = probe.stdout.match(/Found\s+(\d+)\s+gadgets/);
+  if (!match) {
+    throw new Error(
+      `Failed to determine gadget count from multi-batch fixture ${fixturePath}.\nStdout: ${probe.stdout}\nStderr: ${probe.stderr}`
+    );
+  }
+  const count = parseInt(match[1], 10);
+  if (count <= 400) {
+    throw new Error(
+      `Multi-batch fixture ${fixturePath} contains only ${count} gadgets; strictly requires > 400 gadgets for multi-batch testing.`
+    );
+  }
+  return count;
+}
+
+// ---------------------------------------------------------------------------
 // CLI Execution Helper (Asynchronous to keep Node HTTP event loop active)
 // ---------------------------------------------------------------------------
 async function runCli(binaryPath, extraArgs = [], envOverrides = {}) {
@@ -181,7 +275,7 @@ async function runCli(binaryPath, extraArgs = [], envOverrides = {}) {
         ...process.env,
         ...envOverrides
       };
-      const cliExe = path.resolve('build-win', 'ropweaver.exe');
+      const cliExe = resolveExecutable();
       const targetBinary = path.resolve(binaryPath);
 
       const args = [targetBinary, ...extraArgs];
@@ -238,6 +332,18 @@ async function runCli(binaryPath, extraArgs = [], envOverrides = {}) {
 async function main() {
   verifyProtectedArtifacts('pre-test suite initialization');
 
+  const cliExe = resolveExecutable();
+  const singleBatchBinary = resolveSingleBatchBinary();
+  const multiBatchBinary = resolveMultiBatchBinary();
+
+  console.log(`[*] Resolved ROPWeaver executable: ${cliExe}`);
+  console.log(`[*] Resolved single-batch fixture: ${singleBatchBinary}`);
+  console.log(`[*] Resolved multi-batch fixture:  ${multiBatchBinary}\n`);
+
+  // Verify multi-batch fixture meets requirements (> 400 gadgets)
+  const multiBatchGadgetCount = await verifyMultiBatchFixture(multiBatchBinary);
+  console.log(`[*] Verified multi-batch fixture gadget count: ${multiBatchGadgetCount} (> 400)\n`);
+
   const mock = new MockFirestoreServer();
   const port = await mock.start();
   const emulatorHost = `127.0.0.1:${port}`;
@@ -250,7 +356,7 @@ async function main() {
     // -----------------------------------------------------------------------
     await runAsyncTest('Test 1: Normal report metadata + gadget upload flow to loopback mock', async () => {
       mock.clear();
-      const res = await runCli('test_binaries/classic_bof.exe', ['--upload-report'], {
+      const res = await runCli(singleBatchBinary, ['--upload-report'], {
         FIRESTORE_EMULATOR_HOST: emulatorHost
       });
 
@@ -259,13 +365,15 @@ async function main() {
       // Check request sequence: GET (exists check) -> PATCH (report) -> POST (commit gadgets)
       assert.strictEqual(mock.requests.length, 3, `Expected 3 requests, got ${mock.requests.length}`);
 
+      const binStem = path.basename(singleBatchBinary, path.extname(singleBatchBinary));
+
       const getReq = mock.requests[0];
       assert.strictEqual(getReq.method, 'GET');
-      assert.match(getReq.url, /\/reports\/classic_bof_[a-f0-9]{12,}\?key=/);
+      assert.match(getReq.url, new RegExp(`\\/reports\\/${binStem}_[a-f0-9]{12,}\\?key=`));
 
       const patchReq = mock.requests[1];
       assert.strictEqual(patchReq.method, 'PATCH');
-      assert.match(patchReq.url, /\/reports\/classic_bof_[a-f0-9]{12,}\?key=/);
+      assert.match(patchReq.url, new RegExp(`\\/reports\\/${binStem}_[a-f0-9]{12,}\\?key=`));
       const reportFields = patchReq.body?.fields;
       assert.ok(reportFields, 'Report document missing fields object');
 
@@ -290,7 +398,7 @@ async function main() {
       assert.ok(firstWrite.update?.name, 'Gadget write missing doc name');
       assert.match(
         firstWrite.update.name,
-        /projects\/ropweaver\/databases\/\(default\)\/documents\/gadgets\/classic_bof_[a-f0-9]{12}_0x[0-9a-fA-F]+/
+        new RegExp(`projects/ropweaver/databases/\\(default\\)/documents/gadgets/${binStem}_[a-f0-9]{12}_0x[0-9a-fA-F]+`)
       );
 
       const gFields = firstWrite.update.fields;
@@ -306,14 +414,15 @@ async function main() {
     // -----------------------------------------------------------------------
     await runAsyncTest('Test 2: Multi-batch gadget upload with <= 400 writes per batch', async () => {
       mock.clear();
-      // test_endian_readers.exe has 490 gadgets, which splits into batches of 400 and 90
-      const res = await runCli('build-win/test_endian_readers.exe', ['--upload-report'], {
+      const res = await runCli(multiBatchBinary, ['--upload-report'], {
         FIRESTORE_EMULATOR_HOST: emulatorHost
       });
 
       assert.strictEqual(res.status, 0, `CLI failed with code ${res.status}. Stderr: ${res.stderr}`);
 
       // Sequence: 1 GET, 1 PATCH, 2 POST commits
+      const expectedBatches = Math.ceil(multiBatchGadgetCount / 400);
+      assert.strictEqual(expectedBatches, 2, `Multi-batch fixture must require exactly 2 commit batches, got ${expectedBatches}`);
       assert.strictEqual(mock.requests.length, 4, `Expected 4 requests (1 GET, 1 PATCH, 2 commits), got ${mock.requests.length}`);
       assert.strictEqual(mock.requests[0].method, 'GET');
       assert.strictEqual(mock.requests[1].method, 'PATCH');
@@ -323,9 +432,12 @@ async function main() {
       const batch1Writes = mock.requests[2].body?.writes?.length || 0;
       const batch2Writes = mock.requests[3].body?.writes?.length || 0;
 
-      assert.strictEqual(batch1Writes, 400, `Batch 1 should have exactly 400 writes, got ${batch1Writes}`);
-      assert.strictEqual(batch2Writes, 90, `Batch 2 should have exactly 90 writes, got ${batch2Writes}`);
-      assert.strictEqual(batch1Writes + batch2Writes, 490, `Total writes should equal 490, got ${batch1Writes + batch2Writes}`);
+      const expectedBatch1 = 400;
+      const expectedBatch2 = multiBatchGadgetCount - 400;
+
+      assert.strictEqual(batch1Writes, expectedBatch1, `Batch 1 should have exactly ${expectedBatch1} writes, got ${batch1Writes}`);
+      assert.strictEqual(batch2Writes, expectedBatch2, `Batch 2 should have exactly ${expectedBatch2} writes, got ${batch2Writes}`);
+      assert.strictEqual(batch1Writes + batch2Writes, multiBatchGadgetCount, `Total writes should equal ${multiBatchGadgetCount}, got ${batch1Writes + batch2Writes}`);
     });
 
     // -----------------------------------------------------------------------
@@ -344,7 +456,7 @@ async function main() {
         res.end();
       };
 
-      const res = await runCli('test_binaries/classic_bof.exe', ['--upload-report'], {
+      const res = await runCli(singleBatchBinary, ['--upload-report'], {
         FIRESTORE_EMULATOR_HOST: emulatorHost
       });
 
@@ -369,7 +481,7 @@ async function main() {
         mock.defaultHandler(req, res, record);
       };
 
-      const res = await runCli('test_binaries/classic_bof.exe', ['--upload-report', '--force'], {
+      const res = await runCli(singleBatchBinary, ['--upload-report', '--force'], {
         FIRESTORE_EMULATOR_HOST: emulatorHost
       });
 
@@ -397,7 +509,7 @@ async function main() {
         mock.defaultHandler(req, res, record);
       };
 
-      const res = await runCli('build-win/test_endian_readers.exe', ['--upload-report'], {
+      const res = await runCli(multiBatchBinary, ['--upload-report'], {
         FIRESTORE_EMULATOR_HOST: emulatorHost
       });
 
@@ -424,7 +536,7 @@ async function main() {
         }
       };
 
-      const res = await runCli('test_binaries/classic_bof.exe', ['--upload-report'], {
+      const res = await runCli(singleBatchBinary, ['--upload-report'], {
         FIRESTORE_EMULATOR_HOST: emulatorHost
       });
 
@@ -439,7 +551,7 @@ async function main() {
     // -----------------------------------------------------------------------
     await runAsyncTest('Test 6a: Reject remote host (evil.com:8080)', async () => {
       mock.clear();
-      const res = await runCli('test_binaries/classic_bof.exe', ['--upload-report'], {
+      const res = await runCli(singleBatchBinary, ['--upload-report'], {
         FIRESTORE_EMULATOR_HOST: 'evil.com:8080'
       });
 
@@ -450,7 +562,7 @@ async function main() {
 
     await runAsyncTest('Test 6b: Reject scheme prefix (http://127.0.0.1:8080)', async () => {
       mock.clear();
-      const res = await runCli('test_binaries/classic_bof.exe', ['--upload-report'], {
+      const res = await runCli(singleBatchBinary, ['--upload-report'], {
         FIRESTORE_EMULATOR_HOST: `http://${emulatorHost}`
       });
 
@@ -461,7 +573,7 @@ async function main() {
 
     await runAsyncTest('Test 6c: Reject URL path (127.0.0.1:8080/v1)', async () => {
       mock.clear();
-      const res = await runCli('test_binaries/classic_bof.exe', ['--upload-report'], {
+      const res = await runCli(singleBatchBinary, ['--upload-report'], {
         FIRESTORE_EMULATOR_HOST: `${emulatorHost}/v1`
       });
 
@@ -472,7 +584,7 @@ async function main() {
 
     await runAsyncTest('Test 6d: Reject invalid port number (127.0.0.1:99999)', async () => {
       mock.clear();
-      const res = await runCli('test_binaries/classic_bof.exe', ['--upload-report'], {
+      const res = await runCli(singleBatchBinary, ['--upload-report'], {
         FIRESTORE_EMULATOR_HOST: '127.0.0.1:99999'
       });
 
@@ -483,7 +595,7 @@ async function main() {
 
     await runAsyncTest('Test 6e: Reject trailing colon with empty port (127.0.0.1:)', async () => {
       mock.clear();
-      const res = await runCli('test_binaries/classic_bof.exe', ['--upload-report'], {
+      const res = await runCli(singleBatchBinary, ['--upload-report'], {
         FIRESTORE_EMULATOR_HOST: '127.0.0.1:'
       });
 
@@ -513,18 +625,20 @@ async function main() {
             resolve();
           });
         });
+      } catch (err) {
+        const skippedCodes = ['EAFNOSUPPORT', 'EADDRNOTAVAIL', 'ENETUNREACH', 'EACCES'];
+        if (skippedCodes.includes(err.code)) {
+          return { skipped: true, reason: `IPv6 loopback bind unavailable on host: ${err.code} (${err.message})` };
+        }
+        throw err;
+      }
 
-        const res = await runCli('test_binaries/classic_bof.exe', ['--upload-report'], {
+      try {
+        const res = await runCli(singleBatchBinary, ['--upload-report'], {
           FIRESTORE_EMULATOR_HOST: `[::1]:${ipv6Port}`
         });
 
         assert.strictEqual(res.status, 0, `CLI should accept [::1]:${ipv6Port}. Stderr: ${res.stderr}`);
-      } catch (err) {
-        if (err.code === 'EAFNOSUPPORT' || err.code === 'EADDRNOTAVAIL') {
-          console.log('    (IPv6 not available on this host environment — skipping IPv6 live bind)');
-        } else {
-          throw err;
-        }
       } finally {
         if (ipv6Server) {
           await new Promise(r => ipv6Server.close(r));
@@ -545,7 +659,7 @@ async function main() {
     verifyProtectedArtifacts('post-test suite completion');
   });
 
-  console.log(`\n=== Test Summary: ${passCount} Passed, ${failCount} Failed ===\n`);
+  console.log(`\n=== Test Summary: ${passCount} Passed, ${failCount} Failed, ${skipCount} Skipped ===\n`);
   if (failCount > 0) {
     process.exit(1);
   }

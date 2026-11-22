@@ -97,6 +97,24 @@ jobs:
             "$BIN" --version || "$BIN" --help || true
           fi
 
+      - name: Build Multi-Batch Test Fixture
+        run: |
+          clang++ -std=c++17 -arch ${{ matrix.arch }} tests/test_endian_readers.cpp -o build-mac/build/test_endian_readers
+          chmod +x build-mac/build/test_endian_readers
+          file build-mac/build/test_endian_readers
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run Firestore Mock Integration Tests
+        env:
+          ROPWEAVER_EXECUTABLE: ${{ github.workspace }}/build-mac/build/ropweaver
+          ROPWEAVER_MULTI_BATCH_BINARY: ${{ github.workspace }}/build-mac/build/test_endian_readers
+        run: |
+          node tests/test_firestore_mock_integration.mjs
+
       - name: Package Distribution Archive (.tar.gz)
         run: |
           STAGE_DIR=$(mktemp -d)

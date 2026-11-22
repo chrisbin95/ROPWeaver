@@ -44,6 +44,24 @@ jobs:
           chmod +x build/ropweaver
           ./build/ropweaver --help
 
+      - name: Build Multi-Batch Test Fixture
+        run: |
+          g++ -std=c++17 tests/test_endian_readers.cpp -o build/test_endian_readers
+          chmod +x build/test_endian_readers
+          file build/test_endian_readers
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run Firestore Mock Integration Tests
+        env:
+          ROPWEAVER_EXECUTABLE: ${{ github.workspace }}/build/ropweaver
+          ROPWEAVER_MULTI_BATCH_BINARY: ${{ github.workspace }}/build/test_endian_readers
+        run: |
+          node tests/test_firestore_mock_integration.mjs
+
       - name: Package Debian (.deb) Release
         run: |
           DEB_STAGE=$(mktemp -d)
