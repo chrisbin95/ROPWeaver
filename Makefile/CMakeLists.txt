@@ -4,13 +4,17 @@ project(ROPWeaver)
 set(CMAKE_CXX_STANDARD 17)
 set(PROJECT_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/..)
 
-# Qt automation (only used if USE_GUI)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTORCC ON)
-
-option(USE_GUI "Build with Qt GUI" OFF)
 option(BUILD_TESTS "Build test executables" ON)
+
+# Backward compatibility / safe deprecation for legacy USE_GUI
+if(DEFINED USE_GUI)
+    message(DEPRECATION "USE_GUI is deprecated; please use BUILD_GUI instead. BUILD_GUI creates an independent 'ropweaver-gui' target without replacing the CLI.")
+    if(USE_GUI AND NOT DEFINED BUILD_GUI)
+        set(BUILD_GUI ON CACHE BOOL "Build native Qt GUI application" FORCE)
+    endif()
+endif()
+
+option(BUILD_GUI "Build native Qt GUI application" OFF)
 
 # --- REQUIRED PACKAGES ---
 find_package(CURL REQUIRED)
@@ -40,6 +44,7 @@ set(CORE_SRC
     ${PROJECT_ROOT}/core/parsers/riscv64_parser.cpp
 
     # Firebase
+    ${PROJECT_ROOT}/firebase/firebase_auth.cpp
     ${PROJECT_ROOT}/firebase/firebase_uploader.cpp
 )
 
@@ -77,31 +82,43 @@ if(BUILD_TESTS)
     install(TARGETS execve_chain_test DESTINATION bin)
 endif()
 
-# Main executable (CLI or GUI)
-if(NOT USE_GUI)
-    add_executable(ropweaver
-        ${PROJECT_ROOT}/main.cpp
-        ${PROJECT_ROOT}/ui/cli.cpp
-    )
-    target_link_libraries(ropweaver PRIVATE ropweaver_core)
-else()
-    find_package(Qt5 COMPONENTS Widgets REQUIRED)
-    add_executable(ropweaver
-        ${PROJECT_ROOT}/main_qt.cpp
-        ${PROJECT_ROOT}/ui/qt_gui.cpp
-    )
-    target_link_libraries(ropweaver PRIVATE ropweaver_core Qt5::Widgets)
-endif()
-
-# Install main executable
+# CLI executable (always built)
+add_executable(ropweaver
+    ${PROJECT_ROOT}/main.cpp
+    ${PROJECT_ROOT}/ui/cli.cpp
+)
+target_link_libraries(ropweaver PRIVATE ropweaver_core)
 install(TARGETS ropweaver DESTINATION bin)
 
-# Build messages
-if(USE_GUI)
-    message("[MAKE] Building GUI version")
-else()
-    message("[MAKE] Building CLI version")
+# Optional Qt GUI executable (independent target)
+if(BUILD_GUI)
+    set(CMAKE_AUTOMOC ON)
+    set(CMAKE_AUTOUIC ON)
+    set(CMAKE_AUTORCC ON)
+
+    # Discover Qt 6 Widgets with Qt 5 fallback
+    find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets REQUIRED)
+    find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets REQUIRED)
+
+    add_executable(ropweaver-gui
+        ${PROJECT_ROOT}/main_qt.cpp
+        ${PROJECT_ROOT}/ui/qt_gui.cpp
+        ${PROJECT_ROOT}/ui/qt_gui.h
+    )
+    target_include_directories(ropweaver-gui PRIVATE
+        ${PROJECT_ROOT}
+        ${PROJECT_ROOT}/ui
+    )
+    target_link_libraries(ropweaver-gui PRIVATE
+        ropweaver_core
+        Qt${QT_VERSION_MAJOR}::Widgets
+    )
+    install(TARGETS ropweaver-gui DESTINATION bin)
 endif()
 
-message(STATUS "To build CLI: cmake -DUSE_GUI=OFF . && make")
-message(STATUS "To build GUI: cmake -DUSE_GUI=ON . && make")
+# Build status message
+if(BUILD_GUI)
+    message(STATUS "[BUILD] Building CLI (ropweaver) and GUI (ropweaver-gui)")
+else()
+    message(STATUS "[BUILD] Building CLI (ropweaver) only")
+endif()

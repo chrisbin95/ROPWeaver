@@ -88,11 +88,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference = 'S
 rd /s /q "%WIN_STAGE%" 2>nul
 echo [+] Updated: %PUBLIC_DIR%\ropweaver-v1.6.3-win64.zip
 
-if "%1"=="--win-only" (
-    echo [*] --win-only specified. Windows packaging complete.
-    exit /b 0
-)
-
 :: 3. Rebuild Windows Standalone Launcher with embedded zip
 echo.
 echo [*] Step 3: Compiling Standalone Windows Launcher (ropweaver-windows-x64.exe)...
@@ -100,6 +95,12 @@ cd /d "%ROOT_DIR%\tools\windows_launcher"
 call build_launcher.bat
 if errorlevel 1 (
     echo [!] Failed to compile windows launcher.
+    exit /b 1
+)
+
+if "%1"=="--win-only" (
+    echo [*] --win-only specified. Windows packaging complete.
+    exit /b 0
 )
 
 :: 4. Package Linux Distribution (tar.gz)

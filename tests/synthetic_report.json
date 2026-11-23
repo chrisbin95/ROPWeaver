@@ -1,0 +1,17 @@
+{
+  "architecture": "x86_64",
+  "category_counts": {
+    "others": 400,
+    "syscall": 5
+  },
+  "discovered_gadgets_count": 405,
+  "gadgets_stored_separately": true,
+  "report_date": "2026-11-23T00:00:00Z",
+  "report_id": "test_report_integration_001",
+  "target_binary": {
+    "filename": "synthetic_test_bin",
+    "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "tool_version": "1.6.3",
+  "total_gadgets": 405
+}

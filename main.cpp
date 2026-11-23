@@ -30,6 +30,10 @@
 #include "ui/cli.h"
 #include "firebase/firebase_uploader.h"
 
+#ifdef ERROR
+#undef ERROR
+#endif
+
 // ANSI escape codes for coloring
 #define ANSI_COLOR_GREEN   "\x1b[32m"
 #define ANSI_COLOR_ORANGE  "\033[33m"
@@ -65,6 +69,9 @@ static std::string timestamp_now_string() {
 
 #if defined(_WIN32)
 #include <windows.h>
+#ifdef ERROR
+#undef ERROR
+#endif
 #endif
 
 int main(int argc, char* argv[]) {
@@ -439,17 +446,32 @@ int main(int argc, char* argv[]) {
             goto end_main;
         }
 
-        // Deduplication Check: Check if report already exists in Firestore!
-        if (uploader.reportExists(reportDocId) && !options.forceUpload) {
-            std::cout << "\n[" << ANSI_COLOR_CYAN << "i" << ANSI_COLOR_RESET << "] Binary '" << base 
-                      << "' (SHA-256: " << hashShort << "...) already exists in Firebase Firestore." << std::endl;
-            std::cout << "[" << ANSI_COLOR_CYAN << "i" << ANSI_COLOR_RESET << "] Existing Document ID: " 
-                      << ANSI_COLOR_GREEN << reportDocId << ANSI_COLOR_RESET << std::endl;
-            std::cout << "[" << ANSI_COLOR_GREEN << "✓" << ANSI_COLOR_RESET << "] Skipping upload to prevent database clutter." << std::endl;
-            std::cout << "[i] Tip: Use " << ANSI_COLOR_ORANGE << "--force" << ANSI_COLOR_RESET 
-                      << " or " << ANSI_COLOR_ORANGE << "-f" << ANSI_COLOR_RESET 
-                      << " to overwrite the existing Firestore report.\n" << std::endl;
-            goto end_main;
+        // Deduplication & Incomplete Upload Check
+        std::string existingStatus;
+        ropweaver::ReportStatusResult statusRes = uploader.getReportStatus(reportDocId, existingStatus);
+        if (statusRes == ropweaver::ReportStatusResult::FOUND && !options.forceUpload) {
+            if (existingStatus == "completed") {
+                std::cout << "\n[" << ANSI_COLOR_CYAN << "i" << ANSI_COLOR_RESET << "] Binary '" << base
+                          << "' (SHA-256: " << hashShort << "...) already exists in Firebase Firestore (status: completed)." << std::endl;
+                std::cout << "[" << ANSI_COLOR_CYAN << "i" << ANSI_COLOR_RESET << "] Existing Document ID: "
+                          << ANSI_COLOR_GREEN << reportDocId << ANSI_COLOR_RESET << std::endl;
+                std::cout << "[" << ANSI_COLOR_GREEN << "✓" << ANSI_COLOR_RESET << "] Skipping upload to prevent database clutter." << std::endl;
+                std::cout << "[i] Tip: Use " << ANSI_COLOR_ORANGE << "--force" << ANSI_COLOR_RESET
+                          << " or " << ANSI_COLOR_ORANGE << "-f" << ANSI_COLOR_RESET
+                          << " to overwrite the existing Firestore report.\n" << std::endl;
+                goto end_main;
+            } else {
+                std::cout << "\n[" << ANSI_COLOR_ORANGE << "!" << ANSI_COLOR_RESET << "] Binary '" << base
+                          << "' has an incomplete upload in Firebase Firestore (status: "
+                          << existingStatus << ")." << std::endl;
+                std::cout << "[" << ANSI_COLOR_CYAN << "i" << ANSI_COLOR_RESET << "] Recovering incomplete upload for Document ID: "
+                          << ANSI_COLOR_GREEN << reportDocId << ANSI_COLOR_RESET << "..." << std::endl;
+            }
+        } else if (statusRes == ropweaver::ReportStatusResult::ERROR) {
+            std::cerr << "\n[x] Error checking Firestore report status for Document ID: " << reportDocId << "\n"
+                      << "    Network, authentication, or server error encountered during duplicate detection.\n"
+                      << "    Aborting cloud upload to prevent inconsistent database state. Local report and payload remain intact.\n";
+            return 1;
         }
 
         // Default report path (where PayloadGenerator wrote)
@@ -471,14 +493,19 @@ int main(int argc, char* argv[]) {
                   << reportDocId << ")..." << std::endl;
 
         if (uploader.uploadReport(copyPath.string(), reportDocId)) {
-            std::cout << "[+] Report uploaded to Firebase." << std::endl;
+            std::cout << "[+] Report metadata uploaded to Firebase (status: in_progress)." << std::endl;
             // Upload discovered gadgets to Firestore 'gadgets' collection
             if (!uploader.uploadGadgets(base, arch_to_use, fileHash, reportId, gadgets)) {
                 std::cerr << "[x] Firebase gadget upload failed or was incomplete.\n"
-                          << "[i] Report metadata was uploaded, but individual gadgets could not be fully stored in Firestore.\n"
+                          << "[i] Report metadata remains in 'in_progress' status in Firestore for automatic recovery.\n"
                           << "[i] Local analysis output and payloads remain preserved in 'reports/'.\n";
                 return 1;
             }
+            if (!uploader.updateReportStatus(reportDocId, "completed")) {
+                std::cerr << "[!] Warning: All gadgets uploaded, but could not update report status to 'completed'.\n";
+                return 1;
+            }
+            std::cout << "[+] Successfully uploaded report and all gadgets to Firebase (status: completed)." << std::endl;
         } else {
             std::cerr << "[x] Firebase upload failed. Cloud write access is disabled or unauthorized.\n"
                       << "[i] Local analysis output and payloads remain preserved in 'reports/'.\n";

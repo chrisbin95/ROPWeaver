@@ -4,6 +4,16 @@ project(ROPWeaver_macOS VERSION 1.6.3 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Backward compatibility / safe deprecation for legacy USE_GUI
+if(DEFINED USE_GUI)
+    message(DEPRECATION "USE_GUI is deprecated; please use BUILD_GUI instead. BUILD_GUI creates an independent 'ropweaver-gui' target without replacing the CLI.")
+    if(USE_GUI AND NOT DEFINED BUILD_GUI)
+        set(BUILD_GUI ON CACHE BOOL "Build native Qt GUI application" FORCE)
+    endif()
+endif()
+
+option(BUILD_GUI "Build native Qt GUI application" OFF)
+
 set(PROJECT_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/..)
 
 # Detect Homebrew prefix for Apple Silicon vs Intel
@@ -41,6 +51,7 @@ set(CORE_SRC
     ${PROJECT_ROOT}/core/parsers/pe_parser.cpp
     ${PROJECT_ROOT}/core/parsers/riscv32_parser.cpp
     ${PROJECT_ROOT}/core/parsers/riscv64_parser.cpp
+    ${PROJECT_ROOT}/firebase/firebase_auth.cpp
     ${PROJECT_ROOT}/firebase/firebase_uploader.cpp
 )
 
@@ -75,3 +86,32 @@ set_target_properties(ropweaver PROPERTIES
 )
 
 install(TARGETS ropweaver DESTINATION bin)
+
+# Optional Qt GUI executable (independent target)
+if(BUILD_GUI)
+    set(CMAKE_AUTOMOC ON)
+    set(CMAKE_AUTOUIC ON)
+    set(CMAKE_AUTORCC ON)
+
+    # Discover Qt 6 Widgets with Qt 5 fallback
+    find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets REQUIRED)
+    find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets REQUIRED)
+
+    add_executable(ropweaver-gui
+        ${PROJECT_ROOT}/main_qt.cpp
+        ${PROJECT_ROOT}/ui/qt_gui.cpp
+        ${PROJECT_ROOT}/ui/qt_gui.h
+    )
+    target_include_directories(ropweaver-gui PRIVATE
+        ${PROJECT_ROOT}
+        ${PROJECT_ROOT}/ui
+    )
+    target_link_libraries(ropweaver-gui PRIVATE
+        ropweaver_core
+        Qt${QT_VERSION_MAJOR}::Widgets
+    )
+    set_target_properties(ropweaver-gui PROPERTIES
+        INSTALL_RPATH "@executable_path/../lib;${HOMEBREW_PREFIX}/lib"
+    )
+    install(TARGETS ropweaver-gui DESTINATION bin)
+endif()

@@ -31,6 +31,7 @@ console.log('=== ROPWeaver Task 5.9C4: Cross-Platform Firestore Mock Integration
 let passCount = 0;
 let failCount = 0;
 let skipCount = 0;
+let activeEmulatorHost = null;
 
 function runTest(name, fn) {
   try {
@@ -110,6 +111,19 @@ class MockFirestoreServer {
               parsedBody = body;
             }
           }
+          // Handle Auth Emulator login if requested
+          if (req.url.includes('identitytoolkit') || req.url.includes('signInWithPassword')) {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              idToken: 'mock-valid-id-token',
+              refreshToken: 'mock-valid-refresh-token',
+              expiresIn: '3600',
+              localId: 'CqiPQGv339cgbMzULJHKWLz67j93',
+              email: 'ropweaver@gmail.com'
+            }));
+            return;
+          }
+
           const record = {
             method: req.method,
             url: req.url,
@@ -273,6 +287,8 @@ async function runCli(binaryPath, extraArgs = [], envOverrides = {}) {
     try {
       const defaultEnv = {
         ...process.env,
+        ROPWEAVER_FIREBASE_PASSWORD: 'mock-test-password',
+        ...(activeEmulatorHost ? { FIREBASE_AUTH_EMULATOR_HOST: activeEmulatorHost } : {}),
         ...envOverrides
       };
       const cliExe = resolveExecutable();
@@ -347,6 +363,7 @@ async function main() {
   const mock = new MockFirestoreServer();
   const port = await mock.start();
   const emulatorHost = `127.0.0.1:${port}`;
+  activeEmulatorHost = emulatorHost;
 
   console.log(`[*] Mock Firestore server listening on http://${emulatorHost}\n`);
 
@@ -362,8 +379,8 @@ async function main() {
 
       assert.strictEqual(res.status, 0, `CLI failed with code ${res.status}. Stderr: ${res.stderr}`);
 
-      // Check request sequence: GET (exists check) -> PATCH (report) -> POST (commit gadgets)
-      assert.strictEqual(mock.requests.length, 3, `Expected 3 requests, got ${mock.requests.length}`);
+      // Check request sequence: GET (exists check) -> PATCH (report in_progress) -> POST (commit gadgets) -> PATCH (status completed)
+      assert.strictEqual(mock.requests.length, 4, `Expected 4 requests, got ${mock.requests.length}`);
 
       const binStem = path.basename(singleBatchBinary, path.extname(singleBatchBinary));
 
@@ -398,7 +415,7 @@ async function main() {
       assert.ok(firstWrite.update?.name, 'Gadget write missing doc name');
       assert.match(
         firstWrite.update.name,
-        new RegExp(`projects/ropweaver/databases/\\(default\\)/documents/gadgets/${binStem}_[a-f0-9]{12}_0x[0-9a-fA-F]+`)
+        new RegExp(`projects/rop-weaver/databases/\\(default\\)/documents/gadgets/${binStem}_[a-f0-9]{12}_0x[0-9a-fA-F]+`)
       );
 
       const gFields = firstWrite.update.fields;
@@ -407,6 +424,12 @@ async function main() {
       assert.ok(gFields.category?.stringValue, 'Gadget missing category');
       assert.ok(gFields.hash?.stringValue, 'Gadget missing hash');
       assert.ok(gFields.report_id?.stringValue, 'Gadget missing report_id');
+
+      // Requirement 4: Final status transition to 'completed'
+      const statusPatchReq = mock.requests[3];
+      assert.strictEqual(statusPatchReq.method, 'PATCH');
+      assert.match(statusPatchReq.url, /upload_status/);
+      assert.strictEqual(statusPatchReq.body?.fields?.upload_status?.stringValue, 'completed');
     });
 
     // -----------------------------------------------------------------------
@@ -433,8 +456,8 @@ async function main() {
       );
       assert.strictEqual(
         mock.requests.length,
-        2 + expectedBatches,
-        `Expected ${2 + expectedBatches} total requests (1 GET, 1 PATCH, ${expectedBatches} commits), got ${mock.requests.length}`
+        2 + expectedBatches + 1,
+        `Expected ${2 + expectedBatches + 1} total requests (1 GET, 1 PATCH in_progress, ${expectedBatches} commits, 1 PATCH completed), got ${mock.requests.length}`
       );
       assert.strictEqual(mock.requests[0].method, 'GET');
       assert.strictEqual(mock.requests[1].method, 'PATCH');
@@ -536,8 +559,8 @@ async function main() {
       mock.handler = (req, res, record) => {
         if (req.method === 'POST' && req.url.includes(':commit')) {
           commitCount++;
-          if (commitCount === 2) {
-            // Fail second batch
+          if (commitCount >= 2) {
+            // Persistently fail batch 2 (exhaust retry attempts)
             res.writeHead(500, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ error: { code: 500, message: 'Simulated backend storage error' } }));
             return;
@@ -552,7 +575,7 @@ async function main() {
 
       assert.strictEqual(res.status, 1, `CLI must exit with code 1 on partial gadget upload failure. Got: ${res.status}`);
       assert.match(res.stderr, /Firebase gadget upload failed or was incomplete/, 'Missing partial failure error message');
-      assert.match(res.stderr, /Report metadata was uploaded, but individual gadgets could not be fully stored/, 'Missing explanatory message');
+      assert.match(res.stderr, /in_progress/, 'Missing in_progress recovery message');
     });
 
     // -----------------------------------------------------------------------

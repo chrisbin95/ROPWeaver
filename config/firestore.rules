@@ -2,19 +2,100 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Allow public read-only access to reports collection; deny all writes
+    // ---------------------------------------------------------
+    // Helper Functions: Authentication & Identity
+    // ---------------------------------------------------------
+    function isAuthorizedCLI() {
+      return request.auth != null &&
+             request.auth.uid == "CqiPQGv339cgbMzULJHKWLz67j93";
+    }
+
+    // ---------------------------------------------------------
+    // Helper Functions: Report Validation
+    // ---------------------------------------------------------
+    function hasValidCategoryCounts(counts) {
+      return counts is map &&
+             (!("syscall" in counts) || counts.syscall is int) &&
+             (!("stack_pivot" in counts) || counts.stack_pivot is int) &&
+             (!("stack_adjustment" in counts) || counts.stack_adjustment is int) &&
+             (!("register_load" in counts) || counts.register_load is int) &&
+             (!("memory_write" in counts) || counts.memory_write is int) &&
+             (!("memory_read" in counts) || counts.memory_read is int) &&
+             (!("arithmetic" in counts) || counts.arithmetic is int) &&
+             (!("logical" in counts) || counts.logical is int) &&
+             (!("control_transfer" in counts) || counts.control_transfer is int) &&
+             (!("misc" in counts) || counts.misc is int) &&
+             (!("others" in counts) || counts.others is int);
+    }
+
+    function isValidReportCreate() {
+      let data = request.resource.data;
+      return data.report_id is string && data.report_id.size() > 0 &&
+             data.report_date is string && data.report_date.size() > 0 &&
+             data.architecture is string && data.architecture.size() > 0 &&
+             data.total_gadgets is int && data.total_gadgets >= 0 &&
+             data.target_binary is map &&
+             data.target_binary.filename is string && data.target_binary.filename.size() > 0 &&
+             data.target_binary.hash is string && data.target_binary.hash.size() > 0 &&
+             hasValidCategoryCounts(data.category_counts) &&
+             data.gadgets_stored_separately == true &&
+             !("gadgets" in data) &&
+             (!("upload_status" in data) || data.upload_status in ['in_progress', 'completed']);
+    }
+
+    function isValidReportUpdate() {
+      let data = request.resource.data;
+      let existing = resource.data;
+      return isValidReportCreate() &&
+             data.report_id == existing.report_id &&
+             data.target_binary.hash == existing.target_binary.hash;
+    }
+
+    // ---------------------------------------------------------
+    // Helper Functions: Gadget Validation
+    // ---------------------------------------------------------
+    function isValidGadgetCreate() {
+      let data = request.resource.data;
+      return data.report_id is string && data.report_id.size() > 0 &&
+             data.address is string && data.address.size() > 0 &&
+             data.offset is string && data.offset.size() > 0 &&
+             data.instructions is string && data.instructions.size() > 0 &&
+             data.category is string && data.category.size() > 0 &&
+             data.architecture is string && data.architecture.size() > 0 &&
+             data.filename is string && data.filename.size() > 0 &&
+             data.hash is string && data.hash.size() > 0;
+    }
+
+    function isValidGadgetUpdate() {
+      let data = request.resource.data;
+      let existing = resource.data;
+      return isValidGadgetCreate() &&
+             data.report_id == existing.report_id &&
+             data.hash == existing.hash &&
+             data.address == existing.address;
+    }
+
+    // ---------------------------------------------------------
+    // Collections
+    // ---------------------------------------------------------
+
+    // 1. Reports Collection
     match /reports/{reportId} {
       allow read: if true;
-      allow write: if false;
+      allow create: if isAuthorizedCLI() && isValidReportCreate();
+      allow update: if isAuthorizedCLI() && isValidReportUpdate();
+      allow delete: if false;
     }
 
-    // Allow public read-only access to gadgets collection; deny all writes
+    // 2. Gadgets Collection
     match /gadgets/{gadgetId} {
       allow read: if true;
-      allow write: if false;
+      allow create: if isAuthorizedCLI() && isValidGadgetCreate();
+      allow update: if isAuthorizedCLI() && isValidGadgetUpdate();
+      allow delete: if false;
     }
 
-    // Default deny for all other collections and document paths
+    // 3. Strict Default Deny for all other collections & paths
     match /{document=**} {
       allow read, write: if false;
     }

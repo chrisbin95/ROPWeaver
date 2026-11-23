@@ -6,7 +6,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Optional components
 option(BUILD_TESTS "Build test executables" ON)
-option(USE_GUI "Build with experimental Qt GUI (Developer prototype)" OFF)
+
+# Backward compatibility / safe deprecation for legacy USE_GUI
+if(DEFINED USE_GUI)
+    message(DEPRECATION "USE_GUI is deprecated; please use BUILD_GUI instead. BUILD_GUI creates an independent 'ropweaver-gui' target without replacing the CLI.")
+    if(USE_GUI AND NOT DEFINED BUILD_GUI)
+        set(BUILD_GUI ON CACHE BOOL "Build native Qt GUI application" FORCE)
+    endif()
+endif()
+
+option(BUILD_GUI "Build native Qt GUI application" OFF)
 
 # Platform-specific dependency discovery: macOS Homebrew
 if(APPLE)
@@ -45,6 +54,7 @@ set(CORE_SRC
     core/parsers/pe_parser.cpp
     core/parsers/riscv32_parser.cpp
     core/parsers/riscv64_parser.cpp
+    firebase/firebase_auth.cpp
     firebase/firebase_uploader.cpp
 )
 
@@ -78,24 +88,12 @@ if(BUILD_TESTS)
     target_link_libraries(execve_chain_test PRIVATE ropweaver_core)
 endif()
 
-# Main executable (CLI or experimental GUI)
-if(NOT USE_GUI)
-    add_executable(ropweaver
-        main.cpp
-        ui/cli.cpp
-    )
-    target_link_libraries(ropweaver PRIVATE ropweaver_core)
-else()
-    set(CMAKE_AUTOMOC ON)
-    set(CMAKE_AUTOUIC ON)
-    set(CMAKE_AUTORCC ON)
-    find_package(Qt5 COMPONENTS Widgets REQUIRED)
-    add_executable(ropweaver
-        main_qt.cpp
-        ui/qt_gui.cpp
-    )
-    target_link_libraries(ropweaver PRIVATE ropweaver_core Qt5::Widgets)
-endif()
+# CLI executable (always built)
+add_executable(ropweaver
+    main.cpp
+    ui/cli.cpp
+)
+target_link_libraries(ropweaver PRIVATE ropweaver_core)
 
 # Set RPATH for macOS
 if(APPLE AND HOMEBREW_PREFIX)
@@ -105,6 +103,40 @@ if(APPLE AND HOMEBREW_PREFIX)
 endif()
 
 install(TARGETS ropweaver DESTINATION bin)
+
+# Optional Qt GUI executable (independent target)
+if(BUILD_GUI)
+    set(CMAKE_AUTOMOC ON)
+    set(CMAKE_AUTOUIC ON)
+    set(CMAKE_AUTORCC ON)
+
+    # Discover Qt 6 Widgets with Qt 5 fallback
+    find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets REQUIRED)
+    find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets REQUIRED)
+
+    add_executable(ropweaver-gui
+        main_qt.cpp
+        ui/qt_gui.cpp
+        ui/qt_gui.h
+    )
+    target_include_directories(ropweaver-gui PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/ui
+    )
+    target_link_libraries(ropweaver-gui PRIVATE
+        ropweaver_core
+        Qt${QT_VERSION_MAJOR}::Widgets
+    )
+
+    if(APPLE AND HOMEBREW_PREFIX)
+        set_target_properties(ropweaver-gui PROPERTIES
+            INSTALL_RPATH "@executable_path/../lib;${HOMEBREW_PREFIX}/lib"
+        )
+    endif()
+
+    install(TARGETS ropweaver-gui DESTINATION bin)
+endif()
+
 if(BUILD_TESTS)
     install(TARGETS execve_chain_test DESTINATION bin)
 endif()

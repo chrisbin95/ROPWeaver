@@ -2,13 +2,13 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, getDocs, query, where, limit, startAfter, getCountFromServer } from 'firebase/firestore';
 
 export const firebaseConfig = {
-  apiKey: "AIzaSyDZ3BEfUstg32hqnbctG7X3LQ5onNJ98qs",
-  authDomain: "ropweaver.firebaseapp.com",
-  projectId: "ropweaver",
-  storageBucket: "ropweaver.firebasestorage.app",
-  messagingSenderId: "356547989098",
-  appId: "1:356547989098:web:16a48b40d0bde270df8413",
-  measurementId: "G-CR1P508GPH"
+  apiKey: "AIzaSyDSdptZ1bsqDwflZQ3QiT1fVZvfGFRF8mo",
+  authDomain: "rop-weaver.firebaseapp.com",
+  projectId: "rop-weaver",
+  storageBucket: "rop-weaver.firebasestorage.app",
+  messagingSenderId: "466790753632",
+  appId: "1:466790753632:web:f8d0286a3a77f6a6bd6a05",
+  measurementId: "G-6GL8BCHHB3"
 };
 
 export const app = initializeApp(firebaseConfig);

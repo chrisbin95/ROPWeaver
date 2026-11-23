@@ -6,8 +6,16 @@
 #include <iomanip>
 #include <algorithm>
 #include <cstdint>
+#include <chrono>
+#include <thread>
+#include <random>
+#include <ctime>
 #include <curl/curl.h>
 #include "nlohmann/json.hpp"
+
+#ifdef ERROR
+#undef ERROR
+#endif
 
 using json = nlohmann::json;
 
@@ -18,6 +26,29 @@ static size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* use
     if (!userp) return 0;
     static_cast<std::string*>(userp)->append(static_cast<char*>(contents), size * nmemb);
     return size * nmemb;
+}
+
+// Callback for capturing CURL response headers (case-insensitive Retry-After parsing)
+static size_t HeaderCallback(char* buffer, size_t size, size_t nitems, void* userdata) {
+    size_t total = size * nitems;
+    std::string header(buffer, total);
+    std::string* retryAfter = static_cast<std::string*>(userdata);
+    if (!retryAfter) return total;
+
+    std::string lower = header;
+    std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+    if (lower.rfind("retry-after:", 0) == 0) {
+        size_t pos = header.find(':');
+        if (pos != std::string::npos) {
+            std::string val = header.substr(pos + 1);
+            size_t first = val.find_first_not_of(" \t\r\n");
+            size_t last = val.find_last_not_of(" \t\r\n");
+            if (first != std::string::npos && last != std::string::npos) {
+                *retryAfter = val.substr(first, last - first + 1);
+            }
+        }
+    }
+    return total;
 }
 
 // Converts standard JSON values into Google Firestore REST API format
@@ -87,14 +118,14 @@ static fs::path getExeDir() {
 }
 
 static const char* EMBEDDED_FIREBASE_CONFIG = R"({
-  "apiKey": "AIzaSyDZ3BEfUstg32hqnbctG7X3LQ5onNJ98qs",
-  "firebase_url": "https://firestore.googleapis.com/v1/projects/ropweaver/databases/(default)/documents/reports",
-  "authDomain": "ropweaver.firebaseapp.com",
-  "projectId": "ropweaver",
-  "storageBucket": "ropweaver.firebasestorage.app",
-  "messagingSenderId": "356547989098",
-  "appId": "1:356547989098:web:16a48b40d0bde270df8413",
-  "measurementId": "G-CR1P508GPH"
+  "apiKey": "AIzaSyDSdptZ1bsqDwflZQ3QiT1fVZvfGFRF8mo",
+  "firebase_url": "https://firestore.googleapis.com/v1/projects/rop-weaver/databases/(default)/documents/reports",
+  "authDomain": "rop-weaver.firebaseapp.com",
+  "projectId": "rop-weaver",
+  "storageBucket": "rop-weaver.firebasestorage.app",
+  "messagingSenderId": "466790753632",
+  "appId": "1:466790753632:web:f8d0286a3a77f6a6bd6a05",
+  "measurementId": "G-6GL8BCHHB3"
 })";
 
 FirebaseUploader::FirebaseUploader(const std::string& configPath) {
@@ -184,7 +215,7 @@ void FirebaseUploader::loadConfig(const std::string& configPath) {
             }
         }
         if (projectId.empty()) {
-            projectId = "ropweaver";
+            projectId = "rop-weaver";
         }
 
         // Flexible key resolution for apiKey / api_key
@@ -195,6 +226,8 @@ void FirebaseUploader::loadConfig(const std::string& configPath) {
         } else {
             apiKey.clear();
         }
+
+        auth.setApiKey(apiKey);
 
         if (firebaseUrl.empty() || apiKey.empty()) {
             std::cerr << "[x] Firebase configuration is incomplete. Check for missing 'firebase_url' (or 'projectId') or 'apiKey'.\n";
@@ -330,24 +363,66 @@ std::string FirebaseUploader::getFirestoreBaseUrl(bool& isEmulator, bool logErro
 }
 
 bool FirebaseUploader::reportExists(const std::string& docId) {
-    if (!isConfigured() || docId.empty()) return false;
+    std::string status;
+    return getReportStatus(docId, status) == ReportStatusResult::FOUND;
+}
+
+ReportStatusResult FirebaseUploader::parseReportStatusResponse(
+    int curlCode,
+    long httpCode,
+    const std::string& responseBody,
+    std::string& statusOut) {
+    statusOut.clear();
+
+    if (curlCode != CURLE_OK) {
+        return ReportStatusResult::ERROR;
+    }
+
+    if (httpCode == 404) {
+        return ReportStatusResult::NOT_FOUND;
+    }
+
+    if (httpCode == 200) {
+        try {
+            json doc = json::parse(responseBody);
+            if (doc.contains("fields") && doc["fields"].contains("upload_status") &&
+                doc["fields"]["upload_status"].contains("stringValue")) {
+                statusOut = doc["fields"]["upload_status"]["stringValue"].get<std::string>();
+            } else {
+                // Legacy report without upload_status: treat as completed
+                statusOut = "completed";
+            }
+            return ReportStatusResult::FOUND;
+        } catch (...) {
+            return ReportStatusResult::ERROR;
+        }
+    }
+
+    // 401, 403, 500, etc.
+    return ReportStatusResult::ERROR;
+}
+
+ReportStatusResult FirebaseUploader::getReportStatus(const std::string& docId, std::string& statusOut) {
+    statusOut.clear();
+    if (!isConfigured() || docId.empty()) return ReportStatusResult::ERROR;
 
     bool isEmulator = false;
     std::string baseUrl = getFirestoreBaseUrl(isEmulator);
     if (baseUrl.empty()) {
-        std::cerr << "[x] Aborting reportExists: invalid FIRESTORE_EMULATOR_HOST.\n";
-        return false;
+        std::cerr << "[x] Aborting getReportStatus: invalid FIRESTORE_EMULATOR_HOST.\n";
+        return ReportStatusResult::ERROR;
     }
 
-    std::string proj = !projectId.empty() ? projectId : "ropweaver";
+    std::string proj = !projectId.empty() ? projectId : "rop-weaver";
     std::string endpoint = baseUrl + "/v1/projects/" + proj +
                            "/databases/(default)/documents/reports/" + docId + "?key=" + apiKey;
 
     CURL* curl = curl_easy_init();
-    if (!curl) return false;
+    if (!curl) return ReportStatusResult::ERROR;
 
     std::string responseString;
     curl_easy_setopt(curl, CURLOPT_URL, endpoint.c_str());
+    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 5L);
     curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L);
     if (isEmulator) {
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
@@ -372,15 +447,64 @@ bool FirebaseUploader::reportExists(const std::string& docId) {
         }
     }
 
+    // Attach Bearer token if authenticated
+    struct curl_slist* headers = nullptr;
+    std::string authToken = auth.getIdToken();
+    if (!authToken.empty()) {
+        std::string authHdr = "Authorization: Bearer " + authToken;
+        headers = curl_slist_append(headers, authHdr.c_str());
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+    }
+
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &responseString);
 
     CURLcode res = curl_easy_perform(curl);
     long httpCode = 0;
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpCode);
+    if (headers) curl_slist_free_all(headers);
     curl_easy_cleanup(curl);
 
-    return (res == CURLE_OK && httpCode == 200);
+    return parseReportStatusResponse(res, httpCode, responseString, statusOut);
+}
+
+bool FirebaseUploader::updateReportStatus(const std::string& docId, const std::string& status) {
+    if (!isConfigured() || docId.empty() || status.empty()) return false;
+
+    bool isEmulator = false;
+    std::string baseUrl = getFirestoreBaseUrl(isEmulator);
+    if (baseUrl.empty()) {
+        std::cerr << "[x] Aborting updateReportStatus: invalid FIRESTORE_EMULATOR_HOST.\n";
+        return false;
+    }
+
+    std::string proj = !projectId.empty() ? projectId : "rop-weaver";
+    std::string endpoint = baseUrl + "/v1/projects/" + proj +
+                           "/databases/(default)/documents/reports/" + docId +
+                           "?updateMask.fieldPaths=upload_status&key=" + apiKey;
+
+    json patchFields = {
+        {"fields", {
+            {"upload_status", { {"stringValue", status} }}
+        }}
+    };
+
+    std::string authToken = auth.getIdToken();
+    if (authToken.empty()) {
+        std::cerr << "[x] Firebase status update failed: authentication required.\n";
+        return false;
+    }
+
+    UploadResult res = uploadToEndpointWithMethodEx(endpoint, patchFields.dump(), "PATCH", authToken, isEmulator, true);
+    if (res.httpCode == 401) {
+        std::cout << "[!] Received HTTP 401 Unauthorized during status update. Refreshing ID token and retrying...\n";
+        authToken = auth.getIdToken(true);
+        if (!authToken.empty()) {
+            res = uploadToEndpointWithMethodEx(endpoint, patchFields.dump(), "PATCH", authToken, isEmulator, true);
+        }
+    }
+
+    return res.success;
 }
 
 json FirebaseUploader::buildReportDocumentFields(const json& inputJson) {
@@ -444,6 +568,11 @@ json FirebaseUploader::buildReportDocumentFields(const json& inputJson) {
 
     // 6. Explicitly flag that individual gadgets are indexed separately in the 'gadgets' collection
     fields["gadgets_stored_separately"] = toFirestoreValue(json(true));
+
+    // 6b. Set initial upload status to 'in_progress' if not explicitly specified
+    if (!fields.contains("upload_status")) {
+        fields["upload_status"] = toFirestoreValue(json("in_progress"));
+    }
 
     // 7. Standardize filename field while preserving backward-compatible aliases
     std::string binName;
@@ -525,7 +654,7 @@ bool FirebaseUploader::uploadReport(const std::string& jsonPath, const std::stri
 
     json firestoreFormat = { {"fields", buildReportDocumentFields(inputJson)} };
 
-    std::string proj = !projectId.empty() ? projectId : "ropweaver";
+    std::string proj = !projectId.empty() ? projectId : "rop-weaver";
     std::string endpoint;
     std::string method = "POST";
 
@@ -544,7 +673,23 @@ bool FirebaseUploader::uploadReport(const std::string& jsonPath, const std::stri
         }
     }
 
-    return uploadToEndpointWithMethod(endpoint, firestoreFormat.dump(), method, isEmulator);
+    std::string authToken = auth.getIdToken();
+    if (authToken.empty()) {
+        std::cerr << "[x] Firebase report upload failed: authentication required.\n";
+        return false;
+    }
+
+    bool isIdempotent = !docId.empty();
+    UploadResult res = uploadToEndpointWithMethodEx(endpoint, firestoreFormat.dump(), method, authToken, isEmulator, isIdempotent);
+    if (res.httpCode == 401) {
+        std::cout << "[!] Received HTTP 401 Unauthorized from Firestore. Refreshing ID token and retrying report upload...\n";
+        authToken = auth.getIdToken(true);
+        if (!authToken.empty()) {
+            res = uploadToEndpointWithMethodEx(endpoint, firestoreFormat.dump(), method, authToken, isEmulator, isIdempotent);
+        }
+    }
+
+    return res.success;
 }
 
 bool FirebaseUploader::uploadReportFromData(const std::string& binaryName,
@@ -574,16 +719,31 @@ bool FirebaseUploader::uploadReportFromData(const std::string& binaryName,
     
     json firestoreFormat = { {"fields", buildReportDocumentFields(reportJson)} };
 
+    std::string proj = !projectId.empty() ? projectId : "rop-weaver";
     std::string endpoint;
     if (isEmulator) {
-        std::string proj = !projectId.empty() ? projectId : "ropweaver";
         endpoint = baseUrl + "/v1/projects/" + proj +
                    "/databases/(default)/documents/reports?key=" + apiKey;
     } else {
         std::string separator = (firebaseUrl.find('?') == std::string::npos) ? "?key=" : "&key=";
         endpoint = firebaseUrl + separator + apiKey;
     }
-    return uploadToEndpoint(endpoint, firestoreFormat.dump(), isEmulator);
+
+    std::string authToken = auth.getIdToken();
+    if (authToken.empty()) {
+        std::cerr << "[x] Firebase upload failed: authentication required.\n";
+        return false;
+    }
+
+    UploadResult res = uploadToEndpointWithMethodEx(endpoint, firestoreFormat.dump(), "POST", authToken, isEmulator, false);
+    if (res.httpCode == 401) {
+        std::cout << "[!] Received HTTP 401 Unauthorized from Firestore. Refreshing ID token and retrying upload...\n";
+        authToken = auth.getIdToken(true);
+        if (!authToken.empty()) {
+            res = uploadToEndpointWithMethodEx(endpoint, firestoreFormat.dump(), "POST", authToken, isEmulator, false);
+        }
+    }
+    return res.success;
 }
 
 bool FirebaseUploader::uploadGadgets(const std::string& binaryName,
@@ -603,7 +763,13 @@ bool FirebaseUploader::uploadGadgets(const std::string& binaryName,
         return false;
     }
 
-    std::string proj = !projectId.empty() ? projectId : "ropweaver";
+    std::string authToken = auth.getIdToken();
+    if (authToken.empty()) {
+        std::cerr << "[x] Firebase gadget upload failed: authentication required.\n";
+        return false;
+    }
+
+    std::string proj = !projectId.empty() ? projectId : "rop-weaver";
     std::string commitEndpoint = baseUrl + "/v1/projects/" + proj +
                                  "/databases/(default)/documents:commit?key=" + apiKey;
 
@@ -659,10 +825,25 @@ bool FirebaseUploader::uploadGadgets(const std::string& binaryName,
         }
 
         json commitPayload = { {"writes", writesArray} };
-        if (uploadToEndpointWithMethod(commitEndpoint, commitPayload.dump(), "POST", isEmulator)) {
+        UploadResult res = uploadToEndpointWithMethodEx(commitEndpoint, commitPayload.dump(), "POST", authToken, isEmulator, true);
+
+        // Controlled single refresh and retry on HTTP 401
+        if (res.httpCode == 401) {
+            std::cout << "[!] Received HTTP 401 Unauthorized during gadget batch commit (batch starting at index "
+                      << i << "). Refreshing token and retrying batch...\n";
+            authToken = auth.getIdToken(true);
+            if (!authToken.empty()) {
+                res = uploadToEndpointWithMethodEx(commitEndpoint, commitPayload.dump(), "POST", authToken, isEmulator, true);
+            }
+        }
+
+        if (res.success) {
             uploadedCount += (endIdx - i);
         } else {
-            std::cerr << "[x] Failed to upload batch of gadgets.\n";
+            std::cerr << "[x] Failed to upload gadget batch starting at index " << i
+                      << " (" << (endIdx - i) << " gadgets). HTTP Status: " << res.httpCode << "\n";
+            std::cerr << "[!] Partial upload progress preserved: " << uploadedCount << " of " << gadgets.size()
+                      << " gadgets were committed to Firestore before failure.\n";
             return false;
         }
     }
@@ -677,85 +858,311 @@ bool FirebaseUploader::uploadToEndpoint(const std::string& endpoint,
     return uploadToEndpointWithMethod(endpoint, jsonData, "POST", isEmulator);
 }
 
+bool FirebaseUploader::isTransientCurlError(int curlCode) {
+    return (curlCode == CURLE_OPERATION_TIMEDOUT ||
+            curlCode == CURLE_COULDNT_CONNECT ||
+            curlCode == CURLE_COULDNT_RESOLVE_HOST ||
+            curlCode == CURLE_RECV_ERROR ||
+            curlCode == CURLE_SEND_ERROR ||
+            curlCode == CURLE_PARTIAL_FILE);
+}
+
+bool FirebaseUploader::isTransientHttpCode(long httpCode) {
+    return (httpCode == 429 || httpCode == 500 || httpCode == 502 || httpCode == 503 || httpCode == 504);
+}
+
+static time_t portableTimegm(std::tm* tm) {
+#if defined(_WIN32)
+    return _mkgmtime(tm);
+#else
+    return timegm(tm);
+#endif
+}
+
+long FirebaseUploader::parseRetryAfter(const std::string& headerValue,
+                                      long maxCapSeconds,
+                                      std::chrono::system_clock::time_point now) {
+    if (headerValue.empty()) return 0;
+
+    // Trim whitespace and quotes if present
+    size_t first = headerValue.find_first_not_of(" \t\r\n\"");
+    if (first == std::string::npos) return 0;
+    size_t last = headerValue.find_last_not_of(" \t\r\n\"");
+    std::string val = headerValue.substr(first, last - first + 1);
+    if (val.empty()) return 0;
+
+    // 1. Check if integer seconds
+    bool isAllDigits = true;
+    for (char c : val) {
+        if (!std::isdigit(static_cast<unsigned char>(c))) {
+            isAllDigits = false;
+            break;
+        }
+    }
+
+    if (isAllDigits) {
+        try {
+            long seconds = std::stol(val);
+            if (seconds < 0) return 0;
+            if (seconds > maxCapSeconds) {
+                std::cout << "[!] Retry-After delay (" << seconds << "s) exceeded maximum cap ("
+                          << maxCapSeconds << "s). Capping at " << maxCapSeconds << "s.\n";
+                return maxCapSeconds;
+            }
+            return seconds;
+        } catch (...) {
+            return 0;
+        }
+    }
+
+    // 2. Try parsing as HTTP-date (RFC 1123, RFC 850, asctime)
+    std::vector<std::string> dateFormats = {
+        "%a, %d %b %Y %H:%M:%S GMT",
+        "%a, %d-%b-%y %H:%M:%S GMT",
+        "%a %b %d %H:%M:%S %Y"
+    };
+
+    for (const auto& fmt : dateFormats) {
+        std::tm tm = {};
+        std::istringstream ss(val);
+        ss >> std::get_time(&tm, fmt.c_str());
+        if (!ss.fail()) {
+            time_t targetTime = portableTimegm(&tm);
+            if (targetTime != (time_t)-1) {
+                auto nowTimeT = std::chrono::system_clock::to_time_t(now);
+                long diff = static_cast<long>(targetTime - nowTimeT);
+                if (diff < 0) return 0;
+                if (diff > maxCapSeconds) {
+                    std::cout << "[!] Retry-After delay (" << diff << "s) exceeded maximum cap ("
+                              << maxCapSeconds << "s). Capping at " << maxCapSeconds << "s.\n";
+                    return maxCapSeconds;
+                }
+                return diff;
+            }
+        }
+    }
+
+    return 0;
+}
+
+std::chrono::milliseconds FirebaseUploader::calculateBackoffDelay(
+    int retryAttempt,
+    long retryAfterSeconds,
+    double baseDelaySeconds,
+    double maxBackoffSeconds,
+    double jitterFactor) {
+
+    if (retryAfterSeconds > 0) {
+        long cappedSec = std::min(retryAfterSeconds, 30L);
+        return std::chrono::milliseconds(cappedSec * 1000L);
+    }
+
+    double delaySec = baseDelaySeconds * std::pow(2.0, retryAttempt);
+    if (delaySec > maxBackoffSeconds) {
+        delaySec = maxBackoffSeconds;
+    }
+
+    // Bounded jitter in [1.0 - jitterFactor, 1.0 + jitterFactor]
+    static thread_local std::mt19937 rng(static_cast<unsigned int>(std::chrono::steady_clock::now().time_since_epoch().count()));
+    std::uniform_real_distribution<double> dist(1.0 - jitterFactor, 1.0 + jitterFactor);
+    double jitteredDelaySec = delaySec * dist(rng);
+    if (jitteredDelaySec < 0.0) jitteredDelaySec = 0.0;
+
+    return std::chrono::milliseconds(static_cast<long long>(jitteredDelaySec * 1000.0));
+}
+
 bool FirebaseUploader::uploadToEndpointWithMethod(const std::string& endpoint,
                                                   const std::string& jsonData,
                                                   const std::string& method,
                                                   bool isEmulator) {
-    CURL* curl = curl_easy_init();
-    if (!curl) {
-        std::cerr << "[x] curl_easy_init() failed.\n";
-        return false;
-    }
+    return uploadToEndpointWithMethodEx(endpoint, jsonData, method, "", isEmulator, false).success;
+}
 
-    struct curl_slist* headers = nullptr;
-    headers = curl_slist_append(headers, "Content-Type: application/json");
+UploadResult FirebaseUploader::uploadToEndpointWithMethodEx(const std::string& endpoint,
+                                                           const std::string& jsonData,
+                                                           const std::string& method,
+                                                           const std::string& authToken,
+                                                           bool isEmulator,
+                                                           bool isIdempotent,
+                                                           std::chrono::milliseconds budgetDuration) {
+    UploadResult result;
+    const int maxRetries = isIdempotent ? 3 : 0;
+    const auto startTime = std::chrono::steady_clock::now();
 
-    std::string responseString;
-    curl_easy_setopt(curl, CURLOPT_URL, endpoint.c_str());
-    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+    for (int attempt = 0; attempt <= maxRetries; ++attempt) {
+        // Calculate remaining budget before initiating HTTP attempt
+        auto elapsedBeforeReq = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - startTime);
+        auto remainingBudget = budgetDuration - elapsedBeforeReq;
 
-    if (method == "PATCH") {
-        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PATCH");
-    }
+        if (remainingBudget <= std::chrono::milliseconds(0)) {
+            std::cerr << "[!] Total retry budget (" << (budgetDuration.count() / 1000)
+                      << "s) exhausted (" << elapsedBeforeReq.count()
+                      << "ms elapsed) before attempt " << attempt << ". Aborting.\n";
+            result.success = false;
+            return result;
+        }
 
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jsonData.c_str());
-    char errbuf[CURL_ERROR_SIZE] = {0};
-    curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, errbuf);
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 15L);
-    if (isEmulator) {
-        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
-    } else {
-        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
-        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L);
+        // Constrain request and connection timeouts so this request cannot exceed remaining budget
+        long remainingSec = static_cast<long>(
+            std::chrono::duration_cast<std::chrono::seconds>(remainingBudget).count());
+        if (remainingSec < 1) remainingSec = 1;
+        long connectTimeout = std::min(5L, remainingSec);
+        long requestTimeout = std::min(15L, remainingSec);
+
+        CURL* curl = curl_easy_init();
+        if (!curl) {
+            std::cerr << "[x] curl_easy_init() failed.\n";
+            result.success = false;
+            return result;
+        }
+
+        struct curl_slist* headers = nullptr;
+        headers = curl_slist_append(headers, "Content-Type: application/json");
+        if (!authToken.empty()) {
+            std::string authHdr = "Authorization: Bearer " + authToken;
+            headers = curl_slist_append(headers, authHdr.c_str());
+        }
+
+        std::string responseString;
+        std::string capturedRetryAfter;
+
+        curl_easy_setopt(curl, CURLOPT_URL, endpoint.c_str());
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+
+        if (method == "PATCH") {
+            curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PATCH");
+        } else if (method == "PUT") {
+            curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
+        } else if (method == "DELETE") {
+            curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "DELETE");
+        }
+
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jsonData.c_str());
+        char errbuf[CURL_ERROR_SIZE] = {0};
+        curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, errbuf);
+        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, connectTimeout);
+        curl_easy_setopt(curl, CURLOPT_TIMEOUT, requestTimeout);
+
+        if (isEmulator) {
+            curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+            curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+        } else {
+            curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
+            curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L);
 #if defined(_WIN32)
 #ifndef CURLSSLOPT_NATIVE_CA
 #define CURLSSLOPT_NATIVE_CA (1L << 4)
 #endif
-        curl_easy_setopt(curl, CURLOPT_SSL_OPTIONS, CURLSSLOPT_NATIVE_CA);
+            curl_easy_setopt(curl, CURLOPT_SSL_OPTIONS, CURLSSLOPT_NATIVE_CA);
 #endif
-
-        // Look for local, exeDir, or standard CA bundle
-        std::string exeCa2 = (getExeDir() / "curl-ca-bundle.crt").string();
-        if (std::ifstream("curl-ca-bundle.crt").good()) {
-            curl_easy_setopt(curl, CURLOPT_CAINFO, "curl-ca-bundle.crt");
-        } else if (std::ifstream(exeCa2).good()) {
-            curl_easy_setopt(curl, CURLOPT_CAINFO, exeCa2.c_str());
-        } else if (std::ifstream("C:/msys64/mingw64/etc/ssl/certs/ca-bundle.crt").good()) {
-            curl_easy_setopt(curl, CURLOPT_CAINFO, "C:/msys64/mingw64/etc/ssl/certs/ca-bundle.crt");
+            std::string exeCa2 = (getExeDir() / "curl-ca-bundle.crt").string();
+            if (std::ifstream("curl-ca-bundle.crt").good()) {
+                curl_easy_setopt(curl, CURLOPT_CAINFO, "curl-ca-bundle.crt");
+            } else if (std::ifstream(exeCa2).good()) {
+                curl_easy_setopt(curl, CURLOPT_CAINFO, exeCa2.c_str());
+            } else if (std::ifstream("C:/msys64/mingw64/etc/ssl/certs/ca-bundle.crt").good()) {
+                curl_easy_setopt(curl, CURLOPT_CAINFO, "C:/msys64/mingw64/etc/ssl/certs/ca-bundle.crt");
+            }
         }
+
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &responseString);
+        curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, HeaderCallback);
+        curl_easy_setopt(curl, CURLOPT_HEADERDATA, &capturedRetryAfter);
+
+        CURLcode res = curl_easy_perform(curl);
+        long httpCode = 0;
+        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpCode);
+
+        result.httpCode = httpCode;
+        result.response = responseString;
+
+        curl_easy_cleanup(curl);
+        curl_slist_free_all(headers);
+
+        // Success check
+        if (res == CURLE_OK && httpCode >= 200 && httpCode < 300) {
+            std::cout << "[+] Firestore request succeeded (HTTP " << httpCode << ").\n";
+            result.success = true;
+            return result;
+        }
+
+        // Non-retryable status codes: fail immediately with 0 retries
+        if (httpCode == 400 || httpCode == 403 || httpCode == 404) {
+            std::cerr << "[x] Non-retryable HTTP Status: " << httpCode << "\n";
+            if (!responseString.empty()) {
+                std::cerr << "[x] Firestore response: " << responseString << "\n";
+            }
+            if (httpCode == 403) {
+                std::cerr << "[!] Note: 403 Forbidden indicates cloud write access is restricted by Firestore security policy.\n"
+                          << "    Local analysis reports and generated payloads remain intact.\n";
+            }
+            result.success = false;
+            return result;
+        }
+
+        // HTTP 401 Unauthorized: caller handles token refresh and retry
+        if (httpCode == 401) {
+            result.success = false;
+            return result;
+        }
+
+        // Check if error is transient
+        bool isTransient = false;
+        if (res != CURLE_OK && isTransientCurlError(res)) {
+            isTransient = true;
+        } else if (res == CURLE_OK && isTransientHttpCode(httpCode)) {
+            isTransient = true;
+        }
+
+        if (!isTransient) {
+            if (res != CURLE_OK) {
+                std::cerr << "[x] Non-transient CURL error: " << curl_easy_strerror(res) << "\n";
+                if (errbuf[0] != '\0') {
+                    std::cerr << "[x] CURL error detail: " << errbuf << "\n";
+                }
+            } else {
+                std::cerr << "[x] Non-transient HTTP Status: " << httpCode << "\n";
+                if (!responseString.empty()) {
+                    std::cerr << "[x] Firestore response: " << responseString << "\n";
+                }
+            }
+            result.success = false;
+            return result;
+        }
+
+        // If transient, check if retry budget or attempts exhausted
+        if (attempt >= maxRetries) {
+            std::cerr << "[!] Retry attempts exhausted (" << attempt << " retries). Operation failed.\n";
+            result.success = false;
+            return result;
+        }
+
+        long retryAfterSec = parseRetryAfter(capturedRetryAfter);
+        result.retryAfterSeconds = retryAfterSec;
+        auto delayMs = calculateBackoffDelay(attempt, retryAfterSec);
+
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - startTime);
+        if (elapsed + delayMs > budgetDuration) {
+            std::cerr << "[!] Total retry budget (" << (budgetDuration.count() / 1000) << "s) exceeded ("
+                      << elapsed.count() << "ms elapsed + "
+                      << delayMs.count() << "ms delay > " << budgetDuration.count() << "ms). Aborting retries.\n";
+            result.success = false;
+            return result;
+        }
+
+        result.retryAttempts++;
+        std::cout << "[!] Transient failure ("
+                  << (res != CURLE_OK ? curl_easy_strerror(res) : ("HTTP " + std::to_string(httpCode)))
+                  << "). Retrying in " << delayMs.count() << "ms (attempt " << (attempt + 1)
+                  << " of " << maxRetries << ")...\n";
+
+        std::this_thread::sleep_for(delayMs);
     }
 
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &responseString);
-
-    CURLcode res = curl_easy_perform(curl);
-    long httpCode = 0;
-    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpCode);
-
-    bool success = false;
-    if (res != CURLE_OK) {
-        std::cerr << "[x] CURL failed: " << curl_easy_strerror(res) << "\n";
-        if (errbuf[0] != '\0') {
-            std::cerr << "[x] CURL error detail: " << errbuf << "\n";
-        }
-    } else if (httpCode >= 200 && httpCode < 300) {
-        std::cout << "[+] Report successfully uploaded to Firestore (HTTP " << httpCode << ").\n";
-        success = true;
-    } else {
-        std::cerr << "[x] Firestore upload failed! HTTP Status: " << httpCode << "\n";
-        if (!responseString.empty()) {
-            std::cerr << "[x] Firestore response: " << responseString << "\n";
-        }
-        if (httpCode == 403) {
-            std::cerr << "[!] Note: 403 Forbidden indicates cloud write access is restricted by Firestore security policy.\n"
-                      << "    Local analysis reports and generated payloads remain intact.\n";
-        }
-    }
-
-    curl_easy_cleanup(curl);
-    curl_slist_free_all(headers);
-    return success;
+    result.success = false;
+    return result;
 }
 
 } // namespace ropweaver
