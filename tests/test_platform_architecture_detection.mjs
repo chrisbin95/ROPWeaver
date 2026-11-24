@@ -109,7 +109,7 @@ test('Explicitly detected macOS ARM64: Recommends verified Apple Silicon archive
   assert.strictEqual(rec.recommendedOS, 'macos');
   assert.strictEqual(rec.recommendedArch, 'arm64');
   assert.strictEqual(rec.primaryAsset.filename, 'ropweaver-v1.6.4-darwin-arm64.tar.gz');
-  assert.strictEqual(rec.primaryAsset.sha256, 'Pending release build verification');
+  assert.strictEqual(rec.primaryAsset.sha256, 'cabf01d3bd06cdf7f4a9c41144579a96fc5911dbc9962bafd19f1d8e73da066d');
   assert.strictEqual(rec.secondaryAsset.filename, 'ropweaver-v1.6.4-darwin-x86_64.tar.gz');
 });
 
@@ -131,7 +131,7 @@ test('Explicitly detected macOS x86_64: Recommends verified Intel archive', () =
   assert.strictEqual(rec.recommendedOS, 'macos');
   assert.strictEqual(rec.recommendedArch, 'x86_64');
   assert.strictEqual(rec.primaryAsset.filename, 'ropweaver-v1.6.4-darwin-x86_64.tar.gz');
-  assert.strictEqual(rec.primaryAsset.sha256, 'Pending release build verification');
+  assert.strictEqual(rec.primaryAsset.sha256, 'f1714cb999d3892c0fa061f2e4ecc010dfd798fee82e5c01f639dca4a6c4ad03');
   assert.strictEqual(rec.secondaryAsset.filename, 'ropweaver-v1.6.4-darwin-arm64.tar.gz');
 });
 
@@ -214,9 +214,9 @@ test('x86_64 Detection (Linux): Recommends Debian package and Linux tar.gz', () 
   assert.strictEqual(rec.status, 'AVAILABLE');
   assert.strictEqual(rec.isCompatibleBinaryAvailable, true);
   assert.strictEqual(rec.primaryAsset.filename, 'ropweaver_1.6.4_amd64.deb');
-  assert.strictEqual(rec.primaryAsset.sha256, 'Pending release build verification');
+  assert.strictEqual(rec.primaryAsset.sha256, 'c2b430e1861c678e7982b5aae9a4a5777d53a685a20f7eff9fbca10f6c90b50b');
   assert.strictEqual(rec.secondaryAsset.filename, 'ropweaver-v1.6.4-linux-x86_64.tar.gz');
-  assert.strictEqual(rec.secondaryAsset.sha256, 'Pending release build verification');
+  assert.strictEqual(rec.secondaryAsset.sha256, '742c1a2e74de8562a1e7beaf74c3b697155ec464968d6bf4fc3fcd130f0da495');
 });
 
 // 10. RISC-V 64-bit Detection
@@ -271,10 +271,10 @@ test('Preservation of All 6 Verified v1.6.4 Release Assets and Digests', () => {
   const digests = {
     'ropweaver-windows-x64.exe': '7ca7aa1c57711c019b40c8957c93601f728bf4278507e621e4055c6b284150c3',
     'ropweaver-v1.6.4-win64.zip': 'feb756ce1679067c4f11faf91cd1146a40e59a45215deddc1411262737fc6a95',
-    'ropweaver_1.6.4_amd64.deb': 'Pending release build verification',
-    'ropweaver-v1.6.4-linux-x86_64.tar.gz': 'Pending release build verification',
-    'ropweaver-v1.6.4-darwin-arm64.tar.gz': 'Pending release build verification',
-    'ropweaver-v1.6.4-darwin-x86_64.tar.gz': 'Pending release build verification'
+    'ropweaver_1.6.4_amd64.deb': 'c2b430e1861c678e7982b5aae9a4a5777d53a685a20f7eff9fbca10f6c90b50b',
+    'ropweaver-v1.6.4-linux-x86_64.tar.gz': '742c1a2e74de8562a1e7beaf74c3b697155ec464968d6bf4fc3fcd130f0da495',
+    'ropweaver-v1.6.4-darwin-arm64.tar.gz': 'cabf01d3bd06cdf7f4a9c41144579a96fc5911dbc9962bafd19f1d8e73da066d',
+    'ropweaver-v1.6.4-darwin-x86_64.tar.gz': 'f1714cb999d3892c0fa061f2e4ecc010dfd798fee82e5c01f639dca4a6c4ad03'
   };
 
   assets.forEach(asset => {

@@ -30,22 +30,22 @@ const expectedAssets = [
   {
     name: 'Linux Debian/Ubuntu AMD64 DEB',
     file: 'ropweaver_1.6.4_amd64.deb',
-    sha256: 'Pending release build verification'
+    sha256: 'c2b430e1861c678e7982b5aae9a4a5777d53a685a20f7eff9fbca10f6c90b50b'
   },
   {
     name: 'Linux x86_64 Standalone TAR.GZ',
     file: 'ropweaver-v1.6.4-linux-x86_64.tar.gz',
-    sha256: 'Pending release build verification'
+    sha256: '742c1a2e74de8562a1e7beaf74c3b697155ec464968d6bf4fc3fcd130f0da495'
   },
   {
     name: 'macOS Apple Silicon ARM64 TAR.GZ',
     file: 'ropweaver-v1.6.4-darwin-arm64.tar.gz',
-    sha256: 'Pending release build verification'
+    sha256: 'cabf01d3bd06cdf7f4a9c41144579a96fc5911dbc9962bafd19f1d8e73da066d'
   },
   {
     name: 'macOS Intel x86_64 TAR.GZ',
     file: 'ropweaver-v1.6.4-darwin-x86_64.tar.gz',
-    sha256: 'Pending release build verification'
+    sha256: 'f1714cb999d3892c0fa061f2e4ecc010dfd798fee82e5c01f639dca4a6c4ad03'
   }
 ];
 

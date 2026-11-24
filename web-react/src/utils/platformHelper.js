@@ -45,8 +45,8 @@ export const OFFICIAL_ASSETS = {
     name: 'Debian / Ubuntu Package (.deb)',
     filename: 'ropweaver_1.6.4_amd64.deb',
     url: `${DOWNLOAD_BASE_URL}/ropweaver_1.6.4_amd64.deb`,
-    size: '385 KB',
-    sha256: 'Pending release build verification',
+    size: '413 KB',
+    sha256: 'c2b430e1861c678e7982b5aae9a4a5777d53a685a20f7eff9fbca10f6c90b50b',
     platform: 'linux',
     arch: 'x86_64',
     isStaticAsset: false
@@ -55,8 +55,8 @@ export const OFFICIAL_ASSETS = {
     name: 'Standalone Linux x86_64 (.tar.gz)',
     filename: 'ropweaver-v1.6.4-linux-x86_64.tar.gz',
     url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.4-linux-x86_64.tar.gz`,
-    size: '508 KB',
-    sha256: 'Pending release build verification',
+    size: '545 KB',
+    sha256: '742c1a2e74de8562a1e7beaf74c3b697155ec464968d6bf4fc3fcd130f0da495',
     platform: 'linux',
     arch: 'x86_64',
     isStaticAsset: false
@@ -65,8 +65,8 @@ export const OFFICIAL_ASSETS = {
     name: 'macOS Apple Silicon (arm64 .tar.gz)',
     filename: 'ropweaver-v1.6.4-darwin-arm64.tar.gz',
     url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.4-darwin-arm64.tar.gz`,
-    size: '371 KB',
-    sha256: 'Pending release build verification',
+    size: '396 KB',
+    sha256: 'cabf01d3bd06cdf7f4a9c41144579a96fc5911dbc9962bafd19f1d8e73da066d',
     platform: 'macos',
     arch: 'arm64',
     isStaticAsset: false
@@ -75,8 +75,8 @@ export const OFFICIAL_ASSETS = {
     name: 'macOS Intel (x86_64 .tar.gz)',
     filename: 'ropweaver-v1.6.4-darwin-x86_64.tar.gz',
     url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.4-darwin-x86_64.tar.gz`,
-    size: '391 KB',
-    sha256: 'Pending release build verification',
+    size: '416 KB',
+    sha256: 'f1714cb999d3892c0fa061f2e4ecc010dfd798fee82e5c01f639dca4a6c4ad03',
     platform: 'macos',
     arch: 'x86_64',
     isStaticAsset: false

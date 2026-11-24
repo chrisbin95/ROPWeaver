@@ -181,13 +181,13 @@ export default function DownloadPage({ onNavigateTab }) {
       primaryDownload: {
         filename: 'ropweaver_1.6.4_amd64.deb',
         url: `${DOWNLOAD_BASE_URL}/ropweaver_1.6.4_amd64.deb`,
-        size: '385 KB',
+        size: '413 KB',
         label: 'Download Debian / Ubuntu Package (.deb)'
       },
       secondaryDownload: {
         filename: 'ropweaver-v1.6.4-linux-x86_64.tar.gz',
         url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.4-linux-x86_64.tar.gz`,
-        size: '508 KB',
+        size: '545 KB',
         label: 'Download Standalone Binary Archive (.tar.gz with ELF executable)'
       },
       packages: [
@@ -195,15 +195,15 @@ export default function DownloadPage({ onNavigateTab }) {
           name: 'Debian / Ubuntu Package (.deb)',
           filename: 'ropweaver_1.6.4_amd64.deb',
           url: `${DOWNLOAD_BASE_URL}/ropweaver_1.6.4_amd64.deb`,
-          size: '385 KB',
-          sha256: 'Pending release build verification'
+          size: '413 KB',
+          sha256: 'c2b430e1861c678e7982b5aae9a4a5777d53a685a20f7eff9fbca10f6c90b50b'
         },
         {
           name: 'Standalone Linux x86_64 (.tar.gz)',
           filename: 'ropweaver-v1.6.4-linux-x86_64.tar.gz',
           url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.4-linux-x86_64.tar.gz`,
-          size: '508 KB',
-          sha256: 'Pending release build verification'
+          size: '545 KB',
+          sha256: '742c1a2e74de8562a1e7beaf74c3b697155ec464968d6bf4fc3fcd130f0da495'
         }
       ],
       requirements: 'GLIBC 2.31+, Capstone Engine, Linux Kernel 5.4+ (Ubuntu 20.04+, Debian 11+, Kali Linux x86_64)',
@@ -219,23 +219,23 @@ export default function DownloadPage({ onNavigateTab }) {
       primaryDownload: selectedArch === 'x86_64' ? {
         filename: 'ropweaver-v1.6.4-darwin-x86_64.tar.gz',
         url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.4-darwin-x86_64.tar.gz`,
-        size: '391 KB',
+        size: '416 KB',
         label: 'Download Intel x86_64 Archive (.tar.gz)'
       } : {
         filename: 'ropweaver-v1.6.4-darwin-arm64.tar.gz',
         url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.4-darwin-arm64.tar.gz`,
-        size: '371 KB',
+        size: '396 KB',
         label: 'Download Apple Silicon Archive (arm64 .tar.gz)'
       },
       secondaryDownload: selectedArch === 'x86_64' ? {
         filename: 'ropweaver-v1.6.4-darwin-arm64.tar.gz',
         url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.4-darwin-arm64.tar.gz`,
-        size: '371 KB',
+        size: '396 KB',
         label: 'Download Apple Silicon Archive (arm64 .tar.gz)'
       } : {
         filename: 'ropweaver-v1.6.4-darwin-x86_64.tar.gz',
         url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.4-darwin-x86_64.tar.gz`,
-        size: '391 KB',
+        size: '416 KB',
         label: 'Download Intel x86_64 Archive (.tar.gz)'
       },
       packages: [
@@ -243,15 +243,15 @@ export default function DownloadPage({ onNavigateTab }) {
           name: 'macOS Apple Silicon (arm64 .tar.gz)',
           filename: 'ropweaver-v1.6.4-darwin-arm64.tar.gz',
           url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.4-darwin-arm64.tar.gz`,
-          size: '371 KB',
-          sha256: 'Pending release build verification'
+          size: '396 KB',
+          sha256: 'cabf01d3bd06cdf7f4a9c41144579a96fc5911dbc9962bafd19f1d8e73da066d'
         },
         {
           name: 'macOS Intel (x86_64 .tar.gz)',
           filename: 'ropweaver-v1.6.4-darwin-x86_64.tar.gz',
           url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.4-darwin-x86_64.tar.gz`,
-          size: '391 KB',
-          sha256: 'Pending release build verification'
+          size: '416 KB',
+          sha256: 'f1714cb999d3892c0fa061f2e4ecc010dfd798fee82e5c01f639dca4a6c4ad03'
         }
       ],
       requirements: 'macOS 12.0 Monterey or later, Terminal with zsh/bash. Note: Core gadget discovery and chain synthesis engines validated on regression test beds; native macOS runtime testing has not been performed on live Apple hardware.',
