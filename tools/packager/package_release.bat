@@ -121,6 +121,10 @@ if exist "%ROOT_DIR%\build-linux\binsh_test" (
     copy /y "%ROOT_DIR%\build-linux\binsh_test" "%LINUX_PKG%\samples\" >nul
 )
 copy /y "%ROOT_DIR%\tools\linux_launcher\launcher.sh" "%LINUX_PKG%\install.sh" >nul
+if exist "%ROOT_DIR%\config\firebase_config.json" (
+    mkdir "%LINUX_PKG%\config" 2>nul
+    copy /y "%ROOT_DIR%\config\firebase_config.json" "%LINUX_PKG%\config\" >nul
+)
 copy /y "%ROOT_DIR%\LICENSE" "%LINUX_PKG%\" >nul 2>nul
 copy /y "%ROOT_DIR%\THIRD_PARTY_NOTICES.txt" "%LINUX_PKG%\" >nul 2>nul
 

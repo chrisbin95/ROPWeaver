@@ -117,6 +117,8 @@ jobs:
           mkdir -p "${PKG_DIR}/bin" "${PKG_DIR}/samples" "${PKG_DIR}/config"
           cp build/ropweaver "${PKG_DIR}/bin/ropweaver"
           chmod +x "${PKG_DIR}/bin/ropweaver"
+          cp tools/linux_launcher/launcher.sh "${PKG_DIR}/install.sh"
+          chmod +x "${PKG_DIR}/install.sh"
 
           if [ -d test_binaries ]; then
             cp -r test_binaries/* "${PKG_DIR}/samples/" 2>/dev/null || true
@@ -130,6 +132,70 @@ jobs:
 
           tar -czvf "ropweaver-v1.6.3-linux-x86_64.tar.gz" "${PKG_DIR}"
           echo "[+] Created ropweaver-v1.6.3-linux-x86_64.tar.gz"
+
+      - name: Verify Archive Contains ELF Executable and Installer
+        run: |
+          PKG_TAR="ropweaver-v1.6.3-linux-x86_64.tar.gz"
+          echo "Inspecting archive: $PKG_TAR"
+
+          # Verify tar contents list
+          CONTENTS=$(tar -ztvf "$PKG_TAR")
+          echo "$CONTENTS"
+
+          if ! echo "$CONTENTS" | grep -E "bin/ropweaver$"; then
+            echo "::error::Archive missing bin/ropweaver"
+            exit 1
+          fi
+
+          if ! echo "$CONTENTS" | grep -E "install\.sh$"; then
+            echo "::error::Archive missing install.sh"
+            exit 1
+          fi
+
+          # Extract and verify file size and type
+          VERIFY_DIR=$(mktemp -d)
+          tar -xzf "$PKG_TAR" -C "$VERIFY_DIR"
+          EXT_BIN="$VERIFY_DIR/ropweaver-v1.6.3-linux-x86_64/bin/ropweaver"
+          EXT_INSTALL="$VERIFY_DIR/ropweaver-v1.6.3-linux-x86_64/install.sh"
+
+          if [ ! -f "$EXT_BIN" ]; then
+            echo "::error::Extracted executable not found at $EXT_BIN"
+            exit 1
+          fi
+
+          if [ ! -x "$EXT_BIN" ]; then
+            echo "::error::Extracted executable is not marked executable at $EXT_BIN"
+            exit 1
+          fi
+
+          if [ ! -f "$EXT_INSTALL" ]; then
+            echo "::error::Extracted install.sh not found at $EXT_INSTALL"
+            exit 1
+          fi
+
+          if [ ! -x "$EXT_INSTALL" ]; then
+            echo "::error::Extracted install.sh is not marked executable at $EXT_INSTALL"
+            exit 1
+          fi
+
+          bash -n "$EXT_INSTALL"
+
+          EXT_SIZE=$(wc -c < "$EXT_BIN")
+          echo "Extracted binary size: $EXT_SIZE bytes"
+          if [ "$EXT_SIZE" -lt 50000 ]; then
+            echo "::error::Extracted binary size ($EXT_SIZE bytes) is too small; executable must be a compiled binary"
+            exit 1
+          fi
+
+          EXT_FILE=$(file "$EXT_BIN")
+          echo "Extracted binary type: $EXT_FILE"
+          if ! echo "$EXT_FILE" | grep -q "ELF 64-bit"; then
+            echo "::error::Archive contains script or invalid format instead of ELF executable: $EXT_FILE"
+            exit 1
+          fi
+
+          rm -rf "$VERIFY_DIR"
+          echo "[+] Verified: Archive contains real ELF 64-bit executable ($EXT_SIZE bytes) and executable install.sh."
 
       - name: Upload Debian Package (.deb) Artifact
         uses: actions/upload-artifact@v4

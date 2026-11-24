@@ -29,6 +29,11 @@ if [ -f "$ROOT_DIR/build-linux/binsh_test" ]; then
 fi
 
 cp "$ROOT_DIR/tools/linux_launcher/launcher.sh" "$PKG_LINUX/install.sh"
+chmod +x "$PKG_LINUX/install.sh"
+if [ -f "$ROOT_DIR/config/firebase_config.json" ]; then
+    mkdir -p "$PKG_LINUX/config"
+    cp "$ROOT_DIR/config/firebase_config.json" "$PKG_LINUX/config/"
+fi
 if [ -f "$ROOT_DIR/LICENSE" ]; then
     cp "$ROOT_DIR/LICENSE" "$PKG_LINUX/"
 fi
