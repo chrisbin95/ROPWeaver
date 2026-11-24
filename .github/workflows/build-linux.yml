@@ -88,7 +88,7 @@ jobs:
           # Control file
           printf "%s\n" \
             "Package: ropweaver" \
-            "Version: 1.6.3" \
+            "Version: 1.6.4" \
             "Section: utils" \
             "Priority: optional" \
             "Architecture: amd64" \
@@ -108,12 +108,12 @@ jobs:
             > "${DEB_STAGE}/DEBIAN/postinst"
           chmod 0755 "${DEB_STAGE}/DEBIAN/postinst"
 
-          dpkg-deb --build "${DEB_STAGE}" ropweaver_1.6.3_amd64.deb
-          echo "[+] Created ropweaver_1.6.3_amd64.deb ($(du -h ropweaver_1.6.3_amd64.deb | cut -f1))"
+          dpkg-deb --build "${DEB_STAGE}" ropweaver_1.6.4_amd64.deb
+          echo "[+] Created ropweaver_1.6.4_amd64.deb ($(du -h ropweaver_1.6.4_amd64.deb | cut -f1))"
 
       - name: Package Distribution Tarball (.tar.gz)
         run: |
-          PKG_DIR="ropweaver-v1.6.3-linux-x86_64"
+          PKG_DIR="ropweaver-v1.6.4-linux-x86_64"
           mkdir -p "${PKG_DIR}/bin" "${PKG_DIR}/samples" "${PKG_DIR}/config"
           cp build/ropweaver "${PKG_DIR}/bin/ropweaver"
           chmod +x "${PKG_DIR}/bin/ropweaver"
@@ -130,12 +130,12 @@ jobs:
           cp LICENSE "${PKG_DIR}/" 2>/dev/null || true
           cp THIRD_PARTY_NOTICES.txt "${PKG_DIR}/" 2>/dev/null || true
 
-          tar -czvf "ropweaver-v1.6.3-linux-x86_64.tar.gz" "${PKG_DIR}"
-          echo "[+] Created ropweaver-v1.6.3-linux-x86_64.tar.gz"
+          tar -czvf "ropweaver-v1.6.4-linux-x86_64.tar.gz" "${PKG_DIR}"
+          echo "[+] Created ropweaver-v1.6.4-linux-x86_64.tar.gz"
 
       - name: Verify Archive Contains ELF Executable and Installer
         run: |
-          PKG_TAR="ropweaver-v1.6.3-linux-x86_64.tar.gz"
+          PKG_TAR="ropweaver-v1.6.4-linux-x86_64.tar.gz"
           echo "Inspecting archive: $PKG_TAR"
 
           # Verify tar contents list
@@ -155,8 +155,8 @@ jobs:
           # Extract and verify file size and type
           VERIFY_DIR=$(mktemp -d)
           tar -xzf "$PKG_TAR" -C "$VERIFY_DIR"
-          EXT_BIN="$VERIFY_DIR/ropweaver-v1.6.3-linux-x86_64/bin/ropweaver"
-          EXT_INSTALL="$VERIFY_DIR/ropweaver-v1.6.3-linux-x86_64/install.sh"
+          EXT_BIN="$VERIFY_DIR/ropweaver-v1.6.4-linux-x86_64/bin/ropweaver"
+          EXT_INSTALL="$VERIFY_DIR/ropweaver-v1.6.4-linux-x86_64/install.sh"
 
           if [ ! -f "$EXT_BIN" ]; then
             echo "::error::Extracted executable not found at $EXT_BIN"
@@ -200,14 +200,14 @@ jobs:
       - name: Upload Debian Package (.deb) Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ropweaver-1.6.3-linux-amd64-deb
-          path: ropweaver_1.6.3_amd64.deb
+          name: ropweaver-1.6.4-linux-amd64-deb
+          path: ropweaver_1.6.4_amd64.deb
           if-no-files-found: error
 
       - name: Upload Linux Tarball (.tar.gz) Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ropweaver-v1.6.3-linux-x86_64-tar
-          path: ropweaver-v1.6.3-linux-x86_64.tar.gz
+          name: ropweaver-v1.6.4-linux-x86_64-tar
+          path: ropweaver-v1.6.4-linux-x86_64.tar.gz
           if-no-files-found: error
 

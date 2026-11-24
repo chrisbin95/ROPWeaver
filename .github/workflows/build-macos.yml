@@ -23,10 +23,10 @@ jobs:
         include:
           - arch: arm64
             os: macos-15
-            pkg_name: ropweaver-v1.6.3-darwin-arm64
+            pkg_name: ropweaver-v1.6.4-darwin-arm64
           - arch: x86_64
             os: macos-15-intel
-            pkg_name: ropweaver-v1.6.3-darwin-x86_64
+            pkg_name: ropweaver-v1.6.4-darwin-x86_64
 
     steps:
       - name: Checkout Repository
@@ -136,9 +136,9 @@ jobs:
 
           # Add distribution README
           echo "================================================================================" > "${PKG_DIR}/README.txt"
-          echo "                    ROPWeaver v1.6.3 for macOS (${{ matrix.arch }})" >> "${PKG_DIR}/README.txt"
+          echo "                    ROPWeaver v1.6.4 for macOS (${{ matrix.arch }})" >> "${PKG_DIR}/README.txt"
           echo "            Academic Research Tool - Oxford Brookes University" >> "${PKG_DIR}/README.txt"
-          echo "                        Build Identifier: 1.6.3" >> "${PKG_DIR}/README.txt"
+          echo "                        Build Identifier: 1.6.4" >> "${PKG_DIR}/README.txt"
           echo "================================================================================" >> "${PKG_DIR}/README.txt"
           echo "" >> "${PKG_DIR}/README.txt"
           echo "Requirements:" >> "${PKG_DIR}/README.txt"

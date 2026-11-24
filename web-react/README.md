@@ -62,8 +62,8 @@ web-react/
 ├── public/
 │   ├── favicon.svg         # Custom cyberpunk SVG favicon
 │   ├── icons.svg           # Scalable vector icons
-│   ├── ropweaver-v1.6.3-win64.zip            # Official v1.6.3 Windows portable release bundle
-│   └── ropweaver-windows-x64.exe             # Official v1.6.3 Standalone Windows x64 launcher
+│   ├── ropweaver-v1.6.4-win64.zip            # Official v1.6.4 Windows portable release bundle
+│   └── ropweaver-windows-x64.exe             # Official v1.6.4 Standalone Windows x64 launcher
 └── src/
     ├── main.jsx            # Application root entry point
     ├── App.jsx             # Top-level view router and state coordinator

@@ -1,6 +1,6 @@
 /**
  * Focused Test Suite for Architecture-Aware Downloads and Platform Detection
- * ROPWeaver v1.6.3 — Task 4.17 Continuation & Final Architecture Detection Correction
+ * ROPWeaver v1.6.4 — Task 4.17 Continuation & Final Architecture Detection Correction
  */
 
 import assert from 'node:assert';
@@ -108,9 +108,9 @@ test('Explicitly detected macOS ARM64: Recommends verified Apple Silicon archive
   assert.strictEqual(rec.isCompatibleBinaryAvailable, true);
   assert.strictEqual(rec.recommendedOS, 'macos');
   assert.strictEqual(rec.recommendedArch, 'arm64');
-  assert.strictEqual(rec.primaryAsset.filename, 'ropweaver-v1.6.3-darwin-arm64.tar.gz');
-  assert.strictEqual(rec.primaryAsset.sha256, '9e554516e393dc009daa0abfaebb6e79a322432d9c192800f65aedf4e7d596ae');
-  assert.strictEqual(rec.secondaryAsset.filename, 'ropweaver-v1.6.3-darwin-x86_64.tar.gz');
+  assert.strictEqual(rec.primaryAsset.filename, 'ropweaver-v1.6.4-darwin-arm64.tar.gz');
+  assert.strictEqual(rec.primaryAsset.sha256, 'Pending release build verification');
+  assert.strictEqual(rec.secondaryAsset.filename, 'ropweaver-v1.6.4-darwin-x86_64.tar.gz');
 });
 
 // 5. Explicitly detected macOS x86_64
@@ -130,9 +130,9 @@ test('Explicitly detected macOS x86_64: Recommends verified Intel archive', () =
   assert.strictEqual(rec.isCompatibleBinaryAvailable, true);
   assert.strictEqual(rec.recommendedOS, 'macos');
   assert.strictEqual(rec.recommendedArch, 'x86_64');
-  assert.strictEqual(rec.primaryAsset.filename, 'ropweaver-v1.6.3-darwin-x86_64.tar.gz');
-  assert.strictEqual(rec.primaryAsset.sha256, 'cbdee9879c5cb15274f8b6aeb768e193a8832ed7de0e14d02357282f9ae7e5a4');
-  assert.strictEqual(rec.secondaryAsset.filename, 'ropweaver-v1.6.3-darwin-arm64.tar.gz');
+  assert.strictEqual(rec.primaryAsset.filename, 'ropweaver-v1.6.4-darwin-x86_64.tar.gz');
+  assert.strictEqual(rec.primaryAsset.sha256, 'Pending release build verification');
+  assert.strictEqual(rec.secondaryAsset.filename, 'ropweaver-v1.6.4-darwin-arm64.tar.gz');
 });
 
 // 6. Unknown Architecture Fallback Requiring Manual Selection
@@ -194,9 +194,9 @@ test('x86_64 Detection (Windows): Recommends standalone executable and portable 
   assert.strictEqual(rec.recommendedOS, 'windows');
   assert.strictEqual(rec.recommendedArch, 'x86_64');
   assert.strictEqual(rec.primaryAsset.filename, 'ropweaver-windows-x64.exe');
-  assert.strictEqual(rec.primaryAsset.sha256, '552b82173df0f09528a793368ed168b1c70204e4549b05ab1a682809ed38df98');
-  assert.strictEqual(rec.secondaryAsset.filename, 'ropweaver-v1.6.3-win64.zip');
-  assert.strictEqual(rec.secondaryAsset.sha256, '80a99faf4c81fde7d963978f03ecc7ad00a9c17ec208ac6dae49dfb4d8c154d5');
+  assert.strictEqual(rec.primaryAsset.sha256, '7ca7aa1c57711c019b40c8957c93601f728bf4278507e621e4055c6b284150c3');
+  assert.strictEqual(rec.secondaryAsset.filename, 'ropweaver-v1.6.4-win64.zip');
+  assert.strictEqual(rec.secondaryAsset.sha256, 'feb756ce1679067c4f11faf91cd1146a40e59a45215deddc1411262737fc6a95');
 });
 
 // 9. x86_64 Detection: Linux x86_64
@@ -213,10 +213,10 @@ test('x86_64 Detection (Linux): Recommends Debian package and Linux tar.gz', () 
   const rec = getRecommendedDownload(detected);
   assert.strictEqual(rec.status, 'AVAILABLE');
   assert.strictEqual(rec.isCompatibleBinaryAvailable, true);
-  assert.strictEqual(rec.primaryAsset.filename, 'ropweaver_1.6.3_amd64.deb');
-  assert.strictEqual(rec.primaryAsset.sha256, 'c2f21c8367ac0ccdac45e9edc33d0d2ebca460323a8628d09d3a38d6613024e8');
-  assert.strictEqual(rec.secondaryAsset.filename, 'ropweaver-v1.6.3-linux-x86_64.tar.gz');
-  assert.strictEqual(rec.secondaryAsset.sha256, 'e2ec7e636c2051343c7ff14f1aef0ef0e735226c635b4a120c9aadc6764acb10');
+  assert.strictEqual(rec.primaryAsset.filename, 'ropweaver_1.6.4_amd64.deb');
+  assert.strictEqual(rec.primaryAsset.sha256, 'Pending release build verification');
+  assert.strictEqual(rec.secondaryAsset.filename, 'ropweaver-v1.6.4-linux-x86_64.tar.gz');
+  assert.strictEqual(rec.secondaryAsset.sha256, 'Pending release build verification');
 });
 
 // 10. RISC-V 64-bit Detection
@@ -234,7 +234,7 @@ test('RISC-V Detection: Accurately reports unavailable pre-compiled binary witho
   assert.strictEqual(rec.status, 'UNAVAILABLE_ARCH');
   assert.strictEqual(rec.isCompatibleBinaryAvailable, false);
   assert.strictEqual(rec.primaryAsset, null);
-  assert.ok(rec.message.includes('RISC-V 64-bit pre-compiled package is unavailable for v1.6.3'));
+  assert.ok(rec.message.includes('RISC-V 64-bit pre-compiled package is unavailable for v1.6.4'));
 });
 
 // 11. Windows ARM64 Detection
@@ -256,25 +256,25 @@ test('Windows ARM64: Identifies Windows on ARM and reports native binary unavail
 
 // 12. Source Code URLs and Git Repository Verification
 test('Source Code Selection: Validates verified source archives and git repository', () => {
-  assert.strictEqual(RELEASE_PAGE_URL, 'https://github.com/chrisbin95/ROPWeaver/releases/tag/v1.6.3');
-  assert.strictEqual(DOWNLOAD_BASE_URL, 'https://github.com/chrisbin95/ROPWeaver/releases/download/v1.6.3');
-  assert.strictEqual(SOURCE_CODE_ZIP_URL, 'https://github.com/chrisbin95/ROPWeaver/archive/refs/tags/v1.6.3.zip');
-  assert.strictEqual(SOURCE_CODE_TAR_URL, 'https://github.com/chrisbin95/ROPWeaver/archive/refs/tags/v1.6.3.tar.gz');
+  assert.strictEqual(RELEASE_PAGE_URL, 'https://github.com/chrisbin95/ROPWeaver/releases/tag/v1.6.4');
+  assert.strictEqual(DOWNLOAD_BASE_URL, 'https://github.com/chrisbin95/ROPWeaver/releases/download/v1.6.4');
+  assert.strictEqual(SOURCE_CODE_ZIP_URL, 'https://github.com/chrisbin95/ROPWeaver/archive/refs/tags/v1.6.4.zip');
+  assert.strictEqual(SOURCE_CODE_TAR_URL, 'https://github.com/chrisbin95/ROPWeaver/archive/refs/tags/v1.6.4.tar.gz');
   assert.strictEqual(GIT_REPO_URL, 'https://github.com/chrisbin95/ROPWeaver.git');
 });
 
 // 13. Official Release Asset Catalog Completeness and Integrity
-test('Preservation of All 6 Verified v1.6.3 Release Assets and Digests', () => {
+test('Preservation of All 6 Verified v1.6.4 Release Assets and Digests', () => {
   const assets = Object.values(OFFICIAL_ASSETS);
   assert.strictEqual(assets.length, 6, 'Must contain exactly 6 verified official release assets');
 
   const digests = {
-    'ropweaver-windows-x64.exe': '552b82173df0f09528a793368ed168b1c70204e4549b05ab1a682809ed38df98',
-    'ropweaver-v1.6.3-win64.zip': '80a99faf4c81fde7d963978f03ecc7ad00a9c17ec208ac6dae49dfb4d8c154d5',
-    'ropweaver_1.6.3_amd64.deb': 'c2f21c8367ac0ccdac45e9edc33d0d2ebca460323a8628d09d3a38d6613024e8',
-    'ropweaver-v1.6.3-linux-x86_64.tar.gz': 'e2ec7e636c2051343c7ff14f1aef0ef0e735226c635b4a120c9aadc6764acb10',
-    'ropweaver-v1.6.3-darwin-arm64.tar.gz': '9e554516e393dc009daa0abfaebb6e79a322432d9c192800f65aedf4e7d596ae',
-    'ropweaver-v1.6.3-darwin-x86_64.tar.gz': 'cbdee9879c5cb15274f8b6aeb768e193a8832ed7de0e14d02357282f9ae7e5a4'
+    'ropweaver-windows-x64.exe': '7ca7aa1c57711c019b40c8957c93601f728bf4278507e621e4055c6b284150c3',
+    'ropweaver-v1.6.4-win64.zip': 'feb756ce1679067c4f11faf91cd1146a40e59a45215deddc1411262737fc6a95',
+    'ropweaver_1.6.4_amd64.deb': 'Pending release build verification',
+    'ropweaver-v1.6.4-linux-x86_64.tar.gz': 'Pending release build verification',
+    'ropweaver-v1.6.4-darwin-arm64.tar.gz': 'Pending release build verification',
+    'ropweaver-v1.6.4-darwin-x86_64.tar.gz': 'Pending release build verification'
   };
 
   assets.forEach(asset => {

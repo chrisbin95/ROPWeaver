@@ -8,10 +8,10 @@ import {
   getRecommendedDownload
 } from '../utils/platformHelper';
 
-const RELEASE_PAGE_URL = 'https://github.com/chrisbin95/ROPWeaver/releases/tag/v1.6.3';
-const DOWNLOAD_BASE_URL = 'https://github.com/chrisbin95/ROPWeaver/releases/download/v1.6.3';
-const SOURCE_CODE_ZIP_URL = 'https://github.com/chrisbin95/ROPWeaver/archive/refs/tags/v1.6.3.zip';
-const SOURCE_CODE_TAR_URL = 'https://github.com/chrisbin95/ROPWeaver/archive/refs/tags/v1.6.3.tar.gz';
+const RELEASE_PAGE_URL = 'https://github.com/chrisbin95/ROPWeaver/releases/tag/v1.6.4';
+const DOWNLOAD_BASE_URL = 'https://github.com/chrisbin95/ROPWeaver/releases/download/v1.6.4';
+const SOURCE_CODE_ZIP_URL = 'https://github.com/chrisbin95/ROPWeaver/archive/refs/tags/v1.6.4.zip';
+const SOURCE_CODE_TAR_URL = 'https://github.com/chrisbin95/ROPWeaver/archive/refs/tags/v1.6.4.tar.gz';
 const GIT_REPO_URL = 'https://github.com/chrisbin95/ROPWeaver.git';
 
 export default function DownloadPage({ onNavigateTab }) {
@@ -131,24 +131,24 @@ export default function DownloadPage({ onNavigateTab }) {
     ]
   };
 
-  // Download Catalog Data with actual published v1.6.3 distribution artifacts
+  // Download Catalog Data with actual published v1.6.4 distribution artifacts
   const downloads = {
     windows: {
       name: 'Windows',
       fullName: 'Windows 10 / 11 / Server (x64)',
-      version: 'v1.6.3',
+      version: 'v1.6.4',
       arch: 'x86_64 / AMD64',
       releaseDate: 'November 2026',
       icon: Laptop,
       primaryDownload: {
         filename: 'ropweaver-windows-x64.exe',
-        url: '/ropweaver-windows-x64.exe',
+        url: `${DOWNLOAD_BASE_URL}/ropweaver-windows-x64.exe`,
         size: '9.5 MB',
         label: 'Download Standalone Executable (.exe with embedded runtime)'
       },
       secondaryDownload: {
-        filename: 'ropweaver-v1.6.3-win64.zip',
-        url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.3-win64.zip`,
+        filename: 'ropweaver-v1.6.4-win64.zip',
+        url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.4-win64.zip`,
         size: '9.5 MB',
         label: 'Download Portable Bundle (.zip with DLLs & Samples)'
       },
@@ -156,16 +156,16 @@ export default function DownloadPage({ onNavigateTab }) {
         {
           name: 'Standalone Windows x64 Executable',
           filename: 'ropweaver-windows-x64.exe',
-          url: '/ropweaver-windows-x64.exe',
+          url: `${DOWNLOAD_BASE_URL}/ropweaver-windows-x64.exe`,
           size: '9.5 MB',
-          sha256: '552b82173df0f09528a793368ed168b1c70204e4549b05ab1a682809ed38df98'
+          sha256: '7ca7aa1c57711c019b40c8957c93601f728bf4278507e621e4055c6b284150c3'
         },
         {
           name: 'Windows x86_64 ZIP Archive',
-          filename: 'ropweaver-v1.6.3-win64.zip',
-          url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.3-win64.zip`,
+          filename: 'ropweaver-v1.6.4-win64.zip',
+          url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.4-win64.zip`,
           size: '9.5 MB',
-          sha256: '80a99faf4c81fde7d963978f03ecc7ad00a9c17ec208ac6dae49dfb4d8c154d5'
+          sha256: 'feb756ce1679067c4f11faf91cd1146a40e59a45215deddc1411262737fc6a95'
         }
       ],
       requirements: 'Windows 10 build 19041+ or Windows 11, x64 architecture (Zero external dependencies; auto-extracts portable runtime)',
@@ -174,36 +174,36 @@ export default function DownloadPage({ onNavigateTab }) {
     linux: {
       name: 'Linux',
       fullName: 'Linux (Ubuntu, Debian, Kali, Arch, Fedora)',
-      version: 'v1.6.3',
+      version: 'v1.6.4',
       arch: 'x86_64 / AMD64',
       releaseDate: 'November 2026',
       icon: Terminal,
       primaryDownload: {
-        filename: 'ropweaver_1.6.3_amd64.deb',
-        url: `${DOWNLOAD_BASE_URL}/ropweaver_1.6.3_amd64.deb`,
+        filename: 'ropweaver_1.6.4_amd64.deb',
+        url: `${DOWNLOAD_BASE_URL}/ropweaver_1.6.4_amd64.deb`,
         size: '385 KB',
         label: 'Download Debian / Ubuntu Package (.deb)'
       },
       secondaryDownload: {
-        filename: 'ropweaver-v1.6.3-linux-x86_64.tar.gz',
-        url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.3-linux-x86_64.tar.gz`,
+        filename: 'ropweaver-v1.6.4-linux-x86_64.tar.gz',
+        url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.4-linux-x86_64.tar.gz`,
         size: '508 KB',
         label: 'Download Standalone Binary Archive (.tar.gz with ELF executable)'
       },
       packages: [
         {
           name: 'Debian / Ubuntu Package (.deb)',
-          filename: 'ropweaver_1.6.3_amd64.deb',
-          url: `${DOWNLOAD_BASE_URL}/ropweaver_1.6.3_amd64.deb`,
+          filename: 'ropweaver_1.6.4_amd64.deb',
+          url: `${DOWNLOAD_BASE_URL}/ropweaver_1.6.4_amd64.deb`,
           size: '385 KB',
-          sha256: 'c2f21c8367ac0ccdac45e9edc33d0d2ebca460323a8628d09d3a38d6613024e8'
+          sha256: 'Pending release build verification'
         },
         {
           name: 'Standalone Linux x86_64 (.tar.gz)',
-          filename: 'ropweaver-v1.6.3-linux-x86_64.tar.gz',
-          url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.3-linux-x86_64.tar.gz`,
+          filename: 'ropweaver-v1.6.4-linux-x86_64.tar.gz',
+          url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.4-linux-x86_64.tar.gz`,
           size: '508 KB',
-          sha256: 'e2ec7e636c2051343c7ff14f1aef0ef0e735226c635b4a120c9aadc6764acb10'
+          sha256: 'Pending release build verification'
         }
       ],
       requirements: 'GLIBC 2.31+, Capstone Engine, Linux Kernel 5.4+ (Ubuntu 20.04+, Debian 11+, Kali Linux x86_64)',
@@ -212,46 +212,46 @@ export default function DownloadPage({ onNavigateTab }) {
     macos: {
       name: 'macOS',
       fullName: 'macOS (Apple Silicon & Intel)',
-      version: 'v1.6.3',
+      version: 'v1.6.4',
       arch: selectedArch === 'x86_64' ? 'Intel (x86_64)' : (selectedArch === 'arm64' ? 'Apple Silicon (arm64)' : 'Choose Architecture'),
       releaseDate: 'November 2026',
       icon: Apple,
       primaryDownload: selectedArch === 'x86_64' ? {
-        filename: 'ropweaver-v1.6.3-darwin-x86_64.tar.gz',
-        url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.3-darwin-x86_64.tar.gz`,
+        filename: 'ropweaver-v1.6.4-darwin-x86_64.tar.gz',
+        url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.4-darwin-x86_64.tar.gz`,
         size: '391 KB',
         label: 'Download Intel x86_64 Archive (.tar.gz)'
       } : {
-        filename: 'ropweaver-v1.6.3-darwin-arm64.tar.gz',
-        url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.3-darwin-arm64.tar.gz`,
+        filename: 'ropweaver-v1.6.4-darwin-arm64.tar.gz',
+        url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.4-darwin-arm64.tar.gz`,
         size: '371 KB',
         label: 'Download Apple Silicon Archive (arm64 .tar.gz)'
       },
       secondaryDownload: selectedArch === 'x86_64' ? {
-        filename: 'ropweaver-v1.6.3-darwin-arm64.tar.gz',
-        url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.3-darwin-arm64.tar.gz`,
+        filename: 'ropweaver-v1.6.4-darwin-arm64.tar.gz',
+        url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.4-darwin-arm64.tar.gz`,
         size: '371 KB',
         label: 'Download Apple Silicon Archive (arm64 .tar.gz)'
       } : {
-        filename: 'ropweaver-v1.6.3-darwin-x86_64.tar.gz',
-        url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.3-darwin-x86_64.tar.gz`,
+        filename: 'ropweaver-v1.6.4-darwin-x86_64.tar.gz',
+        url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.4-darwin-x86_64.tar.gz`,
         size: '391 KB',
         label: 'Download Intel x86_64 Archive (.tar.gz)'
       },
       packages: [
         {
           name: 'macOS Apple Silicon (arm64 .tar.gz)',
-          filename: 'ropweaver-v1.6.3-darwin-arm64.tar.gz',
-          url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.3-darwin-arm64.tar.gz`,
+          filename: 'ropweaver-v1.6.4-darwin-arm64.tar.gz',
+          url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.4-darwin-arm64.tar.gz`,
           size: '371 KB',
-          sha256: '9e554516e393dc009daa0abfaebb6e79a322432d9c192800f65aedf4e7d596ae'
+          sha256: 'Pending release build verification'
         },
         {
           name: 'macOS Intel (x86_64 .tar.gz)',
-          filename: 'ropweaver-v1.6.3-darwin-x86_64.tar.gz',
-          url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.3-darwin-x86_64.tar.gz`,
+          filename: 'ropweaver-v1.6.4-darwin-x86_64.tar.gz',
+          url: `${DOWNLOAD_BASE_URL}/ropweaver-v1.6.4-darwin-x86_64.tar.gz`,
           size: '391 KB',
-          sha256: 'cbdee9879c5cb15274f8b6aeb768e193a8832ed7de0e14d02357282f9ae7e5a4'
+          sha256: 'Pending release build verification'
         }
       ],
       requirements: 'macOS 12.0 Monterey or later, Terminal with zsh/bash. Note: Core gadget discovery and chain synthesis engines validated on regression test beds; native macOS runtime testing has not been performed on live Apple hardware.',
@@ -260,33 +260,33 @@ export default function DownloadPage({ onNavigateTab }) {
     source: {
       name: 'Source Code',
       fullName: 'Source Code & Native Compilation',
-      version: 'v1.6.3',
+      version: 'v1.6.4',
       arch: 'All Supported Platforms (C99 / C++17)',
       releaseDate: 'November 2026',
       icon: Code2,
       primaryDownload: {
-        filename: 'v1.6.3.tar.gz',
+        filename: 'v1.6.4.tar.gz',
         url: SOURCE_CODE_TAR_URL,
         size: '1.2 MB',
         label: 'Download Source Archive (.tar.gz)'
       },
       secondaryDownload: {
-        filename: 'v1.6.3.zip',
+        filename: 'v1.6.4.zip',
         url: SOURCE_CODE_ZIP_URL,
         size: '1.4 MB',
         label: 'Download Source Archive (.zip)'
       },
       packages: [
         {
-          name: 'Official v1.6.3 Source Code (tar.gz)',
-          filename: 'ROPWeaver-1.6.3.tar.gz',
+          name: 'Official v1.6.4 Source Code (tar.gz)',
+          filename: 'ROPWeaver-1.6.4.tar.gz',
           url: SOURCE_CODE_TAR_URL,
           size: '1.2 MB',
           sha256: 'Verified GitHub Release Source Archive'
         },
         {
-          name: 'Official v1.6.3 Source Code (zip)',
-          filename: 'ROPWeaver-1.6.3.zip',
+          name: 'Official v1.6.4 Source Code (zip)',
+          filename: 'ROPWeaver-1.6.4.zip',
           url: SOURCE_CODE_ZIP_URL,
           size: '1.4 MB',
           sha256: 'Verified GitHub Release Source Archive'
@@ -316,10 +316,10 @@ export default function DownloadPage({ onNavigateTab }) {
   return (
     <div className="download-page fade-in">
       <div className="explorer-hero">
-        <span className="hero-terminal-tag mono">&gt; ropweaver official_releases // product_v1.6.3</span>
+        <span className="hero-terminal-tag mono">&gt; ropweaver official_releases // product_v1.6.4</span>
         <h1 className="hero-title">Download ROPWeaver</h1>
         <p className="hero-subtitle">
-          Official release: <strong className="text-accent-cyan">v1.6.3</strong>.
+          Official release: <strong className="text-accent-cyan">v1.6.4</strong>.
           Download verified cross-platform release archives for Windows, Linux, and macOS below, or build directly from source.
           View complete release notes, changelogs, and corresponding source archives on the official{' '}
           <a
@@ -329,7 +329,7 @@ export default function DownloadPage({ onNavigateTab }) {
             className="text-accent-green"
             style={{ textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
           >
-            <span>GitHub Release v1.6.3</span>
+            <span>GitHub Release v1.6.4</span>
             <ExternalLink size={12} />
           </a>.
         </p>
@@ -476,7 +476,7 @@ export default function DownloadPage({ onNavigateTab }) {
                   CHOOSE YOUR MAC ARCHITECTURE
                 </span>
                 <p className="mono text-xs text-muted" style={{ margin: '0.5rem 0 0', lineHeight: '1.6' }}>
-                  ROPWeaver provides native v1.6.3 packages for both Apple Silicon (M1/M2/M3/M4) and Intel (x86_64) Macs.
+                  ROPWeaver provides native v1.6.4 packages for both Apple Silicon (M1/M2/M3/M4) and Intel (x86_64) Macs.
                   Browser privacy protections do not expose your Mac's CPU architecture. Please select your architecture below to view download options:
                 </p>
               </div>
@@ -550,7 +550,7 @@ export default function DownloadPage({ onNavigateTab }) {
                 <span className="mono text-xs font-bold text-accent-cyan">PACKAGE MANAGERS &amp; AUTOMATED SCRIPTS:</span>
               </div>
               <p className="mono text-xs text-muted" style={{ margin: '0.4rem 0 0', lineHeight: '1.5' }}>
-                Automated terminal installers and package manager packages (winget, Homebrew, AUR) are <strong className="text-accent-orange">unavailable / coming soon</strong> in a future release. Please download the verified official v1.6.3 release archives above or compile from source.
+                Automated terminal installers and package manager packages (winget, Homebrew, AUR) are <strong className="text-accent-orange">unavailable / coming soon</strong> in a future release. Please download the verified official v1.6.4 release archives above or compile from source.
               </p>
             </div>
 
@@ -596,7 +596,7 @@ export default function DownloadPage({ onNavigateTab }) {
                   PRE-COMPILED BINARY UNAVAILABLE FOR {active.name.toUpperCase()} ({selectedArch.toUpperCase()})
                 </span>
                 <p className="mono text-xs text-muted" style={{ margin: '0.5rem 0 0', lineHeight: '1.6' }}>
-                  An official pre-compiled v1.6.3 binary package is not published for {active.name} on {selectedArch}.
+                  An official pre-compiled v1.6.4 binary package is not published for {active.name} on {selectedArch}.
                   ROPWeaver's engine fully supports {selectedArch} target analysis and compilation, and can be built directly from source using CMake on this architecture.
                 </p>
               </div>
@@ -618,7 +618,7 @@ export default function DownloadPage({ onNavigateTab }) {
                 rel="noopener noreferrer"
               >
                 <Download size={14} />
-                <span>Download Source Archive (v1.6.3.tar.gz)</span>
+                <span>Download Source Archive (v1.6.4.tar.gz)</span>
               </a>
             </div>
           </div>
@@ -655,7 +655,7 @@ cmake --build build -j$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || ec
             style={{ marginTop: '0.75rem', width: '100%', justifyContent: 'center' }}
           >
             <ExternalLink size={13} />
-            <span>View GitHub Release v1.6.3 &rarr;</span>
+            <span>View GitHub Release v1.6.4 &rarr;</span>
           </a>
         </div>
 

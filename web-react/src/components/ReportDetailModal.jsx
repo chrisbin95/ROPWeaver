@@ -62,7 +62,7 @@ export default function ReportDetailModal({ report, index, onClose }) {
     report.report_date ?? report.timestamp ?? report.uploaded_at ?? report.created_at,
     { fallback: 'N/A' }
   );
-  const toolVersion = report.tool_version || 'ROPWeaver_v1.6.3';
+  const toolVersion = report.tool_version || 'ROPWeaver_v1.6.4';
 
   // Mitigations
   const rawProts = report.protections || (report.binary_analysis && report.binary_analysis.hardening_features);

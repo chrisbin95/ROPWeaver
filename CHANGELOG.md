@@ -2,6 +2,23 @@
 
 All notable changes to the ROPWeaver framework are documented in this file.
 
+## [v1.6.4] - Phase 2C: Firebase Project Migration, Linux Installer Hardening & Release Unification
+
+### 1. Firebase Infrastructure Migration & Telemetry Pipeline
+- **Project Migration**: Migrated authentication, Firestore rules, and cloud telemetry endpoints to production project `rop-weaver` (Project ID `rop-weaver-a246a`).
+- **Telemetry Batching & Deduplication**: Separated structured gadget batch uploads from binary analysis report records; added client-side deduplication to prevent duplicate gadget registrations.
+- **Cross-Platform Mock Integration**: Standardized local Firestore mock integration tests across Linux, Windows, and macOS runners (`tests/test_firestore_mock_integration.mjs`).
+
+### 2. Linux Standalone Installer Hardening
+- **Symlink Protection**: Hardened `tools/linux_launcher/launcher.sh` with fail-closed symlink rejection at installation destination directory (`~/.local/share/ropweaver`), `bin`, `config`, and system PATH symlink targets (`~/.local/bin/ropweaver`, `/usr/local/bin/ropweaver`) to prevent arbitrary file following or overwrites.
+- **Config Preservation**: Preserved existing customized user `firebase_config.json` configurations across repeated installations while staging distributed configuration as `.dist`.
+- **Idempotency & Verification**: Ensured repeatable, safe execution with explicit directory permission validation and verified compatibility links.
+
+### 3. Cross-Platform Release Packaging & Web Explorer Polish
+- **Release Unification**: Synchronized version constants and package paths across CMake, Windows launcher, Linux installer, macOS distribution wrappers, and universal Python launcher.
+- **Direct GitHub Releases**: Switched Windows standalone executable and zip downloads on the web explorer to direct GitHub Releases distribution.
+- **Web UX Polish**: Enforced strict upload-time sorting with localized ISO timestamps, responsive mobile navigation, and Chromium high-entropy client hints architecture detection.
+
 ## [v1.6.3] - Phase 3 Step 3.5: Unified Regression Runner Finalization & Test Isolation Standardization
 
 ### 1. Unified Regression Runner Integration (Test 18)

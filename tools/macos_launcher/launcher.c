@@ -7,7 +7,7 @@
 #include <mach-o/dyld.h>
 #include <errno.h>
 
-#define VERSION "v1.6.3"
+#define VERSION "v1.6.4"
 
 static int file_exists(const char* path) {
     return (access(path, X_OK) == 0);

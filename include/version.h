@@ -1,9 +1,9 @@
 #ifndef ROPWEAVER_VERSION_H
 #define ROPWEAVER_VERSION_H
 
-#define ROPWEAVER_VERSION "v1.6.3"
-#define ROPWEAVER_VERSION_FULL "ROPWeaver_v1.6.3"
-#define ROPWEAVER_BUILD_ID "1.6.3"
+#define ROPWEAVER_VERSION "v1.6.4"
+#define ROPWEAVER_VERSION_FULL "ROPWeaver_v1.6.4"
+#define ROPWEAVER_BUILD_ID "1.6.4"
 #define ROPWEAVER_COMMIT_HASH "unspecified"
 #define ROPWEAVER_BUILD_DATE "unspecified"
 

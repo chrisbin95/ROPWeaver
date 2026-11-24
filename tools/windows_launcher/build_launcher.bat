@@ -1,5 +1,7 @@
 @echo off
 setlocal
+set SCRIPT_DIR=%~dp0
+cd /d "%SCRIPT_DIR%"
 echo [*] Compiling ROPWeaver Windows Standalone Launcher...
 set MINGW_BIN=C:\msys64\mingw64\bin
 if exist "%MINGW_BIN%\windres.exe" (

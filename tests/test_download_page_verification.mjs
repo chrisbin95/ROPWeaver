@@ -9,43 +9,43 @@ console.log('Verifying DownloadPage.jsx Release Asset Integrity...\n');
 const content = fs.readFileSync('web-react/src/pages/DownloadPage.jsx', 'utf-8');
 
 // 1. Verify published release base URL & tag
-const expectedBaseUrl = 'https://github.com/chrisbin95/ROPWeaver/releases/download/v1.6.3';
-const expectedReleaseUrl = 'https://github.com/chrisbin95/ROPWeaver/releases/tag/v1.6.3';
+const expectedBaseUrl = 'https://github.com/chrisbin95/ROPWeaver/releases/download/v1.6.4';
+const expectedReleaseUrl = 'https://github.com/chrisbin95/ROPWeaver/releases/tag/v1.6.4';
 
-assert.ok(content.includes(expectedBaseUrl), 'Must contain exact v1.6.3 download base URL');
-assert.ok(content.includes(expectedReleaseUrl), 'Must contain exact v1.6.3 release page URL');
+assert.ok(content.includes(expectedBaseUrl), 'Must contain exact v1.6.4 download base URL');
+assert.ok(content.includes(expectedReleaseUrl), 'Must contain exact v1.6.4 release page URL');
 
 // 2. Verify all six distribution options and SHA-256 digests
 const expectedAssets = [
   {
     name: 'Windows Standalone Executable',
     file: 'ropweaver-windows-x64.exe',
-    sha256: '552b82173df0f09528a793368ed168b1c70204e4549b05ab1a682809ed38df98'
+    sha256: '7ca7aa1c57711c019b40c8957c93601f728bf4278507e621e4055c6b284150c3'
   },
   {
     name: 'Windows x86_64 ZIP',
-    file: 'ropweaver-v1.6.3-win64.zip',
-    sha256: '80a99faf4c81fde7d963978f03ecc7ad00a9c17ec208ac6dae49dfb4d8c154d5'
+    file: 'ropweaver-v1.6.4-win64.zip',
+    sha256: 'feb756ce1679067c4f11faf91cd1146a40e59a45215deddc1411262737fc6a95'
   },
   {
     name: 'Linux Debian/Ubuntu AMD64 DEB',
-    file: 'ropweaver_1.6.3_amd64.deb',
-    sha256: 'c2f21c8367ac0ccdac45e9edc33d0d2ebca460323a8628d09d3a38d6613024e8'
+    file: 'ropweaver_1.6.4_amd64.deb',
+    sha256: 'Pending release build verification'
   },
   {
     name: 'Linux x86_64 Standalone TAR.GZ',
-    file: 'ropweaver-v1.6.3-linux-x86_64.tar.gz',
-    sha256: 'e2ec7e636c2051343c7ff14f1aef0ef0e735226c635b4a120c9aadc6764acb10'
+    file: 'ropweaver-v1.6.4-linux-x86_64.tar.gz',
+    sha256: 'Pending release build verification'
   },
   {
     name: 'macOS Apple Silicon ARM64 TAR.GZ',
-    file: 'ropweaver-v1.6.3-darwin-arm64.tar.gz',
-    sha256: '9e554516e393dc009daa0abfaebb6e79a322432d9c192800f65aedf4e7d596ae'
+    file: 'ropweaver-v1.6.4-darwin-arm64.tar.gz',
+    sha256: 'Pending release build verification'
   },
   {
     name: 'macOS Intel x86_64 TAR.GZ',
-    file: 'ropweaver-v1.6.3-darwin-x86_64.tar.gz',
-    sha256: 'cbdee9879c5cb15274f8b6aeb768e193a8832ed7de0e14d02357282f9ae7e5a4'
+    file: 'ropweaver-v1.6.4-darwin-x86_64.tar.gz',
+    sha256: 'Pending release build verification'
   }
 ];
 
