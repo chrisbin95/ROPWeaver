@@ -492,7 +492,7 @@ export default function DownloadPage({ onNavigateTab }) {
                 <Apple size={22} />
                 <div className="btn-large-text">
                   <span className="btn-large-main">Apple Silicon (arm64)</span>
-                  <span className="btn-large-sub text-xs">M1 / M2 / M3 / M4 Macs (371 KB)</span>
+                  <span className="btn-large-sub text-xs">M1 / M2 / M3 / M4 Macs (396 KB)</span>
                 </div>
               </button>
 
@@ -505,7 +505,7 @@ export default function DownloadPage({ onNavigateTab }) {
                 <Laptop size={22} />
                 <div className="btn-large-text">
                   <span className="btn-large-main">Intel Mac (x86_64)</span>
-                  <span className="btn-large-sub text-xs">Core i5 / i7 / i9 / Xeon Macs (391 KB)</span>
+                  <span className="btn-large-sub text-xs">Core i5 / i7 / i9 / Xeon Macs (416 KB)</span>
                 </div>
               </button>
             </div>
